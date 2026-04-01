@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.Duration;
 
 /**
@@ -14,6 +15,7 @@ import java.time.Duration;
 public class AppLocal {
 
     private static final String DEFAULT_DB_NAME = "dag_task_test";
+    private static final String DEFAULT_PG_VERSION = "16.8";
 
     public static void main(String[] args) {
         EmbeddedPostgres embeddedPostgres = null;
@@ -23,15 +25,53 @@ public class AppLocal {
             System.setProperty("LC_ALL", "C");
             System.setProperty("LC_CTYPE", "C");
 
+            String pgVersion = DEFAULT_PG_VERSION;
+            String dbName = DEFAULT_DB_NAME;
+
+            if (args.length >= 2) {
+                pgVersion = args[0];
+                dbName = args[1];
+            } else if (args.length == 1) {
+                dbName = args[0];
+            }
+
             embeddedPostgres = EmbeddedPostgres.builder()
+                .setPgVersion(pgVersion)
                 .setPort(33333)
                 .setPGStartupWait(Duration.ofMinutes(1))
                 .start();
             logger.info("Embedded PostgreSQL started with jdbc url = [{}]."
                 , embeddedPostgres.getJdbcUrl("postgres", "postgres"));
 
+            // Create the database if it doesn't exist
+            try (var connection = embeddedPostgres.getPostgresDatabase().getConnection()) {
+                try (var statement = connection.createStatement()) {
+                    // Check if database exists, create if not
+                    statement.execute(String.format(
+                        "SELECT 'CREATE DATABASE %s' " +
+                        "WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '%s')",
+                        dbName, dbName));
+                }
+            } catch (SQLException e) {
+                logger.warn("Failed to create database '{}', it may already exist: {}",
+                    dbName, e.getMessage());
+            }
+
+            String jdbcUrl = String.format(
+                "jdbc:postgresql://localhost:%d/%s?user=postgres&password=postgres",
+                embeddedPostgres.getPort(), dbName);
+
+            logger.info("Embedded PostgreSQL started");
+            logger.info("PostgreSQL version: {}", pgVersion);
+            logger.info("Database name: {}", dbName);
+            logger.info("JDBC URL: {}", jdbcUrl);
+
             // Set system properties for configuration to override database connection
             System.setProperty("env", "local");
+            System.setProperty("database.jdbcUrl", jdbcUrl);
+            System.setProperty("database.username", "postgres");
+            System.setProperty("database.password", "postgres");
+
             logger.info("Starting main application...");
             App.main(args);
         } catch (IOException ioe) {
