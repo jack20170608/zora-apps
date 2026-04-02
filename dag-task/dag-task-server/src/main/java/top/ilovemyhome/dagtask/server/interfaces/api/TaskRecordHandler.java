@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.ilovemyhome.dagtask.server.application.AppContext;
 import top.ilovemyhome.dagtask.si.TaskDagService;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.TaskRecordDao;
@@ -33,9 +34,9 @@ public class TaskRecordHandler {
     private final TaskDagService<String, String> taskDagService;
 
     @Inject
-    public TaskRecordHandler(TaskRecordDao taskRecordDao, TaskDagService<String, String> taskDagService) {
-        this.taskRecordDao = taskRecordDao;
-        this.taskDagService = taskDagService;
+    public TaskRecordHandler(AppContext appContext) {
+        this.taskRecordDao = appContext.getBean("taskRecordDao", TaskRecordDao.class);
+        this.taskDagService = appContext.getBean("taskDagService", TaskDagService.class);
     }
 
     @GET

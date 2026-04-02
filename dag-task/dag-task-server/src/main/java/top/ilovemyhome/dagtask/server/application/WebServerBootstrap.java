@@ -42,7 +42,7 @@ public class WebServerBootstrap {
         int port = config.getInt("server.port");
         logger.info("Start mu server on port: {}.", port);
         long start = System.currentTimeMillis();
-        AppSecurityContext appSecurityContext = appContext.getAppSecurityContext();
+        AppSecurityContext appSecurityContext = appContext.getBean("appSecurityContext", AppSecurityContext.class);
         MuServerBuilder muServerBuilder = MuServerBuilder.httpServer()
                 .withHttpPort(port)
                 .addResponseCompleteListener(info -> {
@@ -82,8 +82,8 @@ public class WebServerBootstrap {
 
         return RestHandlerBuilder
                 .restHandler(new FooUserHandler(appContext))
-                .addResource(appContext.getTaskOrderHandler())
-                .addResource(appContext.getTaskRecordHandler())
+                .addResource(new TaskOrderHandler(appContext))
+                .addResource(new TaskRecordHandler(appContext))
                 .addCustomReader(createJacksonJsonProvider())
                 .addCustomWriter(createJacksonJsonProvider())
                 .withCollectionParameterStrategy(CollectionParameterStrategy.NO_TRANSFORM)
