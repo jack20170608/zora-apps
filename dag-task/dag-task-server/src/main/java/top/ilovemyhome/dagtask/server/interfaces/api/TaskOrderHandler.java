@@ -1,6 +1,7 @@
 package top.ilovemyhome.dagtask.server.interfaces.api;
 
 import io.muserver.rest.Description;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -13,10 +14,10 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.ilovemyhome.dagtask.server.application.AppContext;
 import top.ilovemyhome.dagtask.si.TaskOrder;
 import top.ilovemyhome.dagtask.si.TaskOrderDao;
 
-import javax.inject.Inject;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -28,8 +29,8 @@ public class TaskOrderHandler {
     private final TaskOrderDao taskOrderDao;
 
     @Inject
-    public TaskOrderHandler(TaskOrderDao taskOrderDao) {
-        this.taskOrderDao = taskOrderDao;
+    public TaskOrderHandler(AppContext appContext) {
+        this.taskOrderDao = appContext.getBean("taskOrderDao", TaskOrderDao.class);
     }
 
     @GET

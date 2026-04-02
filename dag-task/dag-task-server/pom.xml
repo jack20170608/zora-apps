@@ -45,7 +45,7 @@
             <groupId>top.ilovemyhome.zora</groupId>
             <artifactId>zora-config</artifactId>
         </dependency>
-        <!-- zora muserver -->
+        <!-- muserver -->
         <dependency>
             <groupId>io.muserver</groupId>
             <artifactId>mu-server</artifactId>
@@ -78,11 +78,11 @@
             <version>20250517</version>
         </dependency>
 
-        <!-- Google Guice - Dependency Injection -->
+        <!-- Jakarta Inject annotation (still used in code) -->
         <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-            <version>5.1.0</version>
+            <groupId>jakarta.inject</groupId>
+            <artifactId>jakarta.inject-api</artifactId>
+            <version>2.0.1</version>
         </dependency>
 
         <!-- SLF4J -->
@@ -133,11 +133,13 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Upgrade Flyway to latest 11.x version to support PostgreSQL 17 (API compatible) -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>11.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
     </dependencies>
     <build>

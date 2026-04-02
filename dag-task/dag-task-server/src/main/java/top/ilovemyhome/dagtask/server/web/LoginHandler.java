@@ -22,7 +22,7 @@ public class LoginHandler implements RouteHandler {
     public LoginHandler(AppContext appContext) {
         this.env = appContext.getEnv();
         Objects.requireNonNull(env);
-        AppSecurityContext appSecurityContext = appContext.getInjector().getInstance(AppSecurityContext.class);
+        AppSecurityContext appSecurityContext = appContext.getAppSecurityContext();
         this.userPassAuthenticators = appSecurityContext.getUserPassAuthenticators();
         this.jwtAuthenticator = appSecurityContext.getJwtAuthenticator();
         this.domains = appContext.getConfig().getStringList("cookie.domain");

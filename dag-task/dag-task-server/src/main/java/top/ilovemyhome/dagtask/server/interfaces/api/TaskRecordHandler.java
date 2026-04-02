@@ -1,6 +1,7 @@
 package top.ilovemyhome.dagtask.server.interfaces.api;
 
 import io.muserver.rest.Description;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -19,7 +20,6 @@ import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.TaskRecordDao;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 
-import javax.inject.Inject;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -30,10 +30,10 @@ import java.util.Optional;
 public class TaskRecordHandler {
 
     private final TaskRecordDao taskRecordDao;
-    private final TaskDagService<Object, Object> taskDagService;
+    private final TaskDagService<String, String> taskDagService;
 
     @Inject
-    public TaskRecordHandler(TaskRecordDao taskRecordDao, TaskDagService<Object, Object> taskDagService) {
+    public TaskRecordHandler(TaskRecordDao taskRecordDao, TaskDagService<String, String> taskDagService) {
         this.taskRecordDao = taskRecordDao;
         this.taskDagService = taskDagService;
     }

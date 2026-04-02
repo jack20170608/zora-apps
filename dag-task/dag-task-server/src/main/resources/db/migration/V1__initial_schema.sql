@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS t_task (
     dummy BOOLEAN NOT NULL DEFAULT FALSE,
     status VARCHAR(50) NOT NULL,
     success BOOLEAN,
-    failReason TEXT,
+    fail_reason TEXT,
     create_dt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_update_dt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     start_dt TIMESTAMP,
@@ -49,7 +49,7 @@ COMMENT ON COLUMN t_task.id IS 'Primary key ID';
 COMMENT ON COLUMN t_task.order_key IS 'Reference to the task order (workflow)';
 COMMENT ON COLUMN t_task.name IS 'Task name';
 COMMENT ON COLUMN t_task.description IS 'Task description';
-COMMENT ON COLUMN t_task.executionKey IS 'Execution identifier for distributed execution';
+COMMENT ON COLUMN t_task.execution_key IS 'Execution identifier for distributed execution';
 COMMENT ON COLUMN t_task.successor_ids IS 'Array of successor task IDs that depend on this task';
 COMMENT ON COLUMN t_task.input IS 'JSON serialized input data for the task';
 COMMENT ON COLUMN t_task.output IS 'JSON serialized output data from the task';
@@ -57,7 +57,7 @@ COMMENT ON COLUMN t_task.async IS 'Whether this task should be executed asynchro
 COMMENT ON COLUMN t_task.dummy IS 'Whether this is a dummy/placeholder task';
 COMMENT ON COLUMN t_task.status IS 'Current execution status: INIT, RUNNING, SUCCESS, ERROR, CANCELLED';
 COMMENT ON COLUMN t_task.success IS 'Whether the task completed successfully';
-COMMENT ON COLUMN t_task.failReason IS 'Failure reason if task failed';
+COMMENT ON COLUMN t_task.fail_reason IS 'Failure reason if task failed';
 COMMENT ON COLUMN t_task.create_dt IS 'Creation timestamp';
 COMMENT ON COLUMN t_task.last_update_dt IS 'Last update timestamp';
 COMMENT ON COLUMN t_task.start_dt IS 'Execution start timestamp';
@@ -67,5 +67,5 @@ COMMENT ON COLUMN t_task.timeout_unit IS 'Timeout time unit';
 
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_t_task_order_key ON t_task_order(key);
-CREATE INDEX IF NOT EXISTS idx_t_task_order_key ON t_task(order_key);
+CREATE INDEX IF NOT EXISTS idx_t_task_order_fk ON t_task(order_key);
 CREATE INDEX IF NOT EXISTS idx_t_task_status ON t_task(status);
