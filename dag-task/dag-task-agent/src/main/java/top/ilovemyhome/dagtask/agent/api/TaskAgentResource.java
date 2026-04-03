@@ -1,7 +1,6 @@
 package top.ilovemyhome.dagtask.agent.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.muserver.rest.Description;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -43,7 +42,7 @@ import java.util.concurrent.ExecutorService;
  * - GET /api/ping - Heartbeat check
  */
 @Path("/api")
-@Description(value = "DAG Task Agent API", details = "All API endpoints for the DAG task execution agent")
+// @Description(value = "DAG Task Agent API", details = "All API endpoints for the DAG task execution agent")
 @OpenAPIDefinition(
         info = @Info(
                 title = "DAG Task Agent API",
@@ -86,7 +85,7 @@ public class TaskAgentResource {
     @Path("/submit")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Description(value = "Submit task for execution", details = "Receives a task execution request from the server and queues it for execution. Rejects if pending queue is full.")
+    // @Description(value = "Submit task for execution", details = "Receives a task execution request from the server and queues it for execution. Rejects if pending queue is full.")
     @Operation(summary = "Submit a new task for execution",
                description = "Receives a task execution request from the DAG scheduling server and queues it for execution. " +
                              "Rejects the request with HTTP 429 if the pending queue is full (backpressure).")
@@ -154,7 +153,7 @@ public class TaskAgentResource {
     @POST
     @Path("/kill/{taskId}")
     @Produces(MediaType.APPLICATION_JSON)
-    @Description(value = "Kill running task", details = "Attempts to interrupt and kill a running or pending task")
+    // @Description(value = "Kill running task", details = "Attempts to interrupt and kill a running or pending task")
     @Operation(summary = "Kill a running or pending task",
                description = "Attempts to interrupt and kill a task that is either waiting in the pending queue or currently running. " +
                              "Once killed, the task is marked as failed and moved to the finished queue.")
@@ -196,7 +195,7 @@ public class TaskAgentResource {
     @POST
     @Path("/force-ok/{taskId}")
     @Produces(MediaType.APPLICATION_JSON)
-    @Description(value = "Force task success", details = "Marks a running or pending task as completed successfully")
+    // @Description(value = "Force task success", details = "Marks a running or pending task as completed successfully")
     @Operation(summary = "Force a task to complete successfully",
                description = "Forces a task that is either waiting in the pending queue or currently running " +
                              "to complete immediately with a successful result. " +
@@ -231,7 +230,7 @@ public class TaskAgentResource {
     @GET
     @Path("/health")
     @Produces(MediaType.APPLICATION_JSON)
-    @Description(value = "Get agent health", details = "Returns the current health status including queue statistics")
+    // @Description(value = "Get agent health", details = "Returns the current health status including queue statistics")
     @Operation(summary = "Get agent health status",
                description = "Returns detailed health statistics about the agent including " +
                              "running status, configuration, queue sizes, and supported execution keys. " +
@@ -265,7 +264,7 @@ public class TaskAgentResource {
     @GET
     @Path("/ping")
     @Produces(MediaType.TEXT_PLAIN)
-    @Description(value = "Ping the agent", details = "Returns pong if agent is alive")
+    // @Description(value = "Ping the agent", details = "Returns pong if agent is alive")
     @Operation(summary = "Ping heartbeat check",
                description = "Simple heartbeat check to verify the agent is running and responding. " +
                              "Always returns the string 'pong' with 200 OK status.")

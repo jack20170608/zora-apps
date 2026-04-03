@@ -61,17 +61,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
-        <!-- MuServer (optional for standalone mode) - not required when embedding in existing web container -->
-        <dependency>
-            <groupId>io.muserver</groupId>
-            <artifactId>mu-server</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>top.ilovemyhome.zora</groupId>
-            <artifactId>zora-muserver</artifactId>
-            <optional>true</optional>
-        </dependency>
         <!-- the jakarta rs -->
         <dependency>
             <groupId>jakarta.ws.rs</groupId>

@@ -9,6 +9,7 @@ import top.ilovemyhome.dagtask.si.TaskFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -26,6 +27,11 @@ public class DagTaskAgent {
     private final TaskAgentResource resource;
     private boolean running = false;
 
+    /**
+     * Creates a DagTaskAgent with default dependencies.
+     * Uses default DagServerClient and creates a new fixed thread pool.
+     * Creates a new ObjectMapper internally.
+     */
     public DagTaskAgent(AgentConfiguration config) {
         this.config = config;
         this.dagServerClient = new DagServerClient(config);
@@ -36,6 +42,10 @@ public class DagTaskAgent {
         this.resource = new TaskAgentResource(this, executionManager);
     }
 
+    /**
+     * Creates a DagTaskAgent with provided DagServerClient and ExecutorService.
+     * Creates a new ObjectMapper internally.
+     */
     public DagTaskAgent(AgentConfiguration config, DagServerClient dagServerClient, ExecutorService taskExecutor) {
         this.config = config;
         this.dagServerClient = dagServerClient;
@@ -45,6 +55,21 @@ public class DagTaskAgent {
             this.taskExecutor = Executors.newFixedThreadPool(config.getMaxConcurrentTasks());
         }
         ObjectMapper objectMapper = new ObjectMapper();
+        TaskFactory taskFactory = new DefaultTaskFactory();
+        this.executionManager = new TaskExecutionManager(config, dagServerClient, taskExecutor, objectMapper, taskFactory);
+        this.resource = new TaskAgentResource(this, executionManager);
+    }
+
+    /**
+     * Creates a DagTaskAgent with all dependencies provided explicitly.
+     * All parameters are required.
+     */
+    public DagTaskAgent(AgentConfiguration config, DagServerClient dagServerClient,
+                        ExecutorService taskExecutor, ObjectMapper objectMapper) {
+        this.config = Objects.requireNonNull(config, "config is required");
+        this.dagServerClient = Objects.requireNonNull(dagServerClient, "dagServerClient is required");
+        this.taskExecutor = Objects.requireNonNull(taskExecutor, "taskExecutor is required");
+        Objects.requireNonNull(objectMapper, "objectMapper is required");
         TaskFactory taskFactory = new DefaultTaskFactory();
         this.executionManager = new TaskExecutionManager(config, dagServerClient, taskExecutor, objectMapper, taskFactory);
         this.resource = new TaskAgentResource(this, executionManager);
