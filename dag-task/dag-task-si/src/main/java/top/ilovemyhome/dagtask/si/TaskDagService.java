@@ -5,7 +5,7 @@ import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 
 import java.util.List;
 
-public interface TaskDagService<I,O> {
+public interface TaskDagService {
     //1.0 task order management
     boolean isOrdered(String orderKey);
     boolean isSuccess(String orderKey);
@@ -20,11 +20,17 @@ public interface TaskDagService<I,O> {
     List<Long> getNextTaskIds(int count);
     List<Long> createTasks(List<TaskRecord> records);
 
-    TaskOutput<O> runTask(Long taskId, TaskInput<I> input);
-
     //3.0 runtime related
     void start(String orderKey);
 
-    void receiveTaskEvent(Long taskId, TaskStatus newStatus, TaskOutput<O> output);
+    void receiveTaskEvent(Long taskId, TaskStatus newStatus, TaskOutput output);
+
+    TaskOutput runNow(Long taskId, TaskInput input);
+
+    //Force terminite the task and mark the task success
+    void forceOk(Long taskId, TaskOutput output);
+
+    //Force terminate the task and mark the task failure
+    void kill(Long taskId);
 
 }

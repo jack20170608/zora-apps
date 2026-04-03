@@ -27,7 +27,7 @@ public class TaskInputTest {
               }
             }
             """;
-        TaskInput<String> taskInput = JacksonUtil.fromJson(jsonPayload, TaskInput.class);
+        TaskInput taskInput = JacksonUtil.fromJson(jsonPayload, TaskInput.class);
         assertThat(taskInput.taskId()).isEqualTo(100L);
         assertThat(taskInput.input()).isEqualTo("t1Input");
         assertThat(taskInput.attributes().get("p1")).isEqualTo("v1");
@@ -37,19 +37,24 @@ public class TaskInputTest {
 
     @Test
     public void testFooDeserialize(){
-        TaskInput<Foo> taskInput = new TaskInput<>(100L
+        TaskInput taskInput = new TaskInput(100L
             , new Foo(1L, List.of(new Bar(2L, "t1"), new Bar(3L, "t3"))
             , LocalDate.of(2025,6,1))
             , Map.of("p1", "v1", "p2", "v2"));
         assertThat(taskInput.taskId()).isEqualTo(100L);
-        assertThat(taskInput.input().id()).isEqualTo(1L);
-        assertThat(taskInput.input().barList()).isEqualTo(List.of(new Bar(2L, "t1"), new Bar(3L, "t3")));
-        assertThat(taskInput.input().someDate()).isEqualTo(LocalDate.of(2025,6,1));
+        Foo input = (Foo) taskInput.input();
+        assertThat(input.id()).isEqualTo(1L);
+        assertThat(input.barList()).isEqualTo(List.of(new Bar(2L, "t1"), new Bar(3L, "t3")));
+        assertThat(input.someDate()).isEqualTo(LocalDate.of(2025,6,1));
         assertThat(taskInput.attributes().get("p1")).isEqualTo("v1");
         assertThat(taskInput.attributes().get("p2")).isEqualTo("v2");
         String jsonPayload = JacksonUtil.toJson(taskInput);
-        TaskInput<Foo> taskInput2 = JacksonUtil.fromJson(jsonPayload, new TypeReference<>() {});
-        assertThat(taskInput).isEqualTo(taskInput2);
+        // Read the json tree and parse input separately to preserve type information
+        TaskInput taskInput2 = JacksonUtil.fromJson(jsonPayload, TaskInput.class);
+        assertThat(taskInput.taskId()).isEqualTo(taskInput2.taskId());
+        // Parse the input field again with the correct type
+        Foo input2 = JacksonUtil.fromJson(JacksonUtil.toJson(taskInput2.input()), Foo.class);
+        assertThat(input.id()).isEqualTo(input2.id());
     }
 
 

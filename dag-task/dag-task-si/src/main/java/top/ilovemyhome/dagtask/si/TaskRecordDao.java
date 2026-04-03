@@ -30,17 +30,17 @@ public interface TaskRecordDao extends BaseDao<TaskRecord> {
 
     int deleteByOrderKey(String orderKey);
 
-    <I, O> List<Task<I, O>> loadTaskForOrder(String orderKey);
+    List<Task> loadTaskForOrder(String orderKey);
 
-    <I, O> int createTasksForOrder(String orderKey, List<Task<I, O>> listOfTask);
+    int createTasksForOrder(String orderKey, List<Task> listOfTask);
 
     boolean isOrdered(String orderKey);
 
     boolean isSuccess(String orderKey);
 
-    <I> int start(Long id, TaskInput<I> input, LocalDateTime startDt);
+    int start(Long id, TaskInput input, LocalDateTime startDt);
 
-    <O> int stop(Long id, TaskStatus newStatus, TaskOutput<O> output, LocalDateTime stopDt);
+    int stop(Long id, TaskStatus newStatus, TaskOutput output, LocalDateTime stopDt);
 
     String getTaskOrderByTaskId(Long taskId);
 
@@ -57,7 +57,7 @@ public interface TaskRecordDao extends BaseDao<TaskRecord> {
      * @param taskId the task id to load
      * @return the loaded task, or empty if not found
      */
-    <I, O> Optional<Task<I, O>> loadTaskById(Long taskId);
+    Optional<Task> loadTaskById(Long taskId);
 
     /**
      * Find all ready tasks for an order that are still in INIT status.
@@ -65,7 +65,7 @@ public interface TaskRecordDao extends BaseDao<TaskRecord> {
      * @param orderKey the order key to find ready tasks for
      * @return list of ready tasks in INIT status ready to be executed
      */
-    <I, O> List<Task<I, O>> findReadyTasksForOrder(String orderKey);
+    List<Task> findReadyTasksForOrder(String orderKey);
 
     /**
      * Find all ready successor tasks of a completed task.
@@ -74,6 +74,6 @@ public interface TaskRecordDao extends BaseDao<TaskRecord> {
      * @param taskId the completed task ID whose successors we want to check
      * @return list of ready successor tasks ready to be executed
      */
-    <I, O> List<Task<I, O>> findReadySuccessors(Long taskId);
+    List<Task> findReadySuccessors(Long taskId);
 
 }

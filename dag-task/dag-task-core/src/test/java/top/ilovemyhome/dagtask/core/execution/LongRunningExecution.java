@@ -7,11 +7,11 @@ import top.ilovemyhome.dagtask.si.TaskOutput;
 
 import java.time.Duration;
 
-public class LongRunningExecution implements TaskExecution<String, String> {
+public class LongRunningExecution implements TaskExecution {
 
     @Override
-    public TaskOutput<String> execute(TaskInput<String> input) {
-        String in = input.input();
+    public TaskOutput execute(TaskInput input) {
+        String in = (String) input.input();
         Long taskId = input.taskId();
         ThreadUtils.sleepQuietly(Duration.ofSeconds(2));
         return TaskOutput.success(taskId, in + "->" + getClass().getSimpleName());

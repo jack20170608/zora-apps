@@ -31,7 +31,7 @@ import java.util.Optional;
 public class TaskRecordHandler {
 
     private final TaskRecordDao taskRecordDao;
-    private final TaskDagService<String, String> taskDagService;
+    private final TaskDagService taskDagService;
 
     @Inject
     public TaskRecordHandler(AppContext appContext) {

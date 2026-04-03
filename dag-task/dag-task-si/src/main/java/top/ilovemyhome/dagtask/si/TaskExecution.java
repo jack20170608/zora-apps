@@ -4,9 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @FunctionalInterface
-public interface TaskExecution<I, O> {
+public interface TaskExecution {
 
     Logger logger = LoggerFactory.getLogger(TaskExecution.class);
 
-    TaskOutput<O> execute(TaskInput<I> input);
+    TaskOutput execute(TaskInput input);
 }

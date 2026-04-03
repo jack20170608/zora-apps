@@ -8,11 +8,11 @@ public interface TaskFactory {
 
     Logger LOGGER = LoggerFactory.getLogger(TaskFactory.class);
 
-    default <I,O> TaskExecution<I,O> createTaskForExecution(String executionKey){
-        TaskExecution<I, O> result = null;
+    default TaskExecution createTaskForExecution(String executionKey){
+        TaskExecution result = null;
         try {
             Class executionClass = Class.forName(executionKey);
-            result = (TaskExecution<I, O>)executionClass.newInstance();
+            result = (TaskExecution)executionClass.newInstance();
         } catch (Throwable t){
             LOGGER.error(t.getMessage(), t);
         }

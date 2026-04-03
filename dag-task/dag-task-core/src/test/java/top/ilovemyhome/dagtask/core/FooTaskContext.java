@@ -2,7 +2,7 @@ package top.ilovemyhome.dagtask.core;
 
 import org.jdbi.v3.core.Jdbi;
 
-public class FooTaskContext extends AbstractTaskContext<String, String> {
+public class FooTaskContext extends DefaultTaskContext {
 
     private FooTaskContext(Jdbi jdbi) {
         super(jdbi);

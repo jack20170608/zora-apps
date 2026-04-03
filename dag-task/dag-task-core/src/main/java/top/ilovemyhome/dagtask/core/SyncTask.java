@@ -16,13 +16,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class SyncTask<I, O> extends Task<I, O> {
+public class SyncTask extends Task {
 
     private static final long DEFAULT_TIMEOUT_SECONDS = 60;
     private static final TimeUnit DEFAULT_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
-    public SyncTask(Long id, TaskContext<I, O> taskContext, String orderKey, String name
-        , TaskInput<I> input, TaskStatus taskStatus, Long timeout, TimeUnit timeoutUnit, TaskExecution<I, O> taskExecution) {
+    public SyncTask(Long id, TaskContext taskContext, String orderKey, String name
+        , TaskInput input, TaskStatus taskStatus, Long timeout, TimeUnit timeoutUnit, TaskExecution taskExecution) {
         super(id, taskContext, orderKey, name, input, taskStatus, timeout < 1L ? DEFAULT_TIMEOUT_SECONDS : timeout
             , Objects.isNull(timeoutUnit) ? DEFAULT_TIMEOUT_UNIT : timeoutUnit, taskExecution);
     }
@@ -32,8 +32,8 @@ public class SyncTask<I, O> extends Task<I, O> {
         try {
             logger.info("OrderId=[{}], Id=[{}], name=[{}] is running.", getOrderKey(), getId(), getName());
             start();
-            CompletableFuture<TaskOutput<O>> cf = CompletableFuture.supplyAsync(() -> this.getTaskExecution().execute(getInput()));
-            TaskOutput<O> out = cf.get(this.getTimeout(), this.getTimeoutUnit());
+            CompletableFuture<TaskOutput> cf = CompletableFuture.supplyAsync(() -> this.getTaskExecution().execute(getInput()));
+            TaskOutput out = cf.get(this.getTimeout(), this.getTimeoutUnit());
             success(out);
             logger.info("OrderId=[{}], Id=[{}], name=[{}] run successfully.", getOrderKey(), getId(), getName());
         } catch (ExecutionException e) {

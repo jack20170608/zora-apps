@@ -14,10 +14,10 @@ import java.util.concurrent.TimeUnit;
 import static top.ilovemyhome.dagtask.core.helper.TaskHelper.createErrorOutput;
 
 
-public class AsyncTask<I, O> extends Task<I, O> {
+public class AsyncTask extends Task {
 
-    public AsyncTask(Long id, TaskContext<I,O> taskContext, String orderKey, String name, TaskInput<I> input
-        , TaskStatus taskStatus,  Long timeout, TimeUnit timeoutUnit, TaskExecution<I, O> taskExecution) {
+    public AsyncTask(Long id, TaskContext taskContext, String orderKey, String name, TaskInput input
+        , TaskStatus taskStatus,  Long timeout, TimeUnit timeoutUnit, TaskExecution taskExecution) {
         super(id, taskContext, orderKey, name, input, taskStatus, timeout, timeoutUnit, taskExecution);
     }
 
@@ -26,8 +26,8 @@ public class AsyncTask<I, O> extends Task<I, O> {
     public void run() {
         try {
             start();
-            TaskInput<I> input = getInput();
-            TaskOutput<O> out = this.getTaskExecution().execute(input);
+            TaskInput input = getInput();
+            TaskOutput out = this.getTaskExecution().execute(input);
             if (out != null && out.isSuccess()) {
                 logger.info("OrderId=[{}], Id=[{}], name=[{}] triggered successfully.", getOrderKey(), getId(), getName());
             } else {
@@ -39,7 +39,6 @@ public class AsyncTask<I, O> extends Task<I, O> {
             error(createErrorOutput(getId(), t));
         }
     }
-
 
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncTask.class);

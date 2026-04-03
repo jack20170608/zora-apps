@@ -20,9 +20,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public abstract class AbstractTaskDagServiceImpl<I,O> implements TaskDagService<I,O> {
+public class TaskDagServiceImpl implements TaskDagService {
 
-    public AbstractTaskDagServiceImpl(Jdbi jdbi, TaskContext<I,O> taskContext) {
+    public TaskDagServiceImpl(Jdbi jdbi, TaskContext taskContext) {
         this.taskContext = taskContext;
         this.taskOrderDao = taskContext.getTaskOrderDao();
         this.taskRecordDao = taskContext.getTaskRecordDao();
@@ -159,8 +159,18 @@ public abstract class AbstractTaskDagServiceImpl<I,O> implements TaskDagService<
     }
 
     @Override
-    public TaskOutput<O> runTask(Long taskId, TaskInput<I> input) {
+    public TaskOutput runNow(Long taskId, TaskInput input) {
         return null;
+    }
+
+    @Override
+    public void forceOk(Long taskId, TaskOutput output) {
+
+    }
+
+    @Override
+    public void kill(Long taskId) {
+
     }
 
     @Override
@@ -176,7 +186,7 @@ public abstract class AbstractTaskDagServiceImpl<I,O> implements TaskDagService<
     public void start(String orderKey) {
         Objects.requireNonNull(orderKey);
         logger.info("Start task for order key: {}.", orderKey);
-        List<Task<I,O>> readyTasks = taskRecordDao.findReadyTasksForOrder(orderKey);
+        List<Task> readyTasks = taskRecordDao.findReadyTasksForOrder(orderKey);
         readyTasks.forEach(t -> {
             logger.info("Submit the task {}.", t);
             taskContext.getThreadPool().submit(t);
@@ -184,17 +194,17 @@ public abstract class AbstractTaskDagServiceImpl<I,O> implements TaskDagService<
     }
 
     @Override
-    public void receiveTaskEvent(Long taskId, TaskStatus newStatus, TaskOutput<O> output) {
+    public void receiveTaskEvent(Long taskId, TaskStatus newStatus, TaskOutput output) {
         Objects.requireNonNull(taskId);
         Objects.requireNonNull(newStatus);
         Objects.requireNonNull(output);
-        List<Task<I,O>> allTasks = loadByTaskId(taskId);
-        Map<Long, Task<I,O>> taskIdMap = allTasks.stream().collect(Collectors.toMap(Task::getId, Function.identity()));
+        List<Task> allTasks = loadByTaskId(taskId);
+        Map<Long, Task> taskIdMap = allTasks.stream().collect(Collectors.toMap(Task::getId, Function.identity()));
 
         if (!taskIdMap.containsKey(taskId)) {
             throw new IllegalStateException("Data issue, please check!");
         }
-        Task<I,O> targetTask = taskIdMap.get(taskId);
+        Task targetTask = taskIdMap.get(taskId);
         if (!(targetTask instanceof AsyncTask)) {
             throw new IllegalArgumentException("The target task is not an AsyncTask!");
         }
@@ -233,9 +243,9 @@ public abstract class AbstractTaskDagServiceImpl<I,O> implements TaskDagService<
         return taskRecordDao.find(searchCriteria);
     }
 
-    private List<Task<I, O>> loadByOrderKey(String orderKey) {
+    private List<Task> loadByOrderKey(String orderKey) {
         logger.info("Loading task {}.", orderKey);
-        List<Task<I,O>> taskList = taskRecordDao.loadTaskForOrder(orderKey);
+        List<Task> taskList = taskRecordDao.loadTaskForOrder(orderKey);
         if (Objects.isNull(taskList) || taskList.isEmpty()) {
             throw new IllegalStateException("Empty task list, please add task for this order!");
         }
@@ -252,7 +262,7 @@ public abstract class AbstractTaskDagServiceImpl<I,O> implements TaskDagService<
             , Objects.nonNull(record.getSuccessorIds()) ? Sets.newHashSet(record.getSuccessorIds()) : null);
     }
 
-    private List<Task<I,O>> loadByTaskId(Long taskId) {
+    private List<Task> loadByTaskId(Long taskId) {
         String orderKey = taskContext.getTaskRecordDao().getTaskOrderByTaskId(taskId);
         if (Objects.isNull(orderKey)) {
             throw new IllegalStateException("Cannot find the order info for taskId " + taskId);
@@ -260,12 +270,12 @@ public abstract class AbstractTaskDagServiceImpl<I,O> implements TaskDagService<
         return loadByOrderKey(orderKey);
     }
 
-    private final TaskContext<I,O> taskContext;
+    private final TaskContext taskContext;
 
     private final TaskRecordDao taskRecordDao;
     private final TaskOrderDao taskOrderDao;
     private final Jdbi jdbi;
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractTaskDagServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(TaskDagServiceImpl.class);
 
 }

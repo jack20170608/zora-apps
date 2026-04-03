@@ -7,7 +7,7 @@ import top.ilovemyhome.dagtask.si.TaskFactory;
 
 public class FooTaskFactoryImpl implements TaskFactory {
 
-    public FooTaskFactoryImpl(TaskContext<String, String> taskContext) {
+    public FooTaskFactoryImpl(TaskContext taskContext) {
         taskContext.setTaskFactory(this);
     }
 

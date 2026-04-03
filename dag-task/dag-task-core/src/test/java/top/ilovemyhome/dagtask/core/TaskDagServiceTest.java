@@ -341,7 +341,7 @@ public class TaskDagServiceTest {
             .withOrderKey(taskOrder.getKey())
             .withName("t1")
             .withAsync(async)
-            .withInput(JacksonUtil.toJson(new TaskInput<>(id, input, Map.of("p1", "v1", "p2", "v2"))))
+            .withInput(JacksonUtil.toJson(new TaskInput(id, input, Map.of("p1", "v1", "p2", "v2"))))
             .withDescription("T1 print log task")
             .withExecutionKey(PrintInputTaskExecution.class.getCanonicalName())
             .withSuccessorIds(successorIds)
@@ -358,7 +358,7 @@ public class TaskDagServiceTest {
             .withName("t2")
             .withDescription("T2 print log task")
             .withAsync(async)
-            .withInput(JacksonUtil.toJson(new TaskInput<>(id, input, Map.of("p1", "v1", "p2", "v2"))))
+            .withInput(JacksonUtil.toJson(new TaskInput(id, input, Map.of("p1", "v1", "p2", "v2"))))
             .withStatus(TaskStatus.INIT)
             .withTimeoutUnit(TimeUnit.MINUTES)
             .withSuccessorIds(successorIds)
@@ -374,7 +374,7 @@ public class TaskDagServiceTest {
             .withName("t3")
             .withDescription("T3 conditional exception task")
             .withAsync(async)
-            .withInput(JacksonUtil.toJson(new TaskInput<>(id, input, Map.of("p1", "v1", "p2", "v2"))))
+            .withInput(JacksonUtil.toJson(new TaskInput(id, input, Map.of("p1", "v1", "p2", "v2"))))
             .withStatus(TaskStatus.INIT)
             .withTimeoutUnit(TimeUnit.SECONDS)
             .withTimeout(10L)
@@ -390,7 +390,7 @@ public class TaskDagServiceTest {
             .withName("t4")
             .withAsync(async)
             .withDescription("T4 long running task")
-            .withInput(JacksonUtil.toJson(new TaskInput<>(id, input, Map.of("p1", "v1", "p2", "v2"))))
+            .withInput(JacksonUtil.toJson(new TaskInput(id, input, Map.of("p1", "v1", "p2", "v2"))))
             .withStatus(TaskStatus.INIT)
             .withTimeout(timeout)
             .withTimeoutUnit(TimeUnit.SECONDS)
@@ -406,7 +406,7 @@ public class TaskDagServiceTest {
             .withName("t5")
             .withAsync(async)
             .withDescription("T5 print log task")
-            .withInput(JacksonUtil.toJson(new TaskInput<>(id, "t5Input", Map.of("p1", "v1", "p2", "v2"))))
+            .withInput(JacksonUtil.toJson(new TaskInput(id, "t5Input", Map.of("p1", "v1", "p2", "v2"))))
             .withStatus(TaskStatus.INIT)
             .withTimeoutUnit(TimeUnit.SECONDS)
             .withTimeout(10L)
@@ -457,7 +457,7 @@ public class TaskDagServiceTest {
 
     static Jdbi jdbi;
     private static TaskContext taskContext;
-    private static TaskDagService<String, String> taskDagService;
+    private static TaskDagService taskDagService;
     private static EmbeddedPostgres pg;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskDagServiceTest.class);

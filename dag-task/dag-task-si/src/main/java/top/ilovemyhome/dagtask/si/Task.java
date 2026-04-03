@@ -10,28 +10,28 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public abstract class Task<I, O> implements Runnable {
+public abstract class Task implements Runnable {
 
     // Static
     private final Long id;
     private final String orderKey;
     private final String name;
-    private final TaskExecution<I, O> taskExecution;
+    private final TaskExecution taskExecution;
     private final Long timeout;
     private final TimeUnit timeoutUnit;
     private final LocalDateTime createDt;
 
-    private TaskInput<I> input;
+    private TaskInput input;
     private Set<Long> successorIds;
-    private TaskOutput<O> output;
+    private TaskOutput output;
     private TaskStatus taskStatus;
     private LocalDateTime startDt;
     private LocalDateTime endDt;
     protected transient TaskContext taskContext;
     private LocalDateTime lastUpdateDt;
 
-    protected Task(Long id, TaskContext taskContext, String orderKey, String name, TaskInput<I> input
-            , TaskStatus taskStatus, Long timeout, TimeUnit timeoutUnit, TaskExecution<I, O> taskExecution) {
+    protected Task(Long id, TaskContext taskContext, String orderKey, String name, TaskInput input
+            , TaskStatus taskStatus, Long timeout, TimeUnit timeoutUnit, TaskExecution taskExecution) {
         LocalDateTime now = LocalDateTime.now();
         this.id = id;
         this.taskContext = taskContext;
@@ -54,7 +54,7 @@ public abstract class Task<I, O> implements Runnable {
         taskContext.getTaskRecordDao().start(id, this.input, now);
     }
 
-    public synchronized void failure(TaskStatus newStatus, TaskOutput<O> output) {
+    public synchronized void failure(TaskStatus newStatus, TaskOutput output) {
         if (newStatus == TaskStatus.SUCCESS) {
             throw new IllegalArgumentException("The status should not success as your call failure method!!");
         }
@@ -70,19 +70,19 @@ public abstract class Task<I, O> implements Runnable {
         return taskContext.getTaskRecordDao().isReady(getId());
     }
 
-    protected void error(TaskOutput<O> output) {
+    protected void error(TaskOutput output) {
         failure(TaskStatus.ERROR, output);
     }
 
-    protected void unknown(TaskOutput<O> output) {
+    protected void unknown(TaskOutput output) {
         failure(TaskStatus.UNKNOWN, output);
     }
 
-    protected void timeout(TaskOutput<O> output) {
+    protected void timeout(TaskOutput output) {
         failure(TaskStatus.TIMEOUT, output);
     }
 
-    public synchronized void success(TaskOutput<O> output) {
+    public synchronized void success(TaskOutput output) {
         LocalDateTime now = LocalDateTime.now();
         this.output = output;
         this.endDt = now;
@@ -94,12 +94,12 @@ public abstract class Task<I, O> implements Runnable {
         // Find all ready successors with a single SQL query and submit them
         Set<Long> successors = getSuccessorIds();
         if (Objects.nonNull(successors) && !successors.isEmpty()) {
-            taskContext.getTaskRecordDao().<I, O>findReadySuccessors(getId())
+            taskContext.getTaskRecordDao().findReadySuccessors(getId())
                 .forEach(task -> taskContext.getThreadPool().submit(task));
         }
     }
 
-    public void skip(TaskOutput<O> output) {
+    public void skip(TaskOutput output) {
         LocalDateTime now = LocalDateTime.now();
         this.output = output;
         this.endDt = now;
@@ -111,7 +111,7 @@ public abstract class Task<I, O> implements Runnable {
         // Skip all ready successors
         Set<Long> successors = getSuccessorIds();
         if (Objects.nonNull(successors) && !successors.isEmpty()) {
-            taskContext.getTaskRecordDao().<I, O>findReadySuccessors(getId())
+            taskContext.getTaskRecordDao().findReadySuccessors(getId())
                 .forEach(s -> s.skip(output));
         }
     }
@@ -128,11 +128,11 @@ public abstract class Task<I, O> implements Runnable {
         return name;
     }
 
-    public TaskInput<I> getInput() {
+    public TaskInput getInput() {
         return input;
     }
 
-    public TaskExecution<I, O> getTaskExecution() {
+    public TaskExecution getTaskExecution() {
         return taskExecution;
     }
 
@@ -156,7 +156,7 @@ public abstract class Task<I, O> implements Runnable {
         return successorIds;
     }
 
-    public TaskOutput<O> getOutput() {
+    public TaskOutput getOutput() {
         return output;
     }
 
@@ -200,7 +200,7 @@ public abstract class Task<I, O> implements Runnable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Task<?, ?> that = (Task<?, ?>) o;
+        Task that = (Task) o;
         return Objects.equals(id, that.id);
     }
 

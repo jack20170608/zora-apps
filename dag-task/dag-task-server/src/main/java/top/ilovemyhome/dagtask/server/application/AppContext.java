@@ -5,12 +5,10 @@ import com.typesafe.config.Config;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.ilovemyhome.dagtask.core.AbstractTaskContext;
-import top.ilovemyhome.dagtask.core.AbstractTaskDagServiceImpl;
+import top.ilovemyhome.dagtask.core.DefaultTaskContext;
+import top.ilovemyhome.dagtask.core.TaskDagServiceImpl;
 import top.ilovemyhome.dagtask.core.TaskOrderDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.TaskRecordDaoJdbiImpl;
-import top.ilovemyhome.dagtask.server.interfaces.api.TaskOrderHandler;
-import top.ilovemyhome.dagtask.server.interfaces.api.TaskRecordHandler;
 import top.ilovemyhome.dagtask.si.TaskContext;
 import top.ilovemyhome.dagtask.si.TaskDagService;
 import top.ilovemyhome.dagtask.si.TaskOrderDao;
@@ -19,7 +17,6 @@ import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
 import top.ilovemyhome.zora.muserver.security.core.CookieValueType;
 import top.ilovemyhome.zora.muserver.security.core.User;
 import top.ilovemyhome.zora.rdb.config.RdbConfig;
-import top.ilovemyhome.zora.rdb.config.RdbConfigLoader;
 import top.ilovemyhome.zora.rdb.flyway.FlywayMigrationRunner;
 import top.ilovemyhome.zora.rdb.pool.DataSourcePoolBuilder;
 
@@ -129,7 +126,7 @@ public final class AppContext {
         int totalProcessorSize = Runtime.getRuntime().availableProcessors();
         int nThreads = Math.max(totalProcessorSize, 2);
         ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("TaskDagService-%d").build();
-        var taskContext = new AbstractTaskContext<String, String>(jdbi, new ThreadPoolExecutor(
+        var taskContext = new DefaultTaskContext(jdbi, new ThreadPoolExecutor(
             nThreads, nThreads, 0L, TimeUnit.MILLISECONDS
             , new LinkedBlockingQueue<>(1024), namedThreadFactory, new ThreadPoolExecutor.AbortPolicy())
             , "t_task_order", "t_task") {};
@@ -137,7 +134,7 @@ public final class AppContext {
 
         registerBean(TaskOrderDao.class, "taskOrderDao", new TaskOrderDaoJdbiImpl(jdbi, taskContext));
         registerBean(TaskRecordDao.class, "taskRecordDao", new TaskRecordDaoJdbiImpl(jdbi, taskContext));
-        registerBean(TaskDagService.class, "taskDagService", new AbstractTaskDagServiceImpl<>(jdbi, taskContext) {
+        registerBean(TaskDagService.class, "taskDagService", new TaskDagServiceImpl(jdbi, taskContext) {
         });
 
     }

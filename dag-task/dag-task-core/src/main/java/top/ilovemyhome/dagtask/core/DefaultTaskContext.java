@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.*;
 
-public abstract class AbstractTaskContext<I,O> implements TaskContext<I,O> {
+public class DefaultTaskContext implements TaskContext {
 
     private final Jdbi jdbi;
 
@@ -28,7 +28,7 @@ public abstract class AbstractTaskContext<I,O> implements TaskContext<I,O> {
     private TaskFactory taskFactory;
     private TaskRecordDao taskRecordDao;
     private TaskOrderDao taskOrderDao;
-    private TaskDagService<I,O> taskDagService;
+    private TaskDagService taskDagService;
 
     @Override
     public void setTaskFactory(TaskFactory taskFactory) {
@@ -67,12 +67,12 @@ public abstract class AbstractTaskContext<I,O> implements TaskContext<I,O> {
 
 
     @Override
-    public TaskDagService<I,O> getTaskDagService() {
+    public TaskDagService getTaskDagService() {
         return taskDagService;
     }
 
     @Override
-    public void setTaskDagService(TaskDagService<I,O> taskDagService) {
+    public void setTaskDagService(TaskDagService taskDagService) {
         this.taskDagService = taskDagService;
     }
 
@@ -89,11 +89,11 @@ public abstract class AbstractTaskContext<I,O> implements TaskContext<I,O> {
         return jdbi;
     }
 
-    protected AbstractTaskContext(Jdbi jdbi) {
+    protected DefaultTaskContext(Jdbi jdbi) {
         this(jdbi, null, TaskContext.DEFAULT_TASK_ORDER_TABLE_NAME, TaskContext.DEFAULT_TASK_TABLE_NAME);
     }
 
-    protected AbstractTaskContext(Jdbi jdbi, ExecutorService threadPool, String taskOrderTableName, String taskTableName) {
+    protected DefaultTaskContext(Jdbi jdbi, ExecutorService threadPool, String taskOrderTableName, String taskTableName) {
         int totalProcessorSize = Runtime.getRuntime().availableProcessors();
         int nThreads = Math.min(totalProcessorSize, 16);
         ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("TaskDagService-%d").build();
@@ -127,7 +127,7 @@ public abstract class AbstractTaskContext<I,O> implements TaskContext<I,O> {
                 return (position, statement, ctx) -> statement.setString(position, LocalDateUtils.formatYearMonth(value));
             }
         });
-        jdbi.registerArgument(new AbstractArgumentFactory<TaskInput<?>>(Types.VARCHAR) {
+        jdbi.registerArgument(new AbstractArgumentFactory<TaskInput>(Types.VARCHAR) {
             @Override
             protected Argument build(TaskInput taskInput, ConfigRegistry config) {
                 return (position, statement, ctx) -> statement.setString(position, JacksonUtil.toJson(taskInput));

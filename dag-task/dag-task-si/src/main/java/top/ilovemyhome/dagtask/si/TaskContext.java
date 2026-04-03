@@ -2,7 +2,7 @@ package top.ilovemyhome.dagtask.si;
 
 import java.util.concurrent.ExecutorService;
 
-public interface TaskContext<I,O> {
+public interface TaskContext {
 
     TaskFactory getTaskFactory();
     TaskOrderDao getTaskOrderDao();
@@ -11,8 +11,8 @@ public interface TaskContext<I,O> {
     void setTaskRecordDao(TaskRecordDao taskRecordDao);
 
     ExecutorService getThreadPool();
-    TaskDagService<I,O> getTaskDagService();
-    void setTaskDagService(TaskDagService<I,O> taskDagService);
+    TaskDagService getTaskDagService();
+    void setTaskDagService(TaskDagService taskDagService);
     void setTaskFactory(TaskFactory taskFactory);
 
     default String getTaskOrderTableName(){
