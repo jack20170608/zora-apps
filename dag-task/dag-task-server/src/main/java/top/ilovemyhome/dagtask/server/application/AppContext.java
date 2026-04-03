@@ -9,8 +9,11 @@ import top.ilovemyhome.dagtask.core.DefaultTaskContext;
 import top.ilovemyhome.dagtask.core.TaskDagServiceImpl;
 import top.ilovemyhome.dagtask.core.TaskOrderDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.TaskRecordDaoJdbiImpl;
+import top.ilovemyhome.dagtask.core.config.TaskDagConfigLoaderImpl;
 import top.ilovemyhome.dagtask.si.TaskContext;
+import top.ilovemyhome.dagtask.si.TaskDagConfigLoader;
 import top.ilovemyhome.dagtask.si.TaskDagService;
+import top.ilovemyhome.dagtask.si.TaskFactory;
 import top.ilovemyhome.dagtask.si.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.TaskRecordDao;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
@@ -136,6 +139,14 @@ public final class AppContext {
         registerBean(TaskRecordDao.class, "taskRecordDao", new TaskRecordDaoJdbiImpl(jdbi, taskContext));
         registerBean(TaskDagService.class, "taskDagService", new TaskDagServiceImpl(jdbi, taskContext) {
         });
+
+        // Register TaskFactory for configuration loading
+        TaskFactory taskFactory = new TaskFactory() {};
+        registerBean(TaskFactory.class, "taskFactory", taskFactory);
+
+        // Register configuration loader
+        TaskDagConfigLoader configLoader = new TaskDagConfigLoaderImpl(taskContext, taskFactory);
+        registerBean(TaskDagConfigLoader.class, "taskDagConfigLoader", configLoader);
 
     }
 
