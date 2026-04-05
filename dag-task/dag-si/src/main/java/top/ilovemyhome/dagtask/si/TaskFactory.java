@@ -4,6 +4,7 @@ package top.ilovemyhome.dagtask.si;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Deprecated
 public interface TaskFactory {
 
     Logger LOGGER = LoggerFactory.getLogger(TaskFactory.class);

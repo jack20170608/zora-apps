@@ -5,7 +5,6 @@ import java.util.Optional;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.zora.jdbi.dao.BaseDao;
-import top.ilovemyhome.dagtask.si.Task;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 
@@ -33,9 +32,9 @@ public interface TaskRecordDao extends BaseDao<TaskRecord> {
 
     int deleteByOrderKey(String orderKey);
 
-    List<Task> loadTaskForOrder(String orderKey);
+    List<TaskRecord> loadTaskForOrder(String orderKey);
 
-    int createTasksForOrder(String orderKey, List<Task> listOfTask);
+    int createTasksForOrder(String orderKey, List<TaskRecord> listOfTask);
 
     boolean isOrdered(String orderKey);
 
@@ -60,7 +59,7 @@ public interface TaskRecordDao extends BaseDao<TaskRecord> {
      * @param taskId the task id to load
      * @return the loaded task, or empty if not found
      */
-    Optional<Task> loadTaskById(Long taskId);
+    Optional<TaskRecord> loadTaskById(Long taskId);
 
     /**
      * Find all ready tasks for an order that are still in INIT status.
@@ -68,7 +67,7 @@ public interface TaskRecordDao extends BaseDao<TaskRecord> {
      * @param orderKey the order key to find ready tasks for
      * @return list of ready tasks in INIT status ready to be executed
      */
-    List<Task> findReadyTasksForOrder(String orderKey);
+    List<TaskRecord> findReadyTasksForOrder(String orderKey);
 
     /**
      * Find all ready successor tasks of a completed task.
@@ -77,6 +76,6 @@ public interface TaskRecordDao extends BaseDao<TaskRecord> {
      * @param taskId the completed task ID whose successors we want to check
      * @return list of ready successor tasks ready to be executed
      */
-    List<Task> findReadySuccessors(Long taskId);
+    List<TaskRecord> findReadySuccessors(Long taskId);
 
 }

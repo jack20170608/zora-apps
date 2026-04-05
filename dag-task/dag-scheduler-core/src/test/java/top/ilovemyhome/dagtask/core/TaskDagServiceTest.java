@@ -13,6 +13,7 @@ import top.ilovemyhome.dagtask.core.dao.TaskRecordDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.execution.ConditionExceptionalExecution;
 import top.ilovemyhome.dagtask.core.execution.LongRunningExecution;
 import top.ilovemyhome.dagtask.core.execution.PrintInputTaskExecution;
+import top.ilovemyhome.dagtask.core.task.TaskDagServiceImpl;
 import top.ilovemyhome.dagtask.si.*;
 import top.ilovemyhome.dagtask.si.enums.OrderType;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
@@ -438,11 +439,9 @@ public class TaskDagServiceTest {
                 h.execute(initTableSql);
             });
 
-            taskContext = FooTaskContext.getInstance(jdbi);
-            new TaskRecordDaoJdbiImpl(jdbi, taskContext);
-            new TaskOrderDaoJdbiImpl(jdbi, taskContext);
-            new FooTaskFactoryImpl(taskContext);
-            taskDagService = new FooTaskDagServiceImpl(jdbi, taskContext);
+            var taskRecordDao = new TaskRecordDaoJdbiImpl(jdbi);
+            var taskOrderDao = new TaskOrderDaoJdbiImpl(jdbi);
+            taskDagService = new TaskDagServiceImpl(jdbi, taskOrderDao, taskRecordDao);
 
         }catch (Exception e) {
             LOGGER.error("Error {}.", e.getMessage());
@@ -458,7 +457,6 @@ public class TaskDagServiceTest {
     }
 
     static Jdbi jdbi;
-    private static TaskContext taskContext;
     private static TaskDagService taskDagService;
     private static EmbeddedPostgres pg;
 

@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.core;
+package top.ilovemyhome.dagtask.core.task;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.ilovemyhome.dagtask.core.server.DagServerConfig;
 import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
 import top.ilovemyhome.zora.jdbi.SearchCriteria;
@@ -24,12 +25,10 @@ import java.util.stream.Collectors;
 
 public class TaskDagServiceImpl implements TaskDagService {
 
-    public TaskDagServiceImpl(Jdbi jdbi, TaskContext taskContext) {
-        this.taskContext = taskContext;
-        this.taskOrderDao = taskContext.getTaskOrderDao();
-        this.taskRecordDao = taskContext.getTaskRecordDao();
+    public TaskDagServiceImpl(DagServerConfig config, Jdbi jdbi, TaskOrderDao taskOrderDao, TaskRecordDao taskRecordDao) {
         this.jdbi = jdbi;
-        taskContext.setTaskDagService(this);
+        this.taskOrderDao = taskOrderDao;
+        this.taskRecordDao = taskRecordDao;
     }
 
     @Override
@@ -191,7 +190,7 @@ public class TaskDagServiceImpl implements TaskDagService {
         List<Task> readyTasks = taskRecordDao.findReadyTasksForOrder(orderKey);
         readyTasks.forEach(t -> {
             logger.info("Submit the task {}.", t);
-            taskContext.getThreadPool().submit(t);
+//            taskContext.getThreadPool().submit(t);
         });
     }
 
@@ -222,7 +221,7 @@ public class TaskDagServiceImpl implements TaskDagService {
         } else if (newStatus == TaskStatus.INIT) {
             if (oldStatus == TaskStatus.ERROR || oldStatus == TaskStatus.UNKNOWN || oldStatus == TaskStatus.TIMEOUT) {
                 if (targetTask.isReady()) {
-                    taskContext.getThreadPool().submit(targetTask);
+//                    taskContext.getThreadPool().submit(targetTask);
                 }
             }
         } else if (newStatus == TaskStatus.SKIPPED) {
@@ -265,14 +264,12 @@ public class TaskDagServiceImpl implements TaskDagService {
     }
 
     private List<Task> loadByTaskId(Long taskId) {
-        String orderKey = taskContext.getTaskRecordDao().getTaskOrderByTaskId(taskId);
+        String orderKey = taskRecordDao.getTaskOrderByTaskId(taskId);
         if (Objects.isNull(orderKey)) {
             throw new IllegalStateException("Cannot find the order info for taskId " + taskId);
         }
         return loadByOrderKey(orderKey);
     }
-
-    private final TaskContext taskContext;
 
     private final TaskRecordDao taskRecordDao;
     private final TaskOrderDao taskOrderDao;

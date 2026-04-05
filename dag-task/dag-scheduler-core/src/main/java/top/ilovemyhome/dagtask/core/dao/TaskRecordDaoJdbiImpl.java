@@ -2,18 +2,13 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.jdbi.v3.core.Jdbi;
-import top.ilovemyhome.dagtask.core.AsyncTask;
-import top.ilovemyhome.dagtask.core.SyncTask;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.jdbi.SqlGenerator;
 import top.ilovemyhome.zora.jdbi.TableDescription;
 import top.ilovemyhome.zora.jdbi.dao.BaseDaoJdbiImpl;
-import top.ilovemyhome.dagtask.si.TaskContext;
-import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
-import top.ilovemyhome.dagtask.si.Task;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 
@@ -21,7 +16,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static top.ilovemyhome.zora.common.date.LocalDateUtils.toLocalDateTime;
 import static top.ilovemyhome.zora.common.lang.StringConvertUtils.toEnum;
@@ -29,24 +23,22 @@ import static top.ilovemyhome.zora.common.lang.StringConvertUtils.toEnum;
 
 public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implements TaskRecordDao {
 
-    private static final String DEFAULT_ID_SEQ_NAME = "seq_t_task_id";
 
-    public TaskRecordDaoJdbiImpl(Jdbi jdbi, TaskContext taskContext) {
+    public TaskRecordDaoJdbiImpl(Jdbi jdbi) {
         super(TableDescription.builder()
-            .withName(taskContext.getTaskTableName())
+            .withName("t_task")
             .withFieldColumnMap(TaskRecord.FIELD_COLUMN_MAP)
             .withIdField(TaskRecord.ID_FIELD)
             .withIdAutoGenerate(false)
             .build(), jdbi);
-        this.taskContext = taskContext;
-        this.taskContext.setTaskRecordDao(this);
     }
 
     @Override
     public void registerRowMappers(Jdbi jdbi) {
         jdbi.registerRowMapper(TaskRecord.class, (rs, ctx) -> {
             String successorIdStr = rs.getString(TaskRecord.Field.successorIds.getDbColumn());
-            Set<Long> successorIds = JacksonUtil.fromJson(successorIdStr, new TypeReference<>() {});
+            Set<Long> successorIds = JacksonUtil.fromJson(successorIdStr, new TypeReference<>() {
+            });
             return TaskRecord.builder()
                 .withId(rs.getLong(TaskRecord.Field.id.getDbColumn()))
                 .withOrderKey(rs.getString(TaskRecord.Field.orderKey.getDbColumn()))
@@ -73,7 +65,7 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
 
     @Override
     public Long getNextId() {
-        return jdbi.withHandle(h -> h.createQuery("select nextval('" + DEFAULT_ID_SEQ_NAME + "') ")
+        return jdbi.withHandle(h -> h.createQuery("select nextval('seq_t_task_id') ")
             .mapTo(Long.class)
             .one());
     }
@@ -102,34 +94,18 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
     }
 
     @Override
-    public List<Task> loadTaskForOrder(String orderKey) {
+    public List<TaskRecord> loadTaskForOrder(String orderKey) {
         String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll)
             + " where ORDER_KEY = :orderKey ";
-        List<TaskRecord> taskRecordList = find(sql, Map.of("orderKey", orderKey), null);
-        return taskRecordList.stream().map(r -> {
-            TaskInput input = JacksonUtil.fromJson(r.getInput(), new TypeReference<>() {
-            });
-            TaskExecution taskExecution = taskContext.getTaskFactory().createTaskForExecution(r.getExecutionKey());
-            Task task;
-            if (r.isAsync()) {
-                task = new AsyncTask(r.getId(), taskContext, r.getOrderKey(), r.getName()
-                    , input, r.getStatus(),-1L, TimeUnit.MINUTES, taskExecution);
-            } else {
-                task = new SyncTask(r.getId(), taskContext, r.getOrderKey(), r.getName()
-                    , input, r.getStatus(), r.getTimeout(), r.getTimeoutUnit(), taskExecution);
-            }
-            task.setSuccessorIds(r.getSuccessorIds());
-            return task;
-        }).collect(Collectors.toList());
+        return find(sql, Map.of("orderKey", orderKey), null);
     }
 
     @Override
-    public int createTasksForOrder(String orderKey, List<Task> listOfTask) {
+    public int createTasksForOrder(String orderKey, List<TaskRecord> listOfTask) {
         AtomicInteger result = new AtomicInteger();
         jdbi.useTransaction(h -> {
             listOfTask.forEach(t -> {
-                TaskRecord taskRecord = toTaskRecord(t);
-                create(taskRecord);
+                create(t);
                 result.incrementAndGet();
             });
         });
@@ -172,7 +148,7 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
         boolean success = newStatus == TaskStatus.SUCCESS;
         LocalDateTime now = LocalDateTime.now();
         String sql = String.format(
-              "update %s set STATUS = :status, LAST_UPDATE_DT = :lastUpdateDt, SUCCESS = :success, END_DT = :endDt "
+            "update %s set STATUS = :status, LAST_UPDATE_DT = :lastUpdateDt, SUCCESS = :success, END_DT = :endDt "
             , table.getName());
         Map<String, Object> normalParams = new HashMap<>();
         normalParams.put("id", id);
@@ -208,8 +184,8 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
         // successor_ids is stored as varchar (JSON string), need to cast to jsonb first
         String sql = String.format(
             "select count(*) from %s " +
-            "where (successor_ids::jsonb) @> jsonb_build_array(:taskId) " +
-            "and status != 'SUCCESS'",
+                "where (successor_ids::jsonb) @> jsonb_build_array(:taskId) " +
+                "and status != 'SUCCESS'",
             table.getName()
         );
         int nonSuccessCount = jdbi.withHandle(h ->
@@ -222,130 +198,58 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
     }
 
     @Override
-    public Optional<Task> loadTaskById(Long taskId) {
-        Objects.requireNonNull(taskId);
-        return findOne(taskId).map(r -> {
-            TaskInput input = JacksonUtil.fromJson(r.getInput(), new TypeReference<>() {});
-            TaskExecution taskExecution = taskContext.getTaskFactory().createTaskForExecution(r.getExecutionKey());
-            Task task;
-            if (r.isAsync()) {
-                task = new AsyncTask(r.getId(), taskContext, r.getOrderKey(), r.getName()
-                    , input, r.getStatus(), -1L, TimeUnit.MINUTES, taskExecution);
-            } else {
-                task = new SyncTask(r.getId(), taskContext, r.getOrderKey(), r.getName()
-                    , input, r.getStatus(), r.getTimeout(), r.getTimeoutUnit(), taskExecution);
-            }
-            task.setSuccessorIds(r.getSuccessorIds());
-            return task;
-        });
+    public Optional<TaskRecord> loadTaskById(Long taskId) {
+        return findOne(taskId);
     }
 
     @Override
-    public List<Task> findReadyTasksForOrder(String orderKey) {
+    public List<TaskRecord> findReadyTasksForOrder(String orderKey) {
         Objects.requireNonNull(orderKey);
         // Find all tasks for this order that are in INIT status and ready to execute
         // A task is ready when there are NO predecessors (tasks that contain it in their successor_ids) with status != SUCCESS
         String sql = String.format(
             "select * from %s " +
-            "where order_key = :orderKey " +
-            "and status = 'INIT' " +
-            "and not exists (" +
-            "    select 1 from %s t2 " +
-            "    where (t2.successor_ids::jsonb) @> jsonb_build_array(%s.id) " +
-            "    and t2.status != 'SUCCESS'" +
-            ")",
+                "where order_key = :orderKey " +
+                "and status = 'INIT' " +
+                "and not exists (" +
+                "    select 1 from %s t2 " +
+                "    where (t2.successor_ids::jsonb) @> jsonb_build_array(%s.id) " +
+                "    and t2.status != 'SUCCESS'" +
+                ")",
             table.getName(), table.getName(), table.getName()
         );
         return jdbi.withHandle(h ->
             h.createQuery(sql)
                 .bind("orderKey", orderKey)
                 .mapTo(TaskRecord.class)
-                .stream()
-                .map(r -> {
-                    TaskInput input = JacksonUtil.fromJson(r.getInput(), new TypeReference<>() {});
-                    TaskExecution taskExecution = taskContext.getTaskFactory().createTaskForExecution(r.getExecutionKey());
-                    Task task;
-                    if (r.isAsync()) {
-                        task = new AsyncTask(r.getId(), taskContext, r.getOrderKey(), r.getName()
-                            , input, r.getStatus(), -1L, TimeUnit.MINUTES, taskExecution);
-                    } else {
-                        task = new SyncTask(r.getId(), taskContext, r.getOrderKey(), r.getName()
-                            , input, r.getStatus(), r.getTimeout(), r.getTimeoutUnit(), taskExecution);
-                    }
-                    task.setSuccessorIds(r.getSuccessorIds());
-                    return task;
-                })
-                .collect(Collectors.toList())
+                .list()
         );
     }
 
     @Override
-    public List<Task> findReadySuccessors(Long taskId) {
+    public List<TaskRecord> findReadySuccessors(Long taskId) {
         Objects.requireNonNull(taskId);
         // Find all direct successors of the given task that are now ready to execute
         // A successor is ready when all its predecessors (including this one) are SUCCESS
         // We get all successors from the current task's successor_ids, then filter them with the ready check
         String sql = String.format(
             "select * from %s " +
-            "where id in (" +
-            "    select (jsonb_array_elements(successor_ids::jsonb))::bigint from %s where id = :taskId" +
-            ") " +
-            "and status = 'INIT' " +
-            "and not exists (" +
-            "    select 1 from %s t2 " +
-            "    where (t2.successor_ids::jsonb) @> jsonb_build_array(%s.id) " +
-            "    and t2.status != 'SUCCESS'" +
-            ")",
+                "where id in (" +
+                "    select (jsonb_array_elements(successor_ids::jsonb))::bigint from %s where id = :taskId" +
+                ") " +
+                "and status = 'INIT' " +
+                "and not exists (" +
+                "    select 1 from %s t2 " +
+                "    where (t2.successor_ids::jsonb) @> jsonb_build_array(%s.id) " +
+                "    and t2.status != 'SUCCESS'" +
+                ")",
             table.getName(), table.getName(), table.getName(), table.getName()
         );
         return jdbi.withHandle(h ->
             h.createQuery(sql)
                 .bind("taskId", taskId)
                 .mapTo(TaskRecord.class)
-                .stream()
-                .map(r -> {
-                    TaskInput input = JacksonUtil.fromJson(r.getInput(), new TypeReference<>() {});
-                    TaskExecution taskExecution = taskContext.getTaskFactory().createTaskForExecution(r.getExecutionKey());
-                    Task task;
-                    if (r.isAsync()) {
-                        task = new AsyncTask(r.getId(), taskContext, r.getOrderKey(), r.getName()
-                            , input, r.getStatus(), -1L, TimeUnit.MINUTES, taskExecution);
-                    } else {
-                        task = new SyncTask(r.getId(), taskContext, r.getOrderKey(), r.getName()
-                            , input, r.getStatus(), r.getTimeout(), r.getTimeoutUnit(), taskExecution);
-                    }
-                    task.setSuccessorIds(r.getSuccessorIds());
-                    return task;
-                })
-                .collect(Collectors.toList())
+                .list()
         );
     }
-
-    private TaskRecord toTaskRecord(Task t) {
-        Objects.requireNonNull(t);
-        String input = JacksonUtil.toJson(t.getInput());
-        TaskOutput out = t.getOutput();
-        String output = out != null && out.output() != null ? JacksonUtil.toJson(out.output()) : null;
-        return TaskRecord.builder()
-            .withId(t.getId())
-            .withOrderKey(t.getOrderKey())
-            .withName(t.getName())
-            .withDescription("")
-            .withExecutionKey(t.getTaskExecution().getClass().getCanonicalName())
-            .withSuccessorIds(t.getSuccessorIds())
-            .withInput(input)
-            .withOutput(output)
-            .withAsync(t instanceof AsyncTask)
-            .withDummy(false)
-            .withCreateDt(t.getCreateDt())
-            .withLastUpdateDt(t.getLastUpdateDt())
-            .withStatus(t.getTaskStatus())
-            .withStartDt(t.getStartDt())
-            .withEndDt(t.getEndDt())
-            .withSuccess(out != null && out.isSuccess())
-            .withFailReason(out != null && !out.isSuccess() ? out.message() : null)
-            .build();
-    }
-
-    protected final TaskContext taskContext;
 }

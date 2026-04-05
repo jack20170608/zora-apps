@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.core;
+package top.ilovemyhome.dagtask.core.task;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;

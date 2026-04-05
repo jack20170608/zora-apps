@@ -1,22 +1,33 @@
 package top.ilovemyhome.dagtask.server.application;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.DefaultTaskContext;
-import top.ilovemyhome.dagtask.core.TaskDagServiceImpl;
+import top.ilovemyhome.dagtask.core.task.TaskDagServiceImpl;
+import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
+import top.ilovemyhome.dagtask.core.agent.DefaultAgentRegistryService;
+import top.ilovemyhome.dagtask.core.dao.AgentRegistryDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.dao.TaskOrderDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.dao.TaskRecordDaoJdbiImpl;
+import top.ilovemyhome.dagtask.core.dao.TaskTemplateDaoJdbiImpl;
+import top.ilovemyhome.dagtask.core.interfaces.TaskOrderApi;
+import top.ilovemyhome.dagtask.core.interfaces.TaskTemplateApi;
+import top.ilovemyhome.dagtask.core.template.DefaultTaskTemplateService;
+import top.ilovemyhome.dagtask.core.template.TaskTemplateService;
 import top.ilovemyhome.dagtask.core.config.TaskDagConfigLoaderImpl;
-import top.ilovemyhome.dagtask.si.TaskContext;
 import top.ilovemyhome.dagtask.si.TaskDagConfigLoader;
 import top.ilovemyhome.dagtask.si.TaskDagService;
 import top.ilovemyhome.dagtask.si.TaskFactory;
+import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
+import top.ilovemyhome.dagtask.si.persistence.TaskTemplateDao;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
+import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.muserver.security.core.CookieValueType;
 import top.ilovemyhome.zora.muserver.security.core.User;
 import top.ilovemyhome.zora.rdb.config.RdbConfig;
@@ -53,7 +64,7 @@ public final class AppContext {
         initRdb(config);
         runFlywayMigration(config);
 
-        initTaskContext();
+        startDagServer();
 
     }
 
@@ -125,7 +136,7 @@ public final class AppContext {
         logger.info("Flyway migration completed successfully");
     }
 
-    private void initTaskContext(){
+    private void startDagServer(){
         int totalProcessorSize = Runtime.getRuntime().availableProcessors();
         int nThreads = Math.max(totalProcessorSize, 2);
         ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("TaskDagService-%d").build();
@@ -135,8 +146,10 @@ public final class AppContext {
             , "t_task_order", "t_task") {};
         registerBean(TaskContext.class, "taskContext", taskContext);
 
-        registerBean(TaskOrderDao.class, "taskOrderDao", new TaskOrderDaoJdbiImpl(jdbi, taskContext));
-        registerBean(TaskRecordDao.class, "taskRecordDao", new TaskRecordDaoJdbiImpl(jdbi, taskContext));
+        TaskOrderDao taskOrderDao = new TaskOrderDaoJdbiImpl(jdbi, taskContext);
+        registerBean(TaskOrderDao.class, "taskOrderDao", taskOrderDao);
+        TaskRecordDao taskRecordDao = new TaskRecordDaoJdbiImpl(jdbi, taskContext);
+        registerBean(TaskRecordDao.class, "taskRecordDao", taskRecordDao);
         registerBean(TaskDagService.class, "taskDagService", new TaskDagServiceImpl(jdbi, taskContext) {
         });
 
@@ -148,6 +161,30 @@ public final class AppContext {
         TaskDagConfigLoader configLoader = new TaskDagConfigLoaderImpl(taskContext, taskFactory);
         registerBean(TaskDagConfigLoader.class, "taskDagConfigLoader", configLoader);
 
+        // Register agent registry components
+        AgentRegistryDao agentRegistryDao = new AgentRegistryDaoJdbiImpl(jdbi);
+        registerBean(AgentRegistryDao.class, "agentRegistryDao", agentRegistryDao);
+        AgentRegistryService agentRegistryService = new DefaultAgentRegistryService(taskRecordDao, agentRegistryDao);
+        registerBean(AgentRegistryService.class, "agentRegistryService", agentRegistryService);
+
+        // Register template components
+        TaskTemplateDao taskTemplateDao = new TaskTemplateDaoJdbiImpl(jdbi);
+        registerBean(TaskTemplateDao.class, "taskTemplateDao", taskTemplateDao);
+        ObjectMapper objectMapper = JacksonUtil.MAPPER;
+        TaskTemplateService taskTemplateService = new DefaultTaskTemplateService(
+            taskTemplateDao, taskOrderDao, taskRecordDao, objectMapper);
+        registerBean(TaskTemplateService.class, "taskTemplateService", taskTemplateService);
+
+        // Register API endpoints
+        top.ilovemyhome.dagtask.core.interfaces.SchedulerAgentApi schedulerAgentApi =
+            new top.ilovemyhome.dagtask.core.interfaces.SchedulerAgentApi(agentRegistryService);
+        registerBean(top.ilovemyhome.dagtask.core.interfaces.SchedulerAgentApi.class, "schedulerAgentApi", schedulerAgentApi);
+
+        TaskOrderApi taskOrderApi = new TaskOrderApi(taskOrderDao);
+        registerBean(TaskOrderApi.class, "taskOrderApi", taskOrderApi);
+
+        TaskTemplateApi taskTemplateApi = new TaskTemplateApi(taskTemplateService);
+        registerBean(TaskTemplateApi.class, "taskTemplateApi", taskTemplateApi);
     }
 
     @SuppressWarnings("unchecked")
