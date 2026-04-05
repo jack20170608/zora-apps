@@ -7,8 +7,6 @@ import java.util.List;
 
 public interface TaskDagService {
 
-    int deleteOrderByKey(String orderKey, boolean caseCade);
-
     //2.0 task record management
     boolean isSuccess(String orderKey);
     List<TaskRecord> findTaskByOrderKey(String orderKey);

@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import static top.ilovemyhome.dagtask.si.enums.TaskStatus.*;
+
 public class TaskOrderServiceImpl implements TaskOrderService {
 
     public TaskOrderServiceImpl(Jdbi jdbi, TaskRecordDao taskRecordDao, TaskOrderDao taskOrderDao) {
@@ -58,10 +60,13 @@ public class TaskOrderServiceImpl implements TaskOrderService {
     public int deleteOrderByKey(String orderKey) {
         Objects.requireNonNull(orderKey);
         jdbi.useTransaction(h -> {
-            taskRecordDao.count(TaskSearchCriteria.builder()
+            int runningTaskNum = taskRecordDao.count(TaskSearchCriteria.builder()
                     .withOrderKey(orderKey)
-                    .withStatusList(List.of())
+                    .withStatusList(List.of(READY, HOLD, RUNNING))
                 .build());
+            if (runningTaskNum > 0) {
+                throw new IllegalArgumentException("The task order with key: " + orderKey + " is already running");
+            }
             taskOrderDao.deleteByKey(orderKey);
             taskRecordDao.deleteByOrderKey(orderKey);
         });
