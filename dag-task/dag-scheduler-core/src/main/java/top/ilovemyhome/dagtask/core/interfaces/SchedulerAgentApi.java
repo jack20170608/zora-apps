@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
+import top.ilovemyhome.dagtask.si.ResEntityHelper;
 import top.ilovemyhome.dagtask.si.agent.AgentRegistration;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
@@ -70,10 +71,10 @@ public class SchedulerAgentApi {
         LOGGER.debug("Received registration request from agent: {}", registration.agentId());
         boolean success = agentRegistryService.registerAgent(registration);
         if (success) {
-            return Response.ok().entity(new SuccessResponse("Agent registered successfully")).build();
+            return Response.ok().entity(ResEntityHelper.ok("Agent registered successfully", null)).build();
         } else {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("Registration failed"))
+                .entity(ResEntityHelper.badRequest("Registration failed"))
                 .build();
         }
     }
@@ -95,10 +96,10 @@ public class SchedulerAgentApi {
         LOGGER.debug("Received unregistration request from agent: {}", unregistration.agentId());
         boolean success = agentRegistryService.unregisterAgent(unregistration);
         if (success) {
-            return Response.ok().entity(new SuccessResponse("Agent unregistered successfully")).build();
+            return Response.ok().entity(ResEntityHelper.ok("Agent unregistered successfully", null)).build();
         } else {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("Unregistration failed, agent not found"))
+                .entity(ResEntityHelper.badRequest("Unregistration failed, agent not found"))
                 .build();
         }
     }
@@ -122,10 +123,10 @@ public class SchedulerAgentApi {
             taskResultReport.agentId(), taskResultReport.taskId());
         boolean success = agentRegistryService.reportTaskResult(taskResultReport);
         if (success) {
-            return Response.ok().entity(new SuccessResponse("Task result processed successfully")).build();
+            return Response.ok().entity(ResEntityHelper.ok("Task result processed successfully", null)).build();
         } else {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("Failed to process task result"))
+                .entity(ResEntityHelper.badRequest("Failed to process task result"))
                 .build();
         }
     }
@@ -148,23 +149,12 @@ public class SchedulerAgentApi {
         LOGGER.trace("Received status report from agent: {}", statusReport.agentId());
         boolean success = agentRegistryService.reportAgentStatus(statusReport);
         if (success) {
-            return Response.ok().entity(new SuccessResponse("Status updated successfully")).build();
+            return Response.ok().entity(ResEntityHelper.ok("Status updated successfully", null)).build();
         } else {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("Failed to update agent status"))
+                .entity(ResEntityHelper.badRequest("Failed to update agent status"))
                 .build();
         }
     }
 
-    /**
-     * Standard response record for successful API calls.
-     * @param message descriptive success message
-     */
-    public record SuccessResponse(String message) {}
-
-    /**
-     * Standard response record for failed API calls.
-     * @param error description of the error that occurred
-     */
-    public record ErrorResponse(String error) {}
 }
