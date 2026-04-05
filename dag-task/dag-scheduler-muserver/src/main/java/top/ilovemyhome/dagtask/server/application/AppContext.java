@@ -16,7 +16,7 @@ import top.ilovemyhome.dagtask.core.dao.TaskRecordDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.dao.TaskTemplateDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.interfaces.TaskOrderApi;
 import top.ilovemyhome.dagtask.core.interfaces.TaskTemplateApi;
-import top.ilovemyhome.dagtask.core.task.DefaultTaskTemplateService;
+import top.ilovemyhome.dagtask.core.task.TaskTemplateServiceImpl;
 import top.ilovemyhome.dagtask.si.TaskTemplateService;
 import top.ilovemyhome.dagtask.core.config.TaskDagConfigLoaderImpl;
 import top.ilovemyhome.dagtask.si.TaskDagConfigLoader;
@@ -171,7 +171,7 @@ public final class AppContext {
         TaskTemplateDao taskTemplateDao = new TaskTemplateDaoJdbiImpl(jdbi);
         registerBean(TaskTemplateDao.class, "taskTemplateDao", taskTemplateDao);
         ObjectMapper objectMapper = JacksonUtil.MAPPER;
-        TaskTemplateService taskTemplateService = new DefaultTaskTemplateService(
+        TaskTemplateService taskTemplateService = new TaskTemplateServiceImpl(
             taskTemplateDao, taskOrderDao, taskRecordDao, objectMapper);
         registerBean(TaskTemplateService.class, "taskTemplateService", taskTemplateService);
 

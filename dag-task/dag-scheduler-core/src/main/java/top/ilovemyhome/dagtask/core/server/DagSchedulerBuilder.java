@@ -12,7 +12,7 @@ import top.ilovemyhome.dagtask.core.dao.TaskOrderDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.dao.TaskRecordDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.dao.TaskTemplateDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.task.TaskDagServiceImpl;
-import top.ilovemyhome.dagtask.core.task.DefaultTaskTemplateService;
+import top.ilovemyhome.dagtask.core.task.TaskTemplateServiceImpl;
 import top.ilovemyhome.dagtask.core.task.TaskOrderServiceImpl;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.zora.common.date.LocalDateUtils;
@@ -142,7 +142,7 @@ public class DagSchedulerBuilder {
 
         var taskOrderService = new TaskOrderServiceImpl(jdbi, taskRecordDao, taskOrderDao);
         var agentRegistryService = new DefaultAgentRegistryService(taskRecordDao, agentRegistryDao);
-        var taskTemplateService = new DefaultTaskTemplateService(
+        var taskTemplateService = new TaskTemplateServiceImpl(
             taskTemplateDao, taskOrderDao, taskRecordDao, objectMapper);
         var taskDagService = new TaskDagServiceImpl(config, jdbi, taskOrderDao, taskRecordDao, agentRegistryDao, taskTemplateDao);
         return new DagSchedulerServer(

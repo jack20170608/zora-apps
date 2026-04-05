@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskOrder;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.TaskTemplate;
+import top.ilovemyhome.dagtask.si.TaskTemplateService;
 import top.ilovemyhome.dagtask.si.enums.OrderType;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
@@ -43,9 +44,9 @@ import java.util.regex.Pattern;
  * </ol>
  * </p>
  */
-public class DefaultTaskTemplateService implements top.ilovemyhome.dagtask.si.TaskTemplateService {
+public class TaskTemplateServiceImpl implements TaskTemplateService {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultTaskTemplateService.class);
+    private static final Logger logger = LoggerFactory.getLogger(TaskTemplateServiceImpl.class);
 
     private final TaskTemplateDao taskTemplateDao;
     private final TaskOrderDao taskOrderDao;
@@ -65,10 +66,10 @@ public class DefaultTaskTemplateService implements top.ilovemyhome.dagtask.si.Ta
      * @param taskRecordDao DAO for task record persistence
      * @param objectMapper JSON mapper for processing DAG definition
      */
-    public DefaultTaskTemplateService(TaskTemplateDao taskTemplateDao,
-                                       TaskOrderDao taskOrderDao,
-                                       TaskRecordDao taskRecordDao,
-                                       ObjectMapper objectMapper) {
+    public TaskTemplateServiceImpl(TaskTemplateDao taskTemplateDao,
+                                   TaskOrderDao taskOrderDao,
+                                   TaskRecordDao taskRecordDao,
+                                   ObjectMapper objectMapper) {
         this.taskTemplateDao = Objects.requireNonNull(taskTemplateDao, "taskTemplateDao must not be null");
         this.taskOrderDao = Objects.requireNonNull(taskOrderDao, "taskOrderDao must not be null");
         this.taskRecordDao = Objects.requireNonNull(taskRecordDao, "taskRecordDao must not be null");
