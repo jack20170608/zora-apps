@@ -12,10 +12,11 @@
     <description>A DAG-based task scheduling system with distributed execution support</description>
 
     <modules>
-        <module>dag-task-si</module>
-        <module>dag-task-core</module>
-        <module>dag-task-server</module>
-        <module>dag-task-agent</module>
+        <module>dag-si</module>
+        <module>dag-scheduler-core</module>
+        <module>dag-scheduler-muserver</module>
+        <module>dag-agent</module>
+        <module>dag-agent-muserver</module>
     </modules>
 
     <properties>
@@ -37,22 +38,27 @@
             </dependency>
             <dependency>
                 <groupId>top.ilovemyhome.dagtask</groupId>
-                <artifactId>dag-task-si</artifactId>
+                <artifactId>dag-si</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
                 <groupId>top.ilovemyhome.dagtask</groupId>
-                <artifactId>dag-task-core</artifactId>
+                <artifactId>dag-scheduler-core</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
                 <groupId>top.ilovemyhome.dagtask</groupId>
-                <artifactId>dag-task-agent</artifactId>
+                <artifactId>dag-agent</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
                 <groupId>top.ilovemyhome.dagtask</groupId>
-                <artifactId>dag-task-server</artifactId>
+                <artifactId>dag-scheduler-muserver</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>top.ilovemyhome.dagtask</groupId>
+                <artifactId>dag-agent-muserver</artifactId>
                 <version>${revision}</version>
             </dependency>
         </dependencies>
