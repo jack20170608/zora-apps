@@ -300,6 +300,36 @@ public final class TaskRecord {
             return this;
         }
 
+        /**
+         * Creates a builder initialized with all values from an existing TaskRecord.
+         * Useful for creating an updated version of an existing task.
+         *
+         * @param task the existing task to copy values from
+         * @return this builder initialized with the task's values
+         */
+        public Builder from(TaskRecord task) {
+            this.id = task.getId();
+            this.orderKey = task.getOrderKey();
+            this.name = task.getName();
+            this.description = task.getDescription();
+            this.executionKey = task.getExecutionKey();
+            this.successorIds = task.getSuccessorIds();
+            this.input = task.getInput();
+            this.output = task.getOutput();
+            this.async = task.isAsync();
+            this.dummy = task.isDummy();
+            this.createDt = task.getCreateDt();
+            this.lastUpdateDt = task.getLastUpdateDt();
+            this.status = task.getStatus();
+            this.startDt = task.getStartDt();
+            this.endDt = task.getEndDt();
+            this.success = task.isSuccess();
+            this.failReason = task.getFailReason();
+            this.timeout = task.getTimeout();
+            this.timeoutUnit = task.getTimeoutUnit();
+            return this;
+        }
+
         public TaskRecord build() {
             LocalDateTime now = LocalDateTime.now();
             TaskRecord taskRecord = new TaskRecord();

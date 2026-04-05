@@ -6,6 +6,7 @@ public enum OrderType {
     Monthly,
     Weekly,
     Daily,
-    Free
+    Free,
+    INSTANTIATED_FROM_TEMPLATE
 
 }
