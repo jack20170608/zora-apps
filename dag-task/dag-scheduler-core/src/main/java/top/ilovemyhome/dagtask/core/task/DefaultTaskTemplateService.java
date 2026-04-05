@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.core.template;
+package top.ilovemyhome.dagtask.core.task;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,7 +28,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Default implementation of {@link TaskTemplateService} with database persistence.
+ * Default implementation of {@link top.ilovemyhome.dagtask.si.TaskTemplateService} with database persistence.
  * <p>
  * Handles template version management, activation control, and instantiation
  * of concrete {@link TaskOrder} instances from templates.
@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
  * </ol>
  * </p>
  */
-public class DefaultTaskTemplateService implements TaskTemplateService {
+public class DefaultTaskTemplateService implements top.ilovemyhome.dagtask.si.TaskTemplateService {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultTaskTemplateService.class);
 

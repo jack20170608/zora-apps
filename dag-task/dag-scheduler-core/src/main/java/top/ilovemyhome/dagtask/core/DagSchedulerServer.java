@@ -7,7 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
 import top.ilovemyhome.dagtask.core.server.DagServerConfig;
-import top.ilovemyhome.dagtask.core.template.TaskTemplateService;
+import top.ilovemyhome.dagtask.si.TaskOrderService;
+import top.ilovemyhome.dagtask.si.TaskTemplateService;
 import top.ilovemyhome.dagtask.si.TaskDagService;
 import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
@@ -67,6 +68,7 @@ public class DagSchedulerServer {
     // Service layer
     private final AgentRegistryService agentRegistryService;
     private final TaskTemplateService taskTemplateService;
+    private final TaskOrderService taskOrderService;
     private final TaskDagService taskDagService;
 
     // Components that need lifecycle management
@@ -84,6 +86,7 @@ public class DagSchedulerServer {
         TaskTemplateDao taskTemplateDao,
         AgentRegistryService agentRegistryService,
         TaskTemplateService taskTemplateService,
+        TaskOrderService taskOrderService,
         TaskDagService taskDagService) {
         this.config = config;
         this.jdbi = Objects.requireNonNull(jdbi, "jdbi must not be null");
@@ -94,6 +97,7 @@ public class DagSchedulerServer {
         this.taskTemplateDao = Objects.requireNonNull(taskTemplateDao, "taskTemplateDao must not be null");
         this.agentRegistryService = Objects.requireNonNull(agentRegistryService, "agentRegistryService must not be null");
         this.taskTemplateService = Objects.requireNonNull(taskTemplateService, "taskTemplateService must not be null");
+        this.taskOrderService = Objects.requireNonNull(taskOrderService, "taskOrderService must not be null");
         this.taskDagService = Objects.requireNonNull(taskDagService, "taskDagService must not be null");
 
         int totalProcessorSize = Runtime.getRuntime().availableProcessors();

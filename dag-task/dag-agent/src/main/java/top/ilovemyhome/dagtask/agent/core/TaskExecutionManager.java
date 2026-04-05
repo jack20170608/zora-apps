@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.TaskExecution;
-import top.ilovemyhome.dagtask.si.TaskFactory;
+import top.ilovemyhome.dagtask.si.agent.TaskFactory;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 

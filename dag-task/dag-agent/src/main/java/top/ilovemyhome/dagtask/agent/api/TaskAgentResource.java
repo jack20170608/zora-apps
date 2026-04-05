@@ -25,7 +25,7 @@ import top.ilovemyhome.dagtask.agent.core.DagTaskAgent;
 import top.ilovemyhome.dagtask.agent.core.TaskExecutionManager;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
-import top.ilovemyhome.dagtask.si.TaskFactory;
+import top.ilovemyhome.dagtask.si.agent.TaskFactory;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -7,13 +7,14 @@ import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.server.DagServerConfig;
+import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
+import top.ilovemyhome.dagtask.si.persistence.TaskTemplateDao;
 import top.ilovemyhome.zora.jdbi.SearchCriteria;
 import top.ilovemyhome.dagtask.core.dag.DagHelper;
 import top.ilovemyhome.dagtask.core.dag.DagNode;
 import top.ilovemyhome.dagtask.si.*;
-import top.ilovemyhome.dagtask.si.Task;
 import top.ilovemyhome.dagtask.si.TaskOrder;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
@@ -25,67 +26,44 @@ import java.util.stream.Collectors;
 
 public class TaskDagServiceImpl implements TaskDagService {
 
-    public TaskDagServiceImpl(DagServerConfig config, Jdbi jdbi, TaskOrderDao taskOrderDao, TaskRecordDao taskRecordDao) {
+    public TaskDagServiceImpl(DagServerConfig config
+        , Jdbi jdbi
+        , TaskOrderDao taskOrderDao
+        , TaskRecordDao taskRecordDao
+        , AgentRegistryDao agentRegistryDao
+        , TaskTemplateDao taskTemplateDao
+    ) {
         this.jdbi = jdbi;
         this.taskOrderDao = taskOrderDao;
         this.taskRecordDao = taskRecordDao;
+        this.agentRegistryDao = agentRegistryDao;
+        this.taskTemplateDao = taskTemplateDao;
     }
 
-    @Override
-    public boolean isOrdered(String orderKey) {
-        return taskOrderDao.findByKey(orderKey).isPresent();
-    }
+//    @Override
+//    public boolean isOrdered(String orderKey) {
+//        return taskOrderDao.findByKey(orderKey).isPresent();
+//    }
 
-    @Override
-    public synchronized Long createOrder(TaskOrder taskOrder) {
-        Objects.requireNonNull(taskOrder);
-        Objects.requireNonNull(taskOrder.getKey());
-        String orderKey = taskOrder.getKey();
-        Optional<TaskOrder> taskOrderOptional = taskOrderDao.findByKey(orderKey);
-        Long id;
-        if (taskOrderOptional.isEmpty()) {
-            id = taskOrderDao.create(taskOrder);
-            taskOrder.setId(id);
-        } else {
-            throw new IllegalArgumentException("The task order with key: " + orderKey + " already exists");
-        }
-        return id;
-    }
+//    @Override
+//    public synchronized Long createOrder(TaskOrder taskOrder) {
+//        Objects.requireNonNull(taskOrder);
+//        Objects.requireNonNull(taskOrder.getKey());
+//        String orderKey = taskOrder.getKey();
+//        Optional<TaskOrder> taskOrderOptional = taskOrderDao.findByKey(orderKey);
+//        Long id;
+//        if (taskOrderOptional.isEmpty()) {
+//            id = taskOrderDao.create(taskOrder);
+//            taskOrder.setId(id);
+//        } else {
+//            throw new IllegalArgumentException("The task order with key: " + orderKey + " already exists");
+//        }
+//        return id;
+//    }
 
-    @Override
-    public int updateOrderByKey(String orderKey, TaskOrder taskOrder) {
-        Objects.requireNonNull(orderKey);
-        Objects.requireNonNull(taskOrder);
-        Optional<TaskOrder> taskOrderOptional = taskOrderDao.findByKey(orderKey);
-        int result;
-        if (taskOrderOptional.isPresent()) {
-            result = taskOrderDao.updateByKey(orderKey, taskOrder);
-        } else {
-            throw new IllegalArgumentException("The task order with key: " + orderKey + " not exists");
-        }
-        return result;
-    }
 
-    @Override
-    public int deleteOrderByKey(String orderKey, boolean caseCade) {
-        Objects.requireNonNull(orderKey);
-        final AtomicInteger result = new AtomicInteger(0);
-        int count = countTaskByOrderKey(orderKey);
-        if (count > 0) {
-            if (caseCade) {
-                jdbi.useTransaction(h -> {
-                    // Delete in DB
-                    taskRecordDao.deleteByOrderKey(orderKey);
-                    result.set(taskOrderDao.deleteByKey(orderKey));
-                });
-            } else {
-                throw new IllegalArgumentException("The task order with key: " + orderKey + " have tasks linked to it.");
-            }
-        } else {
-            result.set(taskOrderDao.deleteByKey(orderKey));
-        }
-        return result.get();
-    }
+
+
 
     @Override
     public List<Long> getNextTaskIds(int count) {
@@ -273,6 +251,8 @@ public class TaskDagServiceImpl implements TaskDagService {
 
     private final TaskRecordDao taskRecordDao;
     private final TaskOrderDao taskOrderDao;
+    private final AgentRegistryDao agentRegistryDao;
+    private final TaskTemplateDao taskTemplateDao;
     private final Jdbi jdbi;
 
     private static final Logger logger = LoggerFactory.getLogger(TaskDagServiceImpl.class);

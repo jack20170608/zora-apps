@@ -6,7 +6,7 @@ import top.ilovemyhome.dagtask.agent.client.DefaultAgentSchedulerClient;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.agent.api.TaskAgentResource;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
-import top.ilovemyhome.dagtask.si.TaskFactory;
+import top.ilovemyhome.dagtask.si.agent.TaskFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

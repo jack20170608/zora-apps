@@ -12,7 +12,8 @@ import top.ilovemyhome.dagtask.core.dao.TaskOrderDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.dao.TaskRecordDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.dao.TaskTemplateDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.task.TaskDagServiceImpl;
-import top.ilovemyhome.dagtask.core.template.DefaultTaskTemplateService;
+import top.ilovemyhome.dagtask.core.task.DefaultTaskTemplateService;
+import top.ilovemyhome.dagtask.core.task.TaskOrderServiceImpl;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.zora.common.date.LocalDateUtils;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
@@ -126,6 +127,7 @@ public class DagSchedulerBuilder {
         Objects.requireNonNull(dataSource, "Either dataSource or jdbi must be set");
         Jdbi jdbi = Jdbi.create(dataSource);
         bindingJdbiArguments(jdbi);
+        var config = new DagServerConfig(scanIntervalSeconds, maxSystemConcurrentTasks, databaseType, heartbeatTimeoutSeconds, heartbeatIntervalSeconds, maxHeartbeatFailedTimes);
 
         // Create ObjectMapper if not provided
         if (objectMapper == null) {
@@ -138,11 +140,11 @@ public class DagSchedulerBuilder {
         var taskOrderDao = new TaskOrderDaoJdbiImpl(jdbi);
         var taskRecordDao = new TaskRecordDaoJdbiImpl(jdbi);
 
+        var taskOrderService = new TaskOrderServiceImpl(jdbi, taskRecordDao, taskOrderDao);
         var agentRegistryService = new DefaultAgentRegistryService(taskRecordDao, agentRegistryDao);
         var taskTemplateService = new DefaultTaskTemplateService(
             taskTemplateDao, taskOrderDao, taskRecordDao, objectMapper);
-        var config = new DagServerConfig(scanIntervalSeconds, maxSystemConcurrentTasks, databaseType, heartbeatTimeoutSeconds, heartbeatIntervalSeconds, maxHeartbeatFailedTimes);
-        var taskDagService = new TaskDagServiceImpl(config, jdbi, taskOrderDao, taskRecordDao);
+        var taskDagService = new TaskDagServiceImpl(config, jdbi, taskOrderDao, taskRecordDao, agentRegistryDao, taskTemplateDao);
         return new DagSchedulerServer(
             config,
             jdbi,
@@ -153,6 +155,7 @@ public class DagSchedulerBuilder {
             taskTemplateDao,
             agentRegistryService,
             taskTemplateService,
+            taskOrderService,
             taskDagService
         );
     }
