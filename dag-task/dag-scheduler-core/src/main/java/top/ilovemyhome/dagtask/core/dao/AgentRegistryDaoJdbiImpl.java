@@ -19,22 +19,6 @@ import java.util.Optional;
  * JDBI-based implementation of {@link AgentRegistryDao}.
  * Persists agent registry information to a PostgreSQL database table.
  *
- * The table schema expected is:
- * <pre>
- * CREATE TABLE t_agent_registry (
- *     agent_id VARCHAR(255) PRIMARY KEY,
- *     agent_url VARCHAR(1024) NOT NULL,
- *     max_concurrent_tasks INTEGER NOT NULL,
- *     max_pending_tasks INTEGER NOT NULL,
- *     supported_execution_keys TEXT NOT NULL,  -- JSON array
- *     registered_at TIMESTAMP WITH TIME ZONE NOT NULL,
- *     last_heartbeat_at TIMESTAMP WITH TIME ZONE NOT NULL,
- *     running BOOLEAN NOT NULL DEFAULT TRUE,
- *     pending_tasks INTEGER NOT NULL DEFAULT 0,
- *     running_tasks INTEGER NOT NULL DEFAULT 0,
- *     finished_tasks INTEGER NOT NULL DEFAULT 0
- * );
- * </pre>
  */
 public class AgentRegistryDaoJdbiImpl extends BaseDaoJdbiImpl<AgentInfo> implements AgentRegistryDao {
 
@@ -46,8 +30,8 @@ public class AgentRegistryDaoJdbiImpl extends BaseDaoJdbiImpl<AgentInfo> impleme
     public AgentRegistryDaoJdbiImpl(Jdbi jdbi) {
         super(TableDescription.builder()
             .withName("t_agent_registry")
-            .withIdField("agent_id")
-            .withIdAutoGenerate(false)
+            .withIdField("id")
+            .withIdAutoGenerate(true)
             .build(), jdbi);
     }
 
