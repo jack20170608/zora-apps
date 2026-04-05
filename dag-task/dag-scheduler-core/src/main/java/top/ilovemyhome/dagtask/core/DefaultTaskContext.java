@@ -6,6 +6,8 @@ import org.jdbi.v3.core.argument.AbstractArgumentFactory;
 import org.jdbi.v3.core.argument.Argument;
 import org.jdbi.v3.core.config.ConfigRegistry;
 import top.ilovemyhome.dagtask.si.*;
+import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
+import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
 import top.ilovemyhome.zora.common.date.LocalDateUtils;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 

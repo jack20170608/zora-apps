@@ -1,6 +1,9 @@
-package top.ilovemyhome.dagtask.si;
+package top.ilovemyhome.dagtask.si.persistence;
 
 import java.util.Optional;
+
+import top.ilovemyhome.dagtask.si.TaskInput;
+import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.zora.jdbi.dao.BaseDao;
 import top.ilovemyhome.dagtask.si.Task;
 import top.ilovemyhome.dagtask.si.TaskRecord;

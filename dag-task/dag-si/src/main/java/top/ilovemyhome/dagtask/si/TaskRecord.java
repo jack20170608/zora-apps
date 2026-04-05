@@ -121,6 +121,10 @@ public final class TaskRecord {
         return output;
     }
 
+    public void setOutput(String output) {
+        this.output = output;
+    }
+
     public boolean isAsync() {
         return async;
     }
@@ -151,6 +155,10 @@ public final class TaskRecord {
 
     public boolean isSuccess() {
         return success;
+    }
+
+    public void setSuccess(boolean success) {
+        this.success = success;
     }
 
     public String getFailReason() {

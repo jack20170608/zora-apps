@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.ilovemyhome.dagtask.core.dao.TaskOrderDaoJdbiImpl;
+import top.ilovemyhome.dagtask.core.dao.TaskRecordDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.execution.ConditionExceptionalExecution;
 import top.ilovemyhome.dagtask.core.execution.LongRunningExecution;
 import top.ilovemyhome.dagtask.core.execution.PrintInputTaskExecution;

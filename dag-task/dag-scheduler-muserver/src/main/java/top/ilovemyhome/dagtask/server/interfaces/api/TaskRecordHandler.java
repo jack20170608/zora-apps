@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.server.application.AppContext;
 import top.ilovemyhome.dagtask.si.TaskDagService;
 import top.ilovemyhome.dagtask.si.TaskRecord;
-import top.ilovemyhome.dagtask.si.TaskRecordDao;
+import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 
 import java.time.LocalDateTime;

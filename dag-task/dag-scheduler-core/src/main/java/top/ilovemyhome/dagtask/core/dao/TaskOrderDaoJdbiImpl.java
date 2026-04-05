@@ -1,11 +1,11 @@
-package top.ilovemyhome.dagtask.core;
+package top.ilovemyhome.dagtask.core.dao;
 
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.jdbi.v3.core.Jdbi;
 import top.ilovemyhome.dagtask.si.TaskContext;
 import top.ilovemyhome.dagtask.si.TaskOrder;
-import top.ilovemyhome.dagtask.si.TaskOrderDao;
+import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.enums.OrderType;
 import top.ilovemyhome.zora.common.date.LocalDateUtils;

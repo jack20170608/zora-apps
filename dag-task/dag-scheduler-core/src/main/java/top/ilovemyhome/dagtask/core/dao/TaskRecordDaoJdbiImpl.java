@@ -1,7 +1,9 @@
-package top.ilovemyhome.dagtask.core;
+package top.ilovemyhome.dagtask.core.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.jdbi.v3.core.Jdbi;
+import top.ilovemyhome.dagtask.core.AsyncTask;
+import top.ilovemyhome.dagtask.core.SyncTask;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.jdbi.SqlGenerator;
 import top.ilovemyhome.zora.jdbi.TableDescription;
@@ -10,7 +12,7 @@ import top.ilovemyhome.dagtask.si.TaskContext;
 import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
-import top.ilovemyhome.dagtask.si.TaskRecordDao;
+import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
 import top.ilovemyhome.dagtask.si.Task;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;

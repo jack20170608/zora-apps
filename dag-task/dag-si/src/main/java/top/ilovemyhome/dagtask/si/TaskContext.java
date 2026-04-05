@@ -1,5 +1,8 @@
 package top.ilovemyhome.dagtask.si;
 
+import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
+import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
+
 import java.util.concurrent.ExecutorService;
 
 public interface TaskContext {
