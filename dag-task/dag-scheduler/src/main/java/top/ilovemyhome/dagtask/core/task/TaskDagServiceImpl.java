@@ -128,6 +128,11 @@ public class TaskDagServiceImpl implements TaskDagService {
     }
 
     @Override
+    public void hold(Long taskId) {
+
+    }
+
+    @Override
     public boolean isSuccess(String orderKey) {
         boolean ordered = taskRecordDao.isOrdered(orderKey);
         if (!ordered) {

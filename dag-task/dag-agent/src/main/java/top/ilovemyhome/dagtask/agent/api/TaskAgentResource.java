@@ -26,6 +26,7 @@ import top.ilovemyhome.dagtask.agent.core.TaskExecutionManager;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.agent.TaskFactory;
+import top.ilovemyhome.dagtask.si.dto.SubmitRequest;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -136,15 +137,7 @@ public class TaskAgentResource {
                 .build();
     }
 
-    @Schema(description = "Request to submit a new task for execution")
-    public record SubmitRequest(
-            @Schema(description = "Unique ID of the task", required = true)
-            Long taskId,
-            @Schema(description = "Fully qualified class name of the task execution implementation", required = true)
-            String executionClass,
-            @Schema(description = "Optional JSON input data for the task")
-            String input
-    ) {}
+
 
     // ========== Kill endpoint ==========
 

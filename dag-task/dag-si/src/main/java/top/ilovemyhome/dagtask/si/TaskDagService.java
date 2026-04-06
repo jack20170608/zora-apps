@@ -26,4 +26,7 @@ public interface TaskDagService {
     //Force terminate the task and mark the task failure
     void kill(Long taskId);
 
+    //Hold the task and don't trigger even condition is ready
+    void hold(Long taskId);
+
 }

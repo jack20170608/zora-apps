@@ -23,10 +23,11 @@ import static top.ilovemyhome.zora.common.lang.StringConvertUtils.toEnum;
 
 public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implements TaskRecordDao {
 
+    public static final String TABLE_NAME = "t_task";
 
     public TaskRecordDaoJdbiImpl(Jdbi jdbi) {
         super(TableDescription.builder()
-            .withName("t_task")
+            .withName(TABLE_NAME)
             .withFieldColumnMap(TaskRecord.FIELD_COLUMN_MAP)
             .withIdField(TaskRecord.ID_FIELD)
             .withIdAutoGenerate(false)
@@ -251,5 +252,15 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
                 .mapTo(TaskRecord.class)
                 .list()
         );
+    }
+
+    @Override
+    public int updateStatus(Long taskId, TaskStatus newStatus) {
+        Objects.requireNonNull(taskId, "taskId must not be null");
+        Objects.requireNonNull(newStatus, "newStatus must not be null");
+        LocalDateTime now = LocalDateTime.now();
+        String sql = String.format("update %s set STATUS = :status, LAST_UPDATE_DT = :lastUpdateDt where ID = :id",
+            table.getName());
+        return update(sql, Map.of("id", taskId, "status", newStatus, "lastUpdateDt", now), null);
     }
 }

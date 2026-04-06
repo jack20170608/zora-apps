@@ -78,4 +78,12 @@ public interface TaskRecordDao extends BaseDao<TaskRecord> {
      */
     List<TaskRecord> findReadySuccessors(Long taskId);
 
+    /**
+     * Update just the status of a task without changing other fields.
+     * @param taskId the task ID to update
+     * @param newStatus the new status to set
+     * @return number of rows updated (1 if success, 0 if task not found)
+     */
+    int updateStatus(Long taskId, TaskStatus newStatus);
+
 }
