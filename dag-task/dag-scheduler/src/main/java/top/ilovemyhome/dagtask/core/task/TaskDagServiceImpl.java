@@ -40,31 +40,6 @@ public class TaskDagServiceImpl implements TaskDagService {
         this.taskTemplateDao = taskTemplateDao;
     }
 
-//    @Override
-//    public boolean isOrdered(String orderKey) {
-//        return taskOrderDao.findByKey(orderKey).isPresent();
-//    }
-
-//    @Override
-//    public synchronized Long createOrder(TaskOrder taskOrder) {
-//        Objects.requireNonNull(taskOrder);
-//        Objects.requireNonNull(taskOrder.getKey());
-//        String orderKey = taskOrder.getKey();
-//        Optional<TaskOrder> taskOrderOptional = taskOrderDao.findByKey(orderKey);
-//        Long id;
-//        if (taskOrderOptional.isEmpty()) {
-//            id = taskOrderDao.create(taskOrder);
-//            taskOrder.setId(id);
-//        } else {
-//            throw new IllegalArgumentException("The task order with key: " + orderKey + " already exists");
-//        }
-//        return id;
-//    }
-
-
-
-
-
     @Override
     public List<Long> getNextTaskIds(int count) {
         if (count <= 0) {
@@ -165,7 +140,7 @@ public class TaskDagServiceImpl implements TaskDagService {
     public void start(String orderKey) {
         Objects.requireNonNull(orderKey);
         logger.info("Start task for order key: {}.", orderKey);
-        List<Task> readyTasks = taskRecordDao.findReadyTasksForOrder(orderKey);
+        List<TaskRecord> readyTasks = taskRecordDao.findReadyTasksForOrder(orderKey);
         readyTasks.forEach(t -> {
             logger.info("Submit the task {}.", t);
 //            taskContext.getThreadPool().submit(t);
@@ -177,13 +152,14 @@ public class TaskDagServiceImpl implements TaskDagService {
         Objects.requireNonNull(taskId);
         Objects.requireNonNull(newStatus);
         Objects.requireNonNull(output);
-        List<Task> allTasks = loadByTaskId(taskId);
-        Map<Long, Task> taskIdMap = allTasks.stream().collect(Collectors.toMap(Task::getId, Function.identity()));
+        List<TaskRecord> allTasks = loadByTaskId(taskId);
+        Map<Long, TaskRecord> taskIdMap = allTasks.stream().collect(Collectors.toMap(TaskRecord::getId, Function.identity()));
 
         if (!taskIdMap.containsKey(taskId)) {
             throw new IllegalStateException("Data issue, please check!");
         }
-        Task targetTask = taskIdMap.get(taskId);
+        TaskRecord targetTask = taskIdMap.get(taskId);
+        /*
         if (!(targetTask instanceof AsyncTask)) {
             throw new IllegalArgumentException("The target task is not an AsyncTask!");
         }
@@ -205,6 +181,7 @@ public class TaskDagServiceImpl implements TaskDagService {
         } else if (newStatus == TaskStatus.SKIPPED) {
             targetTask.skip(output);
         }
+         */
     }
 
     private int countTaskByOrderKey(String orderKey) {
@@ -222,14 +199,11 @@ public class TaskDagServiceImpl implements TaskDagService {
         return taskRecordDao.find(searchCriteria);
     }
 
-    private List<Task> loadByOrderKey(String orderKey) {
+    private List<TaskRecord> loadByOrderKey(String orderKey) {
         logger.info("Loading task {}.", orderKey);
-        List<Task> taskList = taskRecordDao.loadTaskForOrder(orderKey);
+        List<TaskRecord> taskList = taskRecordDao.loadTaskForOrder(orderKey);
         if (Objects.isNull(taskList) || taskList.isEmpty()) {
             throw new IllegalStateException("Empty task list, please add task for this order!");
-        }
-        if (taskList.isEmpty()) {
-            throw new IllegalStateException("Empty task list!!");
         }
         logger.info("Task loaded successfully!");
         return taskList;
@@ -241,7 +215,7 @@ public class TaskDagServiceImpl implements TaskDagService {
             , Objects.nonNull(record.getSuccessorIds()) ? Sets.newHashSet(record.getSuccessorIds()) : null);
     }
 
-    private List<Task> loadByTaskId(Long taskId) {
+    private List<TaskRecord> loadByTaskId(Long taskId) {
         String orderKey = taskRecordDao.getTaskOrderByTaskId(taskId);
         if (Objects.isNull(orderKey)) {
             throw new IllegalStateException("Cannot find the order info for taskId " + taskId);

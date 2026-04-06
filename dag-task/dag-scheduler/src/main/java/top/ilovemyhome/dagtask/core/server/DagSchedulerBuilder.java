@@ -35,6 +35,7 @@ public class DagSchedulerBuilder {
     public static final String DEFAULT_DATABASE_TYPE = "postgresql";
 
     private DataSource dataSource;
+    private Jdbi jdbi;
     private ObjectMapper objectMapper;
     //扫描Ready任务的时间间隔
     private int scanIntervalSeconds = DEFAULT_SCAN_INTERVAL_SECONDS;
@@ -56,6 +57,11 @@ public class DagSchedulerBuilder {
 
     public DagSchedulerBuilder dataSource(DataSource dataSource) {
         this.dataSource = dataSource;
+        return this;
+    }
+
+    public DagSchedulerBuilder jdbi(Jdbi jdbi) {
+        this.jdbi = jdbi;
         return this;
     }
 
@@ -124,9 +130,16 @@ public class DagSchedulerBuilder {
     }
 
     public DagSchedulerServer build() {
-        Objects.requireNonNull(dataSource, "Either dataSource or jdbi must be set");
-        Jdbi jdbi = Jdbi.create(dataSource);
-        bindingJdbiArguments(jdbi);
+        Jdbi jdbiToUse;
+        if (this.jdbi != null) {
+            // Use provided Jdbi instance
+            jdbiToUse = this.jdbi;
+        } else {
+            Objects.requireNonNull(dataSource, "Either dataSource or jdbi must be set");
+            // Create new Jdbi from DataSource
+            jdbiToUse = Jdbi.create(dataSource);
+        }
+        bindingJdbiArguments(jdbiToUse);
         var config = new DagServerConfig(scanIntervalSeconds, maxSystemConcurrentTasks, databaseType, heartbeatTimeoutSeconds, heartbeatIntervalSeconds, maxHeartbeatFailedTimes);
 
         // Create ObjectMapper if not provided
@@ -135,19 +148,19 @@ public class DagSchedulerBuilder {
         }
 
         // Create DAOs if not overridden
-        var agentRegistryDao = new AgentRegistryDaoJdbiImpl(jdbi);
-        var taskTemplateDao = new TaskTemplateDaoJdbiImpl(jdbi);
-        var taskOrderDao = new TaskOrderDaoJdbiImpl(jdbi);
-        var taskRecordDao = new TaskRecordDaoJdbiImpl(jdbi);
+        var agentRegistryDao = new AgentRegistryDaoJdbiImpl(jdbiToUse);
+        var taskTemplateDao = new TaskTemplateDaoJdbiImpl(jdbiToUse);
+        var taskOrderDao = new TaskOrderDaoJdbiImpl(jdbiToUse);
+        var taskRecordDao = new TaskRecordDaoJdbiImpl(jdbiToUse);
 
-        var taskOrderService = new TaskOrderServiceImpl(jdbi, taskRecordDao, taskOrderDao);
+        var taskOrderService = new TaskOrderServiceImpl(jdbiToUse, taskRecordDao, taskOrderDao);
         var agentRegistryService = new DefaultAgentRegistryService(taskRecordDao, agentRegistryDao);
         var taskTemplateService = new TaskTemplateServiceImpl(
             taskTemplateDao, taskOrderDao, taskRecordDao, objectMapper);
-        var taskDagService = new TaskDagServiceImpl(config, jdbi, taskOrderDao, taskRecordDao, agentRegistryDao, taskTemplateDao);
+        var taskDagService = new TaskDagServiceImpl(config, jdbiToUse, taskOrderDao, taskRecordDao, agentRegistryDao, taskTemplateDao);
         return new DagSchedulerServer(
             config,
-            jdbi,
+            jdbiToUse,
             objectMapper,
             agentRegistryDao,
             taskOrderDao,

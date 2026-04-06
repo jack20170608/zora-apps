@@ -255,6 +255,10 @@ public class DagSchedulerServer {
         return taskDagService;
     }
 
+    public TaskOrderService getTaskOrderService() {
+        return taskOrderService;
+    }
+
     /**
      * Interface for components that need lifecycle management.
      */
