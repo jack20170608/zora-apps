@@ -21,6 +21,7 @@ import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import javax.sql.DataSource;
 import java.sql.Types;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -115,6 +116,13 @@ public class DagSchedulerBuilder {
                 return (position, statement, ctx) -> statement.setString(position, JacksonUtil.toJson(value));
             }
         });
+        jdbi.registerArgument(new AbstractArgumentFactory<List<String>>(Types.VARCHAR) {
+            @Override
+            protected Argument build(List<String> value, ConfigRegistry config) {
+                return (position, statement, ctx) -> statement.setString(position, JacksonUtil.toJson(value));
+            }
+        });
+
         jdbi.registerArgument(new AbstractArgumentFactory<YearMonth>(Types.VARCHAR) {
             @Override
             protected Argument build(YearMonth value, ConfigRegistry config) {

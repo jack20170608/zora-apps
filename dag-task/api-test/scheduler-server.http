@@ -10,8 +10,8 @@ Content-Type: application/json
 Authorization: Basic {{username}} {{password}}
 
 {
-  "agentId": "default-agent-001",
-  "agentUrl": "http://localhost:9000",
+  "agentId": "default-agent-101",
+  "agentUrl": "http://localhost:9000/hahaha",
   "maxConcurrentTasks": 10,
   "maxPendingTasks": 100,
   "supportedExecutionKeys": ["shell", "python", "java", "docker"]
