@@ -13,7 +13,7 @@
 
     <modules>
         <module>dag-si</module>
-        <module>dag-scheduler-core</module>
+        <module>dag-scheduler</module>
         <module>dag-scheduler-muserver</module>
         <module>dag-agent</module>
         <module>dag-agent-muserver</module>
@@ -43,7 +43,7 @@
             </dependency>
             <dependency>
                 <groupId>top.ilovemyhome.dagtask</groupId>
-                <artifactId>dag-scheduler-core</artifactId>
+                <artifactId>dag-scheduler</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

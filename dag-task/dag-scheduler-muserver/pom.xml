@@ -18,7 +18,7 @@
         <!-- DAG Core -->
         <dependency>
             <groupId>top.ilovemyhome.dagtask</groupId>
-            <artifactId>dag-scheduler-core</artifactId>
+            <artifactId>dag-scheduler</artifactId>
         </dependency>
 
         <!-- zora common -->

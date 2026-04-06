@@ -10,8 +10,8 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>dag-scheduler-core</artifactId>
-    <name>dag-scheduler-core - DAG Scheduler Core Implementation</name>
+    <artifactId>dag-scheduler</artifactId>
+    <name>dag-scheduler - DAG Scheduler Core Implementation</name>
     <description>Core implementation of DAG task scheduling system including task definition, dependency management, scheduling algorithm and execution engine</description>
 
     <dependencies>
