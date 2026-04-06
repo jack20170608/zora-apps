@@ -1,6 +1,9 @@
-package top.ilovemyhome.dagtask.si;
+package top.ilovemyhome.dagtask.si.service;
 
 
+import top.ilovemyhome.dagtask.si.TaskInput;
+import top.ilovemyhome.dagtask.si.TaskOutput;
+import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 
 import java.util.List;

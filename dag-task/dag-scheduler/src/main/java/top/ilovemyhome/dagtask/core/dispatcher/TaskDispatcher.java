@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  * Filtering logic:
  * <ul>
  *     <li>Only includes agents that are marked as running (active)</li>
- *     <li>Only includes agents whose {@link AgentInfo#supportedExecutionKeys()} contains
+ *     <li>Only includes agents whose {@link AgentInfo#getSupportedExecutionKeys()} contains
  *         the task's {@link TaskRecord#getExecutionKey()}</li>
  *     <li>Excludes agents that have already reached their maximum concurrent task limit</li>
  * </ul>
@@ -196,7 +196,7 @@ public class TaskDispatcher {
         Objects.requireNonNull(taskId, "taskId must not be null");
         Objects.requireNonNull(agent, "agent must not be null");
 
-        String url = buildAgentUrl(agent.agentUrl()) + "/api/kill/" + taskId;
+        String url = buildAgentUrl(agent.getAgentUrl()) + "/api/kill/" + taskId;
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -209,16 +209,16 @@ public class TaskDispatcher {
             int statusCode = response.statusCode();
 
             if (statusCode >= 200 && statusCode < 300) {
-                logger.info("Kill request accepted for task {} on agent {}", taskId, agent.agentId());
+                logger.info("Kill request accepted for task {} on agent {}", taskId, agent.getAgentId());
                 return true;
             }
 
             logger.warn("Kill request failed for task {} on agent {}, status code: {}",
-                taskId, agent.agentId(), statusCode);
+                taskId, agent.getAgentId(), statusCode);
             return false;
         } catch (IOException | InterruptedException e) {
             logger.error("IOException sending kill request to agent {} for task {}",
-                agent.agentId(), taskId, e);
+                agent.getAgentId(), taskId, e);
             Thread.currentThread().interrupt();
             return false;
         }
@@ -258,7 +258,7 @@ public class TaskDispatcher {
         Objects.requireNonNull(taskId, "taskId must not be null");
         Objects.requireNonNull(agent, "agent must not be null");
 
-        String url = buildAgentUrl(agent.agentUrl()) + "/api/force-ok/" + taskId;
+        String url = buildAgentUrl(agent.getAgentUrl()) + "/api/force-ok/" + taskId;
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -271,16 +271,16 @@ public class TaskDispatcher {
             int statusCode = response.statusCode();
 
             if (statusCode >= 200 && statusCode < 300) {
-                logger.info("Force-ok request accepted for task {} on agent {}", taskId, agent.agentId());
+                logger.info("Force-ok request accepted for task {} on agent {}", taskId, agent.getAgentId());
                 return true;
             }
 
             logger.warn("Force-ok request failed for task {} on agent {}, status code: {}",
-                taskId, agent.agentId(), statusCode);
+                taskId, agent.getAgentId(), statusCode);
             return false;
         } catch (IOException | InterruptedException e) {
             logger.error("IOException sending force-ok request to agent {} for task {}",
-                agent.agentId(), taskId, e);
+                agent.getAgentId(), taskId, e);
             Thread.currentThread().interrupt();
             return false;
         }
@@ -299,9 +299,9 @@ public class TaskDispatcher {
      */
     private List<AgentInfo> filterCandidates(List<AgentInfo> activeAgents, String executionKey) {
         return activeAgents.stream()
-            .filter(agent -> agent.supportedExecutionKeys() == null
-                || agent.supportedExecutionKeys().isEmpty()
-                || agent.supportedExecutionKeys().contains(executionKey))
+            .filter(agent -> agent.getSupportedExecutionKeys() == null
+                || agent.getSupportedExecutionKeys().isEmpty()
+                || agent.getSupportedExecutionKeys().contains(executionKey))
             .collect(Collectors.toList());
     }
 
@@ -314,7 +314,7 @@ public class TaskDispatcher {
      */
     private List<AgentInfo> filterByCapacity(List<AgentInfo> candidates) {
         return candidates.stream()
-            .filter(agent -> agent.runningTasks() < agent.maxConcurrentTasks())
+            .filter(agent -> agent.getRunningTasks() < agent.getMaxConcurrentTasks())
             .collect(Collectors.toList());
     }
 
@@ -327,7 +327,7 @@ public class TaskDispatcher {
      * @return the dispatch result
      */
     private DispatchResult submitToAgent(TaskRecord task, AgentInfo agent) {
-        String agentUrl = agent.agentUrl();
+        String agentUrl = agent.getAgentUrl();
         String submitUrl = buildAgentUrl(agentUrl) + "/api/submit";
 
         // Build the submission request matching what the agent expects
@@ -349,8 +349,8 @@ public class TaskDispatcher {
         // Create and save dispatch record before sending the request
         TaskDispatchRecord dispatchRecord = TaskDispatchRecord.builder()
             .withTaskId(task.getId())
-            .withAgentId(agent.agentId())
-            .withAgentUrl(agent.agentUrl())
+            .withAgentId(agent.getAgentId())
+            .withAgentUrl(agent.getAgentUrl())
             .withStatus(TaskDispatchRecord.DispatchStatus.DISPATCHED)
             .build();
         taskDispatchDao.create(dispatchRecord);
@@ -370,7 +370,7 @@ public class TaskDispatcher {
                 // Accepted - task is queued
                 taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.ACCEPTED);
                 logger.info("Task {} dispatched successfully to agent {} at {}",
-                    task.getId(), agent.agentId(), agentUrl);
+                    task.getId(), agent.getAgentId(), agentUrl);
                 return DispatchResult.success(agent, task.getId());
             }
 
@@ -378,30 +378,30 @@ public class TaskDispatcher {
                 // Too Many Requests - agent's pending queue is full
                 taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.REJECTED);
                 logger.warn("Agent {} rejected task {}: pending queue is full (429)",
-                    agent.agentId(), task.getId());
+                    agent.getAgentId(), task.getId());
                 return DispatchResult.agentQueueFull(agent);
             }
 
             if (statusCode == 400) {
                 taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.REJECTED);
                 logger.warn("Agent {} rejected task {}: bad request (400), response: {}",
-                    agent.agentId(), task.getId(), response.body());
+                    agent.getAgentId(), task.getId(), response.body());
                 return DispatchResult.badRequest(agent, response.body());
             }
 
             taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.FAILED);
             logger.warn("Agent {} rejected task {}: unexpected status code {}",
-                agent.agentId(), task.getId(), statusCode);
+                agent.getAgentId(), task.getId(), statusCode);
             return DispatchResult.unexpectedHttpStatus(agent, statusCode, response.body());
         } catch (IOException e) {
             taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.FAILED);
             logger.error("IOException connecting to agent {} at {} for task {}",
-                agent.agentId(), agentUrl, task.getId(), e);
+                agent.getAgentId(), agentUrl, task.getId(), e);
             return DispatchResult.connectionFailed(agent, e.getMessage());
         } catch (InterruptedException e) {
             taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.FAILED);
             logger.error("Interrupted while connecting to agent {} for task {}",
-                agent.agentId(), task.getId(), e);
+                agent.getAgentId(), task.getId(), e);
             Thread.currentThread().interrupt();
             return DispatchResult.interrupted();
         }
@@ -471,7 +471,7 @@ public class TaskDispatcher {
         public static DispatchResult success(AgentInfo agent, Long taskId) {
             return new DispatchResult(true, agent, taskId,
                 String.format("Task %d dispatched successfully to agent %s at %s",
-                    taskId, agent.agentId(), agent.agentUrl()));
+                    taskId, agent.getAgentId(), agent.getAgentUrl()));
         }
 
         public static DispatchResult noAvailableAgent(String reason) {
@@ -502,25 +502,25 @@ public class TaskDispatcher {
         public static DispatchResult agentQueueFull(AgentInfo agent) {
             return new DispatchResult(false, agent, null,
                 String.format("Agent %s at %s has full pending queue",
-                    agent.agentId(), agent.agentUrl()));
+                    agent.getAgentId(), agent.getAgentUrl()));
         }
 
         public static DispatchResult badRequest(AgentInfo agent, String response) {
             return new DispatchResult(false, agent, null,
                 String.format("Agent %s returned 400 Bad Request: %s",
-                    agent.agentId(), response));
+                    agent.getAgentId(), response));
         }
 
         public static DispatchResult unexpectedHttpStatus(AgentInfo agent, int statusCode, String body) {
             return new DispatchResult(false, agent, null,
                 String.format("Agent %s returned unexpected status code %d: %s",
-                    agent.agentId(), statusCode, body));
+                    agent.getAgentId(), statusCode, body));
         }
 
         public static DispatchResult connectionFailed(AgentInfo agent, String error) {
             return new DispatchResult(false, agent, null,
                 String.format("Connection failed to agent %s at %s: %s",
-                    agent.agentId(), agent.agentUrl(), error));
+                    agent.getAgentId(), agent.getAgentUrl(), error));
         }
 
         public static DispatchResult interrupted() {

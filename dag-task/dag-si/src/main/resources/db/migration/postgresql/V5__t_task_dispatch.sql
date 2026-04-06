@@ -7,8 +7,11 @@
 --   3. Statistics: analyze load distribution across agents
 --   4. Debugging: troubleshoot dispatch issues
 
+-- Create sequence for auto-generated primary key
+CREATE SEQUENCE IF NOT EXISTS seq_t_task_dispatch_id;
+
 CREATE TABLE t_task_dispatch (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT NOT NULL DEFAULT nextval('seq_t_task_dispatch_id'),
     task_id BIGINT NOT NULL,
     agent_id VARCHAR(255) NOT NULL,
     agent_url VARCHAR(1024) NOT NULL,

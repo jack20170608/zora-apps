@@ -154,7 +154,7 @@ public class DagSchedulerBuilder {
         var taskRecordDao = new TaskRecordDaoJdbiImpl(jdbiToUse);
 
         var taskOrderService = new TaskOrderServiceImpl(jdbiToUse, taskRecordDao, taskOrderDao);
-        var agentRegistryService = new DefaultAgentRegistryService(taskRecordDao, agentRegistryDao);
+        var agentRegistryService = new DefaultAgentRegistryService(jdbi, taskRecordDao, agentRegistryDao);
         var taskTemplateService = new TaskTemplateServiceImpl(
             taskTemplateDao, taskOrderDao, taskRecordDao, objectMapper);
         var taskDagService = new TaskDagServiceImpl(config, jdbiToUse, taskOrderDao, taskRecordDao, agentRegistryDao, taskTemplateDao);

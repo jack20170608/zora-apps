@@ -32,6 +32,7 @@ public class AgentRegistryDaoJdbiImpl extends BaseDaoJdbiImpl<AgentInfo> impleme
             .withName("t_agent_registry")
             .withIdField("id")
             .withIdAutoGenerate(true)
+            .withFieldColumnMap(AgentInfo.FIELD_COLUMN_MAP)
             .build(), jdbi);
     }
 
@@ -107,25 +108,26 @@ public class AgentRegistryDaoJdbiImpl extends BaseDaoJdbiImpl<AgentInfo> impleme
     private static class AgentInfoRowMapper implements RowMapper<AgentInfo> {
         @Override
         public AgentInfo map(ResultSet rs, org.jdbi.v3.core.statement.StatementContext ctx) throws SQLException {
-            return new AgentInfo(
-                rs.getString("agent_id"),
-                rs.getString("agent_url"),
-                rs.getInt("max_concurrent_tasks"),
-                rs.getInt("max_pending_tasks"),
-                parseSupportedExecutionKeys(rs.getString("supported_execution_keys")),
-                rs.getTimestamp("registered_at").toInstant(),
-                rs.getTimestamp("last_heartbeat_at").toInstant(),
-                rs.getBoolean("running"),
-                rs.getInt("pending_tasks"),
-                rs.getInt("running_tasks"),
-                rs.getInt("finished_tasks")
-            );
+            return AgentInfo.builder()
+                .withId(rs.getLong(AgentInfo.Field.id.getDbColumn()))
+                .withAgentId(rs.getString(AgentInfo.Field.agentId.getDbColumn()))
+                .withAgentUrl(rs.getString(AgentInfo.Field.agentUrl.getDbColumn()))
+                .withMaxConcurrentTasks(rs.getInt(AgentInfo.Field.maxConcurrentTasks.getDbColumn()))
+                .withMaxPendingTasks(rs.getInt(AgentInfo.Field.maxPendingTasks.getDbColumn()))
+                .withSupportedExecutionKeys(parseSupportedExecutionKeys(rs.getString(AgentInfo.Field.supportedExecutionKeys.getDbColumn())))
+                .withRegisteredAt(rs.getTimestamp(AgentInfo.Field.registeredAt.getDbColumn()).toInstant())
+                .withLastHeartbeatAt(rs.getTimestamp(AgentInfo.Field.lastHeartbeatAt.getDbColumn()).toInstant())
+                .withRunning(rs.getBoolean(AgentInfo.Field.running.getDbColumn()))
+                .withPendingTasks(rs.getInt(AgentInfo.Field.pendingTasks.getDbColumn()))
+                .withRunningTasks(rs.getInt(AgentInfo.Field.runningTasks.getDbColumn()))
+                .withFinishedTasks(rs.getInt(AgentInfo.Field.finishedTasks.getDbColumn()))
+                .build();
         }
 
         /**
-         * Parses the JSON array string from database into a List<String>.
-         * Simple comma-split for now since it's just keys.
-         * Could be replaced with JSON parsing if needed.
+         * Parses the comma-separated string from database into a List<String>.
+         * Currently stored as comma-separated for simplicity.
+         * Could be replaced with JSON parsing if needed in the future.
          */
         private List<String> parseSupportedExecutionKeys(String input) {
             if (input == null || input.isBlank()) {

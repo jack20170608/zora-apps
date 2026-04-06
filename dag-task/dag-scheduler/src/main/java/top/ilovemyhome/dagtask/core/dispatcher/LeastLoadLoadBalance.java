@@ -28,7 +28,7 @@ public class LeastLoadLoadBalance implements LoadBalanceStrategy {
      * The agent with the fewest running tasks comes first.
      */
     private static final Comparator<AgentInfo> LEAST_RUNNING_COMPARATOR =
-        Comparator.comparingInt(AgentInfo::runningTasks);
+        Comparator.comparingInt(AgentInfo::getRunningTasks);
 
     @Override
     public AgentInfo select(List<AgentInfo> candidates) {

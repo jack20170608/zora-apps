@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.dao.TaskRecordDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.server.DagServerConfig;
-import top.ilovemyhome.dagtask.si.TaskDagService;
+import top.ilovemyhome.dagtask.si.service.TaskDagService;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.TaskRecord;
@@ -16,7 +16,7 @@ import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskTemplateDao;
 
-import javax.annotation.PostConstruct;
+//import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * {@link TaskDagService} implementation using <b>named semaphore</b> approach for dependency tracking.
@@ -113,7 +114,7 @@ public class NamedSemaphoreTaskDagServiceImpl implements TaskDagService {
      * by collecting all predecessors that are still incomplete for each task.
      * </p>
      */
-    @PostConstruct
+//    @PostConstruct
     public void initialize() {
         logger.info("Initializing named-semaphore-based DAG service from database...");
         incompleteDependencies.clear();
@@ -578,7 +579,7 @@ public class NamedSemaphoreTaskDagServiceImpl implements TaskDagService {
             h.createQuery(sql)
                 .bind("taskId", task.getId())
                 .mapTo(Long.class)
-                .collectInto(HashSet::new)
+                .collect(Collectors.toSet())
         );
     }
 

@@ -10,7 +10,7 @@ import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
-import top.ilovemyhome.dagtask.si.ResEntityHelper;
+import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
 import top.ilovemyhome.dagtask.si.agent.AgentRegistration;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
@@ -37,9 +37,9 @@ import top.ilovemyhome.dagtask.si.agent.TaskResultReport;
  */
 @Path("/api/v1/agent")
 @Produces(MediaType.APPLICATION_JSON)
-public class SchedulerAgentApi {
+public class AgentRegistryApi {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerAgentApi.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AgentRegistryApi.class);
 
     private final AgentRegistryService agentRegistryService;
 
@@ -49,7 +49,7 @@ public class SchedulerAgentApi {
      * @param agentRegistryService the service that handles agent registry operations
      */
     @Inject
-    public SchedulerAgentApi(AgentRegistryService agentRegistryService) {
+    public AgentRegistryApi(AgentRegistryService agentRegistryService) {
         this.agentRegistryService = agentRegistryService;
     }
 

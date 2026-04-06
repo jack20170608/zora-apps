@@ -14,8 +14,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
-import top.ilovemyhome.dagtask.core.interfaces.SchedulerAgentApi;
+import top.ilovemyhome.dagtask.core.DagSchedulerServer;
+import top.ilovemyhome.dagtask.core.interfaces.AgentRegistryApi;
 import top.ilovemyhome.dagtask.core.interfaces.TaskOrderApi;
 import top.ilovemyhome.dagtask.core.interfaces.TaskTemplateApi;
 import top.ilovemyhome.dagtask.server.interfaces.api.FooUserHandler;
@@ -82,14 +82,14 @@ public class WebServerBootstrap {
 
     private static RestHandlerBuilder createRestHandler(AppContext appContext) {
 
-        AgentRegistryService agentRegistryService = appContext.getBean("agentRegistryService", AgentRegistryService.class);
-        TaskOrderApi taskOrderApi = appContext.getBean("taskOrderApi", TaskOrderApi.class);
-        TaskTemplateApi taskTemplateApi = appContext.getBean("taskTemplateApi", TaskTemplateApi.class);
-        SchedulerAgentApi schedulerAgentApi = appContext.getBean("schedulerAgentApi", SchedulerAgentApi.class);
+        DagSchedulerServer schedulerServer = appContext.getBean("dagSchedulerServer", DagSchedulerServer.class);
+        TaskOrderApi taskOrderApi = new TaskOrderApi(schedulerServer.getTaskOrderDao());
+        TaskTemplateApi taskTemplateApi = new TaskTemplateApi(schedulerServer.getTaskTemplateService());
+        AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
 
         return RestHandlerBuilder
                 .restHandler(new FooUserHandler(appContext),
-                    schedulerAgentApi,
+                    agentRegistryApi,
                     taskOrderApi,
                     taskTemplateApi)
                 .addCustomReader(createJacksonJsonProvider())

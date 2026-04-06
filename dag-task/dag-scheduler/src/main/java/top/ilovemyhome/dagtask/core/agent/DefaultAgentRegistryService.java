@@ -1,6 +1,7 @@
 package top.ilovemyhome.dagtask.core.agent;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskOutput;
@@ -31,6 +32,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultAgentRegistryService.class);
 
+    private final Jdbi jdbi;
     private final TaskRecordDao taskRecordDao;
     private final AgentRegistryDao agentRegistryDao;
     private final ConcurrentHashMap<String, AgentInfo> agentCache = new ConcurrentHashMap<>();
@@ -41,7 +43,8 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      * @param taskRecordDao DAO for updating task records when results are reported
      * @param agentRegistryDao DAO for persisting agent registry information
      */
-    public DefaultAgentRegistryService(TaskRecordDao taskRecordDao, AgentRegistryDao agentRegistryDao) {
+    public DefaultAgentRegistryService(Jdbi jdbi, TaskRecordDao taskRecordDao, AgentRegistryDao agentRegistryDao) {
+        this.jdbi = jdbi;
         this.taskRecordDao = Objects.requireNonNull(taskRecordDao, "taskRecordDao must not be null");
         this.agentRegistryDao = Objects.requireNonNull(agentRegistryDao, "agentRegistryDao must not be null");
         // Warm the cache from database
@@ -53,7 +56,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      */
     private void loadAllFromDatabase() {
         List<AgentInfo> allAgents = agentRegistryDao.findAll();
-        allAgents.forEach(agent -> agentCache.put(agent.agentId(), agent));
+        allAgents.forEach(agent -> agentCache.put(agent.getAgentId(), agent));
         logger.info("Loaded {} agents from database into registry cache", allAgents.size());
     }
 
@@ -63,28 +66,28 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
             logger.warn("Cannot register agent: invalid registration (agentId is blank)");
             return false;
         }
-
         AgentInfo agentInfo = AgentInfo.fromRegistration(registration);
+        jdbi.useTransaction(h -> {
+            if (agentRegistryDao.exists(registration.agentId())) {
+                // Update existing agent in database
+                agentRegistryDao.updateStatus(
+                    registration.agentId(),
+                    true,
+                    0,
+                    0,
+                    0
+                );
+                logger.info("Agent [{}] already exists in database, reactivating", registration.agentId());
+            } else {
+                // Insert new agent into database
+                Long id = agentRegistryDao.create(agentInfo);
+                logger.info("Agent [{}] registered successfully Id:{}, URL: {}, max concurrent: {}",
+                    registration.agentId(), id, registration.agentUrl(), registration.maxConcurrentTasks());
+            }
+            // Update cache
+            agentCache.put(registration.agentId(), agentInfo);
+        });
 
-        if (agentRegistryDao.exists(registration.agentId())) {
-            // Update existing agent in database
-            agentRegistryDao.updateStatus(
-                registration.agentId(),
-                true,
-                0,
-                0,
-                0
-            );
-            logger.info("Agent [{}] already exists in database, reactivating", registration.agentId());
-        } else {
-            // Insert new agent into database
-            agentRegistryDao.create(agentInfo);
-        }
-
-        // Update cache
-        agentCache.put(registration.agentId(), agentInfo);
-        logger.info("Agent [{}] registered successfully. URL: {}, max concurrent: {}",
-            registration.agentId(), registration.agentUrl(), registration.maxConcurrentTasks());
         return true;
     }
 
@@ -193,7 +196,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      */
     public List<AgentInfo> listActiveAgents() {
         return agentCache.values().stream()
-            .filter(AgentInfo::running)
+            .filter(AgentInfo::isRunning)
             .toList();
     }
 

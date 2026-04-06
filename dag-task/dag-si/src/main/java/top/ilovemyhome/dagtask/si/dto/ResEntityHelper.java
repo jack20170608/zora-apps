@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.si;
+package top.ilovemyhome.dagtask.si.dto;
 
 public class ResEntityHelper {
 
