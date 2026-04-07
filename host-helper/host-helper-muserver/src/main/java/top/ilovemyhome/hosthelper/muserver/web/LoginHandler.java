@@ -7,7 +7,7 @@ import jakarta.ws.rs.core.Response;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.ilovemyhome.zora.commons.util.CollectionUtil;
+import top.ilovemyhome.commons.util.CollectionUtil;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
 import top.ilovemyhome.zora.muserver.security.authenticator.JwtAuthenticator;
 import top.ilovemyhome.zora.muserver.security.core.User;

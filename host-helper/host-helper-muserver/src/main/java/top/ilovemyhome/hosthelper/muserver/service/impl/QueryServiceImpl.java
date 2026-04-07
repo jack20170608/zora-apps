@@ -3,7 +3,7 @@ package top.ilovemyhome.hosthelper.muserver.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.ilovemyhome.zora.commons.system.OSUtil;
+import top.ilovemyhome.commons.system.OSUtil;
 import top.ilovemyhome.zora.jdbi.page.Page;
 import top.ilovemyhome.zora.jdbi.page.impl.PageRequest;
 import top.ilovemyhome.hosthelper.muserver.application.AppContext;
