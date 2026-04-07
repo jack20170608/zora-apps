@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.zora.common.system.OSUtil;
 import top.ilovemyhome.zora.jdbi.page.Page;
-import top.ilovemyhome.zora.jdbi.page.PageRequest;
+import top.ilovemyhome.zora.jdbi.page.impl.PageRequest;
 import top.ilovemyhome.hosthelper.muserver.application.AppContext;
 import top.ilovemyhome.hosthelper.si.domain.FileSearchCriteria;
 import top.ilovemyhome.hosthelper.si.domain.FileSearchResult;

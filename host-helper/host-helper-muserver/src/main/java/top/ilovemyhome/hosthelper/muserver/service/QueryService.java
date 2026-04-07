@@ -1,7 +1,7 @@
 package top.ilovemyhome.hosthelper.muserver.service;
 
 import top.ilovemyhome.zora.jdbi.page.Page;
-import top.ilovemyhome.zora.jdbi.page.PageRequest;
+import top.ilovemyhome.zora.jdbi.page.impl.PageRequest;
 import top.ilovemyhome.hosthelper.si.domain.FileSearchCriteria;
 import top.ilovemyhome.hosthelper.si.domain.FileSearchResult;
 import top.ilovemyhome.hosthelper.si.domain.HostItem;

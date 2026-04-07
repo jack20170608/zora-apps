@@ -2,8 +2,8 @@ package top.ilovemyhome.hosthelper.muserver.service.impl;
 
 import org.apache.commons.lang3.RandomUtils;
 import top.ilovemyhome.zora.jdbi.page.Page;
-import top.ilovemyhome.zora.jdbi.page.PageImpl;
-import top.ilovemyhome.zora.jdbi.page.PageRequest;
+import top.ilovemyhome.zora.jdbi.page.impl.PageImpl;
+import top.ilovemyhome.zora.jdbi.page.impl.PageRequest;
 import top.ilovemyhome.hosthelper.si.domain.FileSearchCriteria;
 import top.ilovemyhome.hosthelper.si.domain.FileSearchResult;
 import top.ilovemyhome.hosthelper.si.domain.FileType;
