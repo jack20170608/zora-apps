@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HostHelper v7</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="common/css/styles.css">
+    <style>
+        /* 保留原有样式并添加加载指示器样式 */
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 20px; }
+        #main-layout { width: 100%; margin: 5px auto; background: #fff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); padding: 28px 32px 32px 32px; box-sizing: border-box; transition: all 0.3s ease; animation: containerFadeIn 0.5s ease-out; }
+        .title { font-size: 2.2rem; font-weight: 700; margin-bottom: 24px; background: linear-gradient(90deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; color: transparent; text-align: left; letter-spacing: -0.5px; }
+        .row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+        .row label { font-weight: 500; margin-right: 6px; color: #333; }
+        .checkbox-group { display: flex; flex-direction: row; flex-wrap: wrap; gap: 15px; align-items: center; } .server-group { display: flex; align-items: center; margin: 4px 0; color: #0a3069; font-size: 14px; margin-right: 15px; white-space: nowrap; } .server-group strong { margin-right: 8px; } .server-group + div { margin-left: 0; } .server-group input[type="checkbox"] { margin-right: 5px; margin-left: 8px; }
+        .checkbox-group label { font-weight: 400; margin-right: 0; background: #f3f6fb; padding: 4px 10px 4px 6px; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+        .checkbox-group input[type="checkbox"] { margin-right: 3px; }
+        input[type="text"] { padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: #fff; min-width: 120px; transition: all 0.2s ease; }
+        input[type="text"]:focus { border-color: #667eea; outline: none; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2); background-color: #fff; }
+        button { padding: 10px 20px; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2); transition: all 0.3s ease; position: relative; overflow: hidden; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3); }        button::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 150%; background: rgba(255,255,255,0.1); transform: translate(-50%, -50%) scale(0); transition: transform 0.5s ease; border-radius: 50%; }        button:active::after { transform: translate(-50%, -50%) scale(1); }
+        #clearBtn { background: linear-gradient(90deg, #94a3b8 0%, #64748b 100%); }
+        #clearBtn:hover { background: linear-gradient(90deg, #64748b 0%, #475569 100%); }
+        #results { margin-top: 22px; display: flex; flex-direction: column; gap: 14px; }
+        .action-btn { display: inline-block; padding: 3px 10px; margin: 0 2px; border-radius: 4px; font-size: 13px; font-weight: 500; text-decoration: none; color: #fff; transition: background 0.18s; cursor: pointer; }
+        .action-view { background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); } .action-view:hover { background: linear-gradient(90deg, #5a6fe0 0%, #6a4298 100%); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2); }
+        .action-download { background: linear-gradient(90deg, #10b981 0%, #059669 100%); } .action-download:hover { background: linear-gradient(90deg, #059669 0%, #067d53 100%); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+        .action-tail { background: linear-gradient(90deg, #f59e42 0%, #ea580c 100%); } .action-tail:hover { background: linear-gradient(90deg, #ea580c 0%, #c2410c 100%); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(245, 158, 66, 0.2); }
+        .result-card table { width: 100%; min-width: 700px; border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); font-size: 13px; }
+        .result-card th, .result-card td { padding: 6px 5px; text-align: left; border-bottom: 1px solid #e5e7eb; font-size: 13px; vertical-align: top; }
+        .result-card th { background: #e0e7ff; font-weight: 600; color: #1e293b; position: sticky; top: 0; z-index: 1; }
+        .result-card tbody tr:nth-child(even) { background: #f6f8fa; }
+        .result-card tbody tr:hover { background: #dbeafe; transition: background 0.18s; }
+        .result-card { padding: 8px 10px; font-size: 13px; overflow-x: auto; }
+        .pagination-bar { display: flex; align-items: center; justify-content: flex-end; padding: 12px 18px; background: #f9fafb; border-top: 1px solid #f1f5f9; border-radius: 0 0 12px 12px; font-size: 15px; gap: 0; }
+        .pagination-bar select { margin-right: 0; margin-left: 0; }
+        .pagination-bar button.page-btn { background: #f1f5f9; color: #334155; border: none; border-radius: 8px; padding: 5px 12px; margin: 0 2px; font-size: 14px; cursor: pointer; transition: all 0.2s ease; }
+        .pagination-bar button.page-btn:disabled { background: #f8fafc; color: #94a3b8; cursor: not-allowed; }        .pagination-bar button.page-btn:not(:disabled):hover { background: #e0e7ff; color: #1e40af; transform: translateY(-1px); }
+        /* Tree select styles */
+        .tree-select-container { position: relative; display: inline-block; min-width: 220px; }
+        .tree-select-input { width: 93%; padding: 6px 10px; border: 1px solid #b6c2d2; border-radius: 5px; font-size: 13px; background: #f6f8fa; }
+.folder-suggestions { position: absolute; top: calc(100% + 5px); left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 150px; overflow-y: auto; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.folder-suggestion-item { padding: 6px 12px; cursor: pointer; }
+.folder-suggestion-item:hover { background-color: #f0f7ff; }
+        .tree-dropdown { display: none; position: absolute; top: 110%; left: 0; z-index: 10; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); min-width: 220px; max-height: 320px; overflow: auto; animation: fadeIn 0.2s ease-in-out; }
+        .tree-dropdown ul { list-style: none; margin: 0; padding-left: 16px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; line-height: 1.4; }
+        .tree-dropdown li { padding: 4px 8px; cursor: pointer; user-select: none; display: flex; align-items: center; transition: all 0.2s ease; border-left: 2px solid transparent; }
+        .tree-dropdown li:hover { background: #f0f7ff; border-left-color: #93c5fd; } .tree-dropdown .selected { background: #dbeafe; border-left-color: #3b82f6; font-weight: 500; }
+        .tree-dropdown .folder { font-weight: 500; }
+        .tree-dropdown .children { margin-left: 16px; padding-left: 2px; border-left: 1px dashed #cbd5e1; }
+        .tree-dropdown .toggle { display: inline-block; width: 14px; height: 14px; text-align: center; cursor: pointer; color: #4b5563; font-size: 13px; margin-right: 2px; transition: transform 0.2s ease; } .tree-dropdown .toggle:hover { color: #2563eb; }
+        .tree-dropdown .icon-folder { color: #f59e0b; margin-right: 4px; font-size: 15px; text-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .tree-dropdown .icon-file { color: #2563eb; margin-right: 4px; font-size: 15px; }
+        .tree-dropdown .node-label { margin-left: 0; vertical-align: middle; cursor: pointer; padding: 2px 0; font-smoothing: antialiased; -webkit-font-smoothing: antialiased; }
+        /* Loading indicator */
+        .loading { display: none; padding: 15px; text-align: center; color: #667eea; font-weight: 500; animation: fadeIn 0.5s ease-in-out; }
+        .loading::after { content: ""; display: inline-block; width: 16px; height: 16px; border: 3px solid rgba(102, 126, 234, 0.3); border-radius: 50%; border-top-color: #667eea; animation: spin 1s ease-in-out infinite; margin-left: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }        @keyframes containerFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Responsive adjustments */
+        @media (max-width: 900px) { #main-layout { padding: 18px 2vw; max-width: 100vw; } }
+        @media (max-width: 700px) { #main-layout { padding: 8px 1vw; } .title { font-size: 1.2rem; } .row { flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 10px; } .result-card table { min-width: 500px; font-size: 12px; } .result-card th, .result-card td { padding: 4px 3px; font-size: 12px; } .action-btn { font-size: 12px; padding: 2px 7px; } }
+        @media (max-width: 500px) { #main-layout { padding: 4px 0; border-radius: 0; } .result-card table { min-width: 350px; } }
+    </style>
+    <script src="common/js/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+<div id="main-layout">
+    <div class="title">HostHelper v7</div>
+    <div class="row" id="server-row">
+
+        <div class="checkbox-group" id="serverCheckboxes"></div>
+    </div>
+    <div class="row">
+        <div style="display:flex;align-items:center;gap:6px;">
+            <label for="folderTreeSelect">Path:</label>
+            <div class="tree-select-container">
+                <input type="text" id="folderTreeSelect" class="tree-select-input" placeholder="双击显示列表，手动输入或选择路径...">
+                <div class="tree-dropdown" id="treeDropdown"></div>
+<div id="folderSuggestions" class="folder-suggestions" style="display: none;"></div>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+            <label for="fileInput">content:</label>
+            <input type="text" id="fileInput" placeholder="输入要搜索的文件内容关键字...">
+        </div>
+        <button id="searchBtn">Search</button>
+        <button id="clearBtn" style="background: #64748b;">Clear</button>
+    </div>
+    <div class="loading" id="loadingIndicator">Searching files</div>
+    <div id="results"></div>
+</div>
+<script>
+// 配置化常量
+const AppConfig = {
+    folderTree: [
+        {"name": "project","children": [
+            {"name": "src","children": [
+                {"name": "main","children": [{"name": "java"},{"name": "resources",
+                        "children": [{"name": "config",
+                            "children":[{"name": "app1"}, {"name": "app2"}, {"name": "app3" }]},{"name": "templates"}]}]},
+                {"name": "test","children": [{"name": "java"},{"name": "resources"}]},
+            ]},
+            {"name": "docs"},
+            {"name": "tests"}
+        ]},
+        {"name": "archive","children": [{"name": "2023"},{"name": "2024"}]}
+    ],
+    defaultPageSize: 20,
+    pageSizes: [10, 20, 50, 100, 200, 500],
+    searchDelay: 300 // 防抖动延迟
+};
+
+// 应用状态管理
+const AppState = {
+    serverGroups: null ,
+    currentPage: 1,
+    pageSize: AppConfig.defaultPageSize,
+    searchResults: [],
+    totalElements: 0,
+    totalPages: 0
+};
+
+//搜索功能实现
+async function performSearch() {
+    const checkedServers = $('#serverCheckboxes input[type=checkbox]:checked').map((_, el) => el.value).get();
+    const folder = $('#folderTreeSelect').val();
+    const fileNameInput = $('#fileInput').val().trim();
+    const $results = $('#results');
+
+    // 输入验证
+    if (checkedServers.length === 0) {
+        $results.html('<div class="result-card" style="color:#dc2626;padding:15px;">⚠️ 请至少选择一个服务器</div>');
+        return;
+    }
+    if (!folder) {
+        $results.html('<div class="result-card" style="color:#dc2626;padding:15px;">⚠️ 请选择文件夹路径</div>');
+        return;
+    }
+    // if (!fileNameInput) {
+    //     $results.html('<div class="result-card" style="color:#dc2626;padding:15px;">⚠️ 请输入搜索关键字</div>');
+    //     return;
+    // }
+
+    // 显示加载状态
+    $('#loadingIndicator').show();
+    $results.empty();
+
+    try {
+        const response = await fetch(`query/api/v1/search?page=${AppState.currentPage}&pageSize=${AppState.pageSize}&sortBy=name&direction=ASC`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                hostLabel: checkedServers[0],
+                filePathPattern: folder,
+                keywords: fileNameInput
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        AppState.searchResults = data.content;
+        AppState.totalPages = data.totalPages;
+        AppState.totalElements = data.totalElements;
+
+        // 隐藏加载状态并渲染结果
+        $('#loadingIndicator').hide();
+        renderResultsPage(AppState.currentPage);
+    } catch (error) {
+        console.error('Search failed:', error);
+        $('#loadingIndicator').hide();
+        $results.html('<div class="result-card" style="color:#dc2626;padding:15px;">⚠️ 搜索失败，请稍后重试</div>');
+    }
+}
+
+// 渲染结果表格
+function renderResultsPage(page = 1) {
+    AppState.currentPage = page;
+    // const totalPages = Math.ceil(AppState.totalItems / AppState.pageSize);
+    const pageResults = AppState.searchResults;
+
+    let tableRows = pageResults.map((r, idx) => `
+        <tr>
+            <td style="padding:6px;">${r.name}</td>
+            <td style="padding:6px;">${r.type}</td>
+            <td style="padding:6px;">${r.hostLabel}</td>
+            <td style="padding:6px;">${formatFileSize(r.sizeInBytes)}</td>
+            <td style="padding:6px;">${r.lastModifiedTime}</td>
+            <td style="padding:6px;">${r.createdTime}</td>
+            <td style="padding:6px;">
+                <a href="#" class="action-btn action-view" data-idx="${idx}">View</a>
+                <a href="#" class="action-btn action-download" data-idx="${idx}">Download</a>
+                <a href="#" class="action-btn action-tail" data-idx="${idx}">Tail</a>
+            </td>
+        </tr>`).join('');
+
+    // 分页控件
+    const paginationBar = `
+        <div class="pagination-bar">
+            <span style="margin-right:12px;font-weight:300;">Rows per page</span>
+            <select id="pageSizeSelect" style="width:70px;">
+                ${AppConfig.pageSizes.map(size => `<option value="${size}" ${size === AppState.pageSize ? 'selected' : ''}>${size}</option>`).join('')}
+            </select>
+            <span style="margin:0 10px;">
+                ${AppState.totalElements === 0 ? '0-0' : ((page - 1) * AppState.pageSize + 1) + '-' + Math.min(page * AppState.pageSize, AppState.totalElements)}/${AppState.totalElements}
+            </span>
+            <button class="page-btn" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>&lt;</button>
+            <button class="page-btn" data-page="${page + 1}" ${page >= AppState.totalPages ? 'disabled' : ''}>&gt;</button>
+        </div>`;
+
+    $('#results').html(`
+        <div class="result-card" style="padding:0;">
+            <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr style="background:#e0e7ff;">
+                        <th style="padding:8px 6px; text-align:left;">File Name</th>
+                        <th style="padding:8px 6px; text-align:left;">File Type</th>
+                        <th style="padding:8px 6px; text-align:left;">Server</th>
+                        <th style="padding:8px 6px; text-align:left;">Size</th>
+                        <th style="padding:8px 6px; text-align:left;">Last Modified</th>
+                        <th style="padding:8px 6px; text-align:left;">Create Time</th>
+                        <th style="padding:8px 6px; text-align:left;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>${tableRows || '<tr><td colspan="6" style="text-align:center;padding:15px;">No results found</td></tr>'}</tbody>
+            </table>
+            ${paginationBar}
+        </div>`);
+}
+
+// 工具函数 - 文件类型检测
+function getFileType(fileName) {
+    const idx = fileName.lastIndexOf('.');
+    return idx !== -1 ? fileName.substring(idx + 1).toLowerCase() : 'unknown';
+}
+
+// 工具函数 - 文件大小格式化
+function formatFileSize(bytes) {
+    if (bytes >= 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+    if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    if (bytes >= 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return bytes + ' B';
+}
+
+// 渲染文件夹树
+function buildTree(nodes, path = '', level = 1) {
+    let html = '<ul>';
+    nodes.forEach(node => {
+        const fullPath = path ? path + '/' + node.name : node.name;
+        const hasChildren = node.children && node.children.length > 0;
+        const expanded = level <= 2;
+        html += `<li data-path="${fullPath}" class="folder">
+            ${hasChildren ? `<span class="toggle">${expanded ? '▼' : '▶'}</span>` : '<span style="display:inline-block;width:14px;"></span>'}
+            <span class="icon-folder">📁</span>
+            <span class="node-label">${node.name}</span>
+            ${hasChildren ? `<div class="children" style="display:${expanded ? 'block' : 'none'};">${buildTree(node.children, fullPath, level + 1)}</div>` : ''}
+        </li>`;
+    });
+    return html + '</ul>';
+}
+
+// 初始化文件夹选择器
+function initTreeSelector() {
+    const $input = $('#folderTreeSelect');
+    const $dropdown = $('#treeDropdown');
+    $dropdown.html(buildTree(AppConfig.folderTree));
+
+    // 双击显示下拉列表
+    $input.on('dblclick', () => $dropdown.toggle());
+
+    // 输入提示功能
+    $input.on('input', function() {
+        const inputVal = $(this).val().toLowerCase();
+        const suggestionsContainer = $('#folderSuggestions');
+
+        if (!inputVal) {
+            suggestionsContainer.hide();
+            return;
+        }
+
+        // 收集所有文件夹路径
+        const allPaths = [];
+        function traverseTree(node, currentPath = '') {
+            const newPath = currentPath ? `${currentPath}/${node.name}` : node.name;
+            allPaths.push(newPath);
+            if (node.children && node.children.length) {
+                node.children.forEach(child => traverseTree(child, newPath));
+            }
+        }
+
+        AppConfig.folderTree.forEach(root => traverseTree(root));
+
+        // 过滤匹配的路径
+        const matchedPaths = allPaths.filter(path =>
+            path.toLowerCase().includes(inputVal)
+        );
+
+        if (matchedPaths.length) {
+            suggestionsContainer.html(matchedPaths.map(path =>
+                `<div class="folder-suggestion-item" data-path="${path}">${path}</div>`
+            ).join('')).show();
+        } else {
+            suggestionsContainer.hide();
+        }
+    });
+
+    // 点击选择提示项
+    $('#folderSuggestions').on('click', '.folder-suggestion-item', function() {
+        const path = $(this).data('path');
+        $input.val(path);
+        $('#folderSuggestions').hide();
+    });
+
+    // 点击页面其他地方隐藏提示
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.tree-select-container').length) {
+            $('#folderSuggestions').hide();
+        }
+    });
+
+    // 回车隐藏下拉列表
+    $input.on('keypress', function(e) {
+        if (e.key === 'Enter') {
+            $dropdown.hide();
+            $('#folderSuggestions').hide();
+        }
+    });
+    $(document).on('click', e => !$(e.target).closest('.tree-select-container').length && $dropdown.hide());
+
+    $dropdown.on('click', e => {
+        const $li = $(e.target).closest('li');
+        if (!$li.length) return;
+
+        if ($(e.target).hasClass('toggle')) {
+            const $children = $li.children('.children');
+            if ($children.length) {
+                const isOpen = $children.css('display') === 'block';
+                $children.toggle();
+                $(e.target).text(isOpen ? '▶' : '▼');
+            }
+        } else {
+            $dropdown.find('.selected').removeClass('selected');
+            $li.addClass('selected');
+            const selectedPath = $li.attr('data-path');
+            $input.val(selectedPath);
+            $('#folderSuggestions').hide();
+            $dropdown.hide();
+        }
+    });
+}
+
+// 绑定分页事件
+$(document).on('change', '#pageSizeSelect', function() {
+    AppState.pageSize = parseInt($(this).val());
+    AppState.currentPage = 1; // 切换每页数量时重置到第一页
+    performSearch(); // 调用搜索函数获取新数据
+});
+
+$(document).on('click', '.page-btn', function() {
+    const page = parseInt($(this).data('page'));
+    if (page > 0 && page <= AppState.totalPages) {
+        AppState.currentPage = page;
+        performSearch(); // 调用搜索函数获取新数据
+    }
+});
+
+// 初始化应用
+$(function() {
+    //Get the hosts info from
+    $.get('query/api/v1/allHosts', function(data) {
+        AppState.serverGroups = data;
+        renderServerCheckboxes();
+    }).fail(function(error) {
+        console.error('Failed to fetch server groups:', error);
+        $('#serverCheckboxes').html('<div style="color: red;">Get the hosts list failure, please check!</div>');
+    });
+
+    function renderServerCheckboxes() {
+        if (!AppState.serverGroups) return;
+        for (const groupName in AppState.serverGroups) {
+            const servers = AppState.serverGroups[groupName];
+            const groupNameLower = groupName.toLowerCase();
+            const $groupContainer = $(`<div class="server-group" data-group="${groupNameLower}">
+                <input type="checkbox" id="group-${groupNameLower}" class="group-checkbox" ${groupNameLower === 'sit' ? 'checked' : ''}>
+                <label for="group-${groupNameLower}"><strong>${groupName}</strong></label>
+            </div>`);
+
+            servers.forEach((server, idx) => {
+                const id = `server_${groupName}_${idx}`;
+                $groupContainer.append(`
+                    <input type="checkbox" id="${id}" value="${server.key}" ${groupNameLower === 'sit' ? 'checked' : ''}>
+                    <label for="${id}">${server.key}</label>
+                `);
+            });
+
+            $('#serverCheckboxes').append($groupContainer);
+        }
+
+        // 分组复选框与服务器复选框联动
+        $('.group-checkbox').change(function() {
+            const $group = $(this).closest('.server-group');
+            const isChecked = $(this).prop('checked');
+            $group.find('input[type="checkbox"]:not(.group-checkbox)').prop('checked', isChecked);
+        });
+    }
+
+    // 初始化文件夹选择器
+    initTreeSelector();
+
+    // 绑定搜索按钮事件
+    $('#searchBtn').on('click', performSearch);
+
+    // 绑定清除按钮事件
+    $('#clearBtn').on('click', () => {
+        $('#fileInput').val('');
+        $('#folderTreeSelect').val('');
+        $('#results').empty();
+        AppState.searchResults = [];
+    });
+
+    // 绑定分页事件
+    $(document).on('change', '#pageSizeSelect', function() {
+        AppState.pageSize = parseInt($(this).val());
+        renderResultsPage(1);
+    });
+
+    $(document).on('click', '.page-btn', function() {
+        const page = parseInt($(this).data('page'));
+        if (page > 0 && page <= Math.ceil(AppState.searchResults.length / AppState.pageSize)) {
+            renderResultsPage(page);
+        }
+    });
+
+    // 绑定键盘事件 (Enter键触发搜索)
+    $('#fileInput').on('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                performSearch();
+            }
+        });
+
+    $('#fileInput').prop({ readonly: false, disabled: false });
+
+    // 初始化页面
+    renderResultsPage(1);
+});
+</script>
+</body>
+</html>
