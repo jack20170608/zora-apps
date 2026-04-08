@@ -102,44 +102,6 @@ public class AgentRegistryDaoJdbiImpl extends BaseDaoJdbiImpl<AgentInfo> impleme
         return count(sql, Map.of("agentId", agentId), null) > 0;
     }
 
-    @Override
-    public Long create(AgentInfo entity) {
-        // Explicitly handle insert with auto-generated id - exclude id from column list
-        String sql = String.format(
-            "insert into %s (agent_id, agent_url, max_concurrent_tasks, max_pending_tasks, " +
-                "supported_execution_keys, registered_at, last_heartbeat_at, running, " +
-                "pending_tasks, running_tasks, finished_tasks) " +
-                "values (:agentId, :agentUrl, :maxConcurrentTasks, :maxPendingTasks, " +
-                ":supportedExecutionKeys, :registeredAt, :lastHeartbeatAt, :running, " +
-                ":pendingTasks, :runningTasks, :finishedTasks) " +
-                "returning id",
-            table.getName()
-        );
-        // supported_execution_keys is NOT NULL, even if empty use empty string, not null
-        String supportedKeys = "";
-        if (entity.getSupportedExecutionKeys() != null && !entity.getSupportedExecutionKeys().isEmpty()) {
-            supportedKeys = String.join(",", entity.getSupportedExecutionKeys());
-        }
-        Map<String, Object> params = Map.of(
-            "agentId", entity.getAgentId(),
-            "agentUrl", entity.getAgentUrl(),
-            "maxConcurrentTasks", entity.getMaxConcurrentTasks(),
-            "maxPendingTasks", entity.getMaxPendingTasks(),
-            "supportedExecutionKeys", supportedKeys,
-            "registeredAt", java.sql.Timestamp.from(entity.getRegisteredAt()),
-            "lastHeartbeatAt", java.sql.Timestamp.from(entity.getLastHeartbeatAt()),
-            "running", entity.isRunning(),
-            "pendingTasks", entity.getPendingTasks(),
-            "runningTasks", entity.getRunningTasks(),
-            "finishedTasks", entity.getFinishedTasks()
-        );
-        // Already have returning id in SQL, use createQuery to avoid adding duplicate returning clause
-        return jdbi.withHandle(h -> h.createQuery(sql)
-            .bindFromMap(params)
-            .mapTo(Long.class)
-            .one());
-    }
-
     /**
      * RowMapper for mapping database rows to {@link AgentInfo} objects.
      */
