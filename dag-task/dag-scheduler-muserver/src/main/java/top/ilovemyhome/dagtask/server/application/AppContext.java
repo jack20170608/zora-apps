@@ -95,7 +95,6 @@ public final class AppContext {
         this.dataSource = DataSourcePoolBuilder.create(rdbConfig).build();
         logger.info("DataSource initialized successfully");
         this.jdbi = Jdbi.create(this.dataSource);
-        this.jdbi.installPlugin(new org.jdbi.v3.sqlobject.SqlObjectPlugin());
     }
 
     private void runFlywayMigration(Config config) {
