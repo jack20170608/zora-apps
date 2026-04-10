@@ -6,6 +6,18 @@ import { statsApi } from "@/lib/api-client";
 import type { DashboardStats } from "@/types/task";
 import { FileText, CheckCircle, Server } from "lucide-react";
 
+// Mock data for when backend API doesn't exist yet
+const MOCK_STATS: DashboardStats = {
+  totalTemplates: 3,
+  activeTemplates: 2,
+  totalTasksToday: 8,
+  completedTasks: 7,
+  failedTasks: 1,
+  successRate: 87.5,
+  onlineAgents: 3,
+  totalAgents: 4,
+};
+
 function StatCard({
   title,
   value,
@@ -39,20 +51,11 @@ export function StatsDashboard() {
   const { data, error } = useQuery({
     queryKey: ["dashboardStats"],
     queryFn: () => statsApi.getDashboardStats(),
-    // Don't throw error - just use defaults when API doesn't exist yet
     retry: false,
   });
 
-  const stats: DashboardStats = data?.data ?? {
-    totalTemplates: 0,
-    activeTemplates: 0,
-    totalTasksToday: 0,
-    completedTasks: 0,
-    failedTasks: 0,
-    successRate: 0,
-    onlineAgents: 0,
-    totalAgents: 0,
-  };
+  // Use mock data if API request fails (backend doesn't have endpoint yet)
+  const stats: DashboardStats = error ? MOCK_STATS : (data?.data ?? MOCK_STATS);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

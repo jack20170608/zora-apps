@@ -15,6 +15,54 @@ import { taskApi } from "@/lib/api-client";
 import type { TaskExecution } from "@/types/task";
 import { cn } from "@/lib/utils";
 
+// Mock data for when backend API doesn't exist yet
+const MOCK_TASKS: TaskExecution[] = [
+  {
+    id: 1,
+    orderKey: "etl-production-daily",
+    orderName: "Production ETL Daily Run",
+    templateKey: "etl-data-processing",
+    templateVersion: "1.1.0",
+    status: "COMPLETED",
+    startTime: new Date(Date.now() - 3600000).toISOString(),
+    durationMs: 12450,
+    agentId: "default-agent-001",
+  },
+  {
+    id: 2,
+    orderKey: "backup-users-db-daily",
+    orderName: "Daily Backup - Users Database",
+    templateKey: "daily-database-backup",
+    templateVersion: "1.0.0",
+    status: "COMPLETED",
+    startTime: new Date(Date.now() - 7200000).toISOString(),
+    durationMs: 8320,
+    agentId: "python-worker-002",
+  },
+  {
+    id: 3,
+    orderKey: "train-model-weekly",
+    orderName: "Weekly ML Model Retrain",
+    templateKey: "ml-model-training",
+    templateVersion: "1.0.0",
+    status: "RUNNING",
+    startTime: new Date(Date.now() - 1800000).toISOString(),
+    agentId: "docker-agent-003",
+  },
+  {
+    id: 4,
+    orderKey: "cleanup-old-backups",
+    orderName: "Cleanup Old Backup Files",
+    templateKey: "daily-database-backup",
+    templateVersion: "1.0.0",
+    status: "FAILED",
+    startTime: new Date(Date.now() - 10800000).toISOString(),
+    endTime: new Date(Date.now() - 10740000).toISOString(),
+    durationMs: 60000,
+    agentId: "default-agent-001",
+  },
+];
+
 const statusVariants: Record<TaskExecution["status"], any> = {
   PENDING: { label: "Pending", variant: "outline" },
   RUNNING: { label: "Running", variant: "warning" },
@@ -34,11 +82,8 @@ export function TaskList() {
     return <div className="p-4 text-muted-foreground">Loading tasks...</div>;
   }
 
-  if (error) {
-    return <div className="p-4 text-destructive">Error loading tasks</div>;
-  }
-
-  const tasks: TaskExecution[] = data?.data ?? [];
+  // Use mock data if API request fails (backend doesn't have endpoint yet)
+  const tasks: TaskExecution[] = error ? MOCK_TASKS : (data?.data ?? []);
 
   return (
     <Card>
