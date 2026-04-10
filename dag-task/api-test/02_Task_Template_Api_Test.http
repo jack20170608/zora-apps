@@ -1,0 +1,210 @@
+# ============================================
+# Test API for DAG Scheduler Server - Task Template API
+# ============================================
+# -----------------------------------------------------------------------------
+# 1. Create first template version - ETL data processing
+# -----------------------------------------------------------------------------
+### Create ETL data processing template v1.0.0 and set as active
+POST {{baseUrl}}/api/v1/template?setActive=true
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "templateKey": "etl-data-processing",
+  "templateName": "ETL Data Processing Workflow",
+  "description": "A general-purpose ETL workflow that extracts, transforms and loads data from source to destination",
+  "version": "1.0.0",
+  "active": true,
+  "dagDefinition": "{\n  \"nodes\": [\n    {\"id\": \"extract\", \"type\": \"extractor\", \"config\": {\"source\": \"${source}\"}},\n    {\"id\": \"transform\", \"type\": \"transformer\", \"config\": {\"rules\": \"${transformRules}\"}},\n    {\"id\": \"load\", \"type\": \"loader\", \"config\": {\"destination\": \"${destination}\"}}\n  ],\n  \"edges\": [\n    {\"from\": \"extract\", \"to\": \"transform\"},\n    {\"from\": \"transform\", \"to\": \"load\"}\n  ]\n}",
+  "parameterSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"source\": {\"type\": \"string\", \"description\": \"Source connection string\"},\n    \"transformRules\": {\"type\": \"string\", \"description\": \"Transformation rules JSON\"},\n    \"destination\": {\"type\": \"string\", \"description\": \"Destination connection string\"}\n  },\n  \"required\": [\"source\", \"destination\"]\n}"
+}
+
+### Create daily backup template v1.0.0
+POST {{baseUrl}}/api/v1/template?setActive=true
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "templateKey": "daily-database-backup",
+  "templateName": "Daily Database Backup",
+  "description": "Backup database to remote storage and verify backup integrity",
+  "version": "1.0.0",
+  "active": true,
+  "dagDefinition": "{\n  \"nodes\": [\n    {\"id\": \"dump\", \"type\": \"database-dump\", \"config\": {\"database\": \"${databaseName}\"}},\n    {\"id\": \"compress\", \"type\": \"gzip-compress\"},\n    {\"id\": \"upload\", \"type\": \"s3-upload\", \"config\": {\"bucket\": \"${backupBucket}\"}},\n    {\"id\": \"verify\", \"type\": \"backup-verify\"}\n  ],\n  \"edges\": [\n    {\"from\": \"dump\", \"to\": \"compress\"},\n    {\"from\": \"compress\", \"to\": \"upload\"},\n    {\"from\": \"upload\", \"to\": \"verify\"}\n  ]\n}",
+  "parameterSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"databaseName\": {\"type\": \"string\", \"description\": \"Database name to backup\"},\n    \"backupBucket\": {\"type\": \"string\", \"description\": \"S3 bucket name for backup\"},\n    \"retentionDays\": {\"type\": \"integer\", \"description\": \"Number of days to keep backup\"}\n  },\n  \"required\": [\"databaseName\", \"backupBucket\"]\n}"
+}
+
+### Create ML model training template v1.0.0
+POST {{baseUrl}}/api/v1/template?setActive=true
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "templateKey": "ml-model-training",
+  "templateName": "ML Model Training Pipeline",
+  "description": "End-to-end machine learning model training with data validation and model evaluation",
+  "version": "1.0.0",
+  "active": true,
+  "dagDefinition": "{\n  \"nodes\": [\n    {\"id\": \"fetch-data\", \"type\": \"data-fetcher\"},\n    {\"id\": \"validate\", \"type\": \"data-validator\"},\n    {\"id\": \"preprocess\", \"type\": \"data-preprocessor\"},\n    {\"id\": \"train\", \"type\": \"model-trainer\"},\n    {\"id\": \"evaluate\", \"type\": \"model-evaluator\"},\n    {\"id\": \"deploy\", \"type\": \"model-deployer\", \"condition\": \"${autoDeploy}\"\n  }\n  ],\n  \"edges\": [\n    {\"from\": \"fetch-data\", \"to\": \"validate\"},\n    {\"from\": \"validate\", \"to\": \"preprocess\"},\n    {\"from\": \"preprocess\", \"to\": \"train\"},\n    {\"from\": \"train\", \"to\": \"evaluate\"},\n    {\"from\": \"evaluate\", \"to\": \"deploy\"}\n  ]\n}"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 2. Create a new version of existing template
+# -----------------------------------------------------------------------------
+### Create ETL template v1.1.0 with improved error handling (don't set as active yet)
+POST {{baseUrl}}/api/v1/template?setActive=false
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "templateKey": "etl-data-processing",
+  "templateName": "ETL Data Processing Workflow",
+  "description": "A general-purpose ETL workflow that extracts, transforms and loads data from source to destination (with improved error handling)",
+  "version": "1.1.0",
+  "active": false,
+  "dagDefinition": "{\n  \"nodes\": [\n    {\"id\": \"extract\", \"type\": \"extractor\", \"config\": {\"source\": \"${source}\", \"retryCount\": 3}},\n    {\"id\": \"transform\", \"type\": \"transformer\", \"config\": {\"rules\": \"${transformRules}\", \"errorTolerance\": 0.05}},\n    {\"id\": \"load\", \"type\": \"loader\", \"config\": {\"destination\": \"${destination}\", \"atomicWrite\": true}}\n  ],\n  \"edges\": [\n    {\"from\": \"extract\", \"to\": \"transform\"},\n    {\"from\": \"transform\", \"to\": \"load\"}\n  ]\n}",
+  "parameterSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"source\": {\"type\": \"string\", \"description\": \"Source connection string\"},\n    \"transformRules\": {\"type\": \"string\", \"description\": \"Transformation rules JSON\"},\n    \"destination\": {\"type\": \"string\", \"description\": \"Destination connection string\"},\n    \"errorTolerance\": {\"type\": \"number\", \"description\": \"Allowed error rate 0.0-1.0\", \"default\": 0.0}\n  },\n  \"required\": [\"source\", \"destination\"]\n}"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 3. List all active templates (only active version per key)
+# -----------------------------------------------------------------------------
+### List all active templates
+GET {{baseUrl}}/api/v1/template
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 4. List all templates including all versions
+# -----------------------------------------------------------------------------
+### List all templates with all versions
+GET {{baseUrl}}/api/v1/template/all
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 5. List all versions of a specific template
+# -----------------------------------------------------------------------------
+### List all versions of ETL template
+GET {{baseUrl}}/api/v1/template/etl-data-processing/versions
+Authorization: Basic {{username}} {{password}}
+
+### List all versions of backup template
+GET {{baseUrl}}/api/v1/template/daily-database-backup/versions
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 6. Get the active version of a template
+# -----------------------------------------------------------------------------
+### Get active ETL template
+GET {{baseUrl}}/api/v1/template/etl-data-processing/active
+Authorization: Basic {{username}} {{password}}
+
+### Get active backup template
+GET {{baseUrl}}/api/v1/template/daily-database-backup/active
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 7. Get a specific template version
+# -----------------------------------------------------------------------------
+### Get ETL template v1.0.0
+GET {{baseUrl}}/api/v1/template/etl-data-processing/v/1.0.0
+Authorization: Basic {{username}} {{password}}
+
+### Get ETL template v1.1.0
+GET {{baseUrl}}/api/v1/template/etl-data-processing/v/1.1.0
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 8. Update an existing template version
+# -----------------------------------------------------------------------------
+### Update ETL template v1.1.0 - change description
+PUT {{baseUrl}}/api/v1/template/etl-data-processing/v/1.1.0
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "templateKey": "etl-data-processing",
+  "templateName": "ETL Data Processing Workflow",
+  "description": "A general-purpose ETL workflow with retry, error tolerance and atomic write support",
+  "version": "1.1.0",
+  "active": false,
+  "dagDefinition": "{\n  \"nodes\": [\n    {\"id\": \"extract\", \"type\": \"extractor\", \"config\": {\"source\": \"${source}\", \"retryCount\": 3}},\n    {\"id\": \"transform\", \"type\": \"transformer\", \"config\": {\"rules\": \"${transformRules}\", \"errorTolerance\": 0.05}},\n    {\"id\": \"load\", \"type\": \"loader\", \"config\": {\"destination\": \"${destination}\", \"atomicWrite\": true}}\n  ],\n  \"edges\": [\n    {\"from\": \"extract\", \"to\": \"transform\"},\n    {\"from\": \"transform\", \"to\": \"load\"}\n  ]\n}",
+  "parameterSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"source\": {\"type\": \"string\", \"description\": \"Source connection string\"},\n    \"transformRules\": {\"type\": \"string\", \"description\": \"Transformation rules JSON\"},\n    \"destination\": {\"type\": \"string\", \"description\": \"Destination connection string\"},\n    \"errorTolerance\": {\"type\": \"number\", \"description\": \"Allowed error rate 0.0-1.0\", \"default\": 0.0}\n  },\n  \"required\": [\"source\", \"destination\"]\n}"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 9. Activate the new version (deactivate old version)
+# -----------------------------------------------------------------------------
+### Activate ETL template v1.1.0
+POST {{baseUrl}}/api/v1/template/etl-data-processing/v/1.1.0/activate
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+### Deactivate old ETL version 1.0.0
+POST {{baseUrl}}/api/v1/template/etl-data-processing/v/1.0.0/deactivate
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 10. Instantiate task order from active template version
+# -----------------------------------------------------------------------------
+### Instantiate daily production ETL job from active ETL template
+POST {{baseUrl}}/api/v1/template/etl-data-processing/instantiate?orderKey=etl-production-daily&orderName=Production ETL Daily Run
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "source": "jdbc:postgresql://prod-db:5432/sales",
+  "transformRules": "classpath:transform/prod-sales-rules.json",
+  "destination": "s3://data-lake/sales/daily/"
+}
+
+### Instantiate daily backup for users database
+POST {{baseUrl}}/api/v1/template/daily-database-backup/instantiate?orderKey=backup-users-db-daily&orderName=Daily Backup - Users Database
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "databaseName": "users",
+  "backupBucket": "backups.company.com",
+  "retentionDays": "30"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 11. Instantiate task order from specific template version
+# -----------------------------------------------------------------------------
+### Instantiate from specific ETL version 1.1.0
+POST {{baseUrl}}/api/v1/template/etl-data-processing/v/1.1.0/instantiate?orderKey=etl-staging-test&orderName=ETL Staging Test Run
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "source": "jdbc:postgresql://staging-db:5432/sales",
+  "transformRules": "classpath:transform/staging-test.json",
+  "destination": "s3://staging-data-lake/sales/test/"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 12. Delete a template version
+# -----------------------------------------------------------------------------
+### Try to delete inactive version (delete after deactivation)
+DELETE {{baseUrl}}/api/v1/template/etl-data-processing/v/1.0.0
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 13. Health check
+# -----------------------------------------------------------------------------
+### Get health info
+GET {{baseUrl}}/actuator/health
+Authorization: Basic {{username}} {{password}}

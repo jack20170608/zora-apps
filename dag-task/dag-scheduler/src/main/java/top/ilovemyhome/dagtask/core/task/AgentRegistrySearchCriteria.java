@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-@JsonDeserialize(builder = AgentInfoSearchCriteria.Builder.class)
-public class AgentInfoSearchCriteria implements SearchCriteria {
+@JsonDeserialize(builder = AgentRegistrySearchCriteria.Builder.class)
+public class AgentRegistrySearchCriteria implements SearchCriteria {
 
     private final List<Long> listOfId;
     private final String agentId;
@@ -22,7 +22,7 @@ public class AgentInfoSearchCriteria implements SearchCriteria {
     private final Boolean running;
     private final String supportedExecutionKey;
 
-    public AgentInfoSearchCriteria(List<Long> listOfId, String agentId, String agentIdPrefix, String agentUrlPrefix,
+    public AgentRegistrySearchCriteria(List<Long> listOfId, String agentId, String agentIdPrefix, String agentUrlPrefix,
                                    Boolean running, String supportedExecutionKey) {
         this.listOfId = listOfId;
         this.agentId = agentId;
@@ -60,7 +60,7 @@ public class AgentInfoSearchCriteria implements SearchCriteria {
 
     @Override
     public String toString() {
-        return "AgentInfoSearchCriteria{" +
+        return "AgentRegistrySearchCriteria{" +
             "listOfId=" + listOfId +
             ", agentId='" + agentId + '\'' +
             ", agentIdPrefix='" + agentIdPrefix + '\'' +
@@ -193,8 +193,8 @@ public class AgentInfoSearchCriteria implements SearchCriteria {
             return this;
         }
 
-        public AgentInfoSearchCriteria build() {
-            return new AgentInfoSearchCriteria(listOfId, agentId, agentIdPrefix, agentUrlPrefix,
+        public AgentRegistrySearchCriteria build() {
+            return new AgentRegistrySearchCriteria(listOfId, agentId, agentIdPrefix, agentUrlPrefix,
                 running, supportedExecutionKey);
         }
     }
