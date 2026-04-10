@@ -12,7 +12,7 @@ import java.util.List;
  * @param maxPendingTasks maximum number of pending tasks waiting in the queue
  * @param supportedExecutionKeys list of execution keys (task types) that this agent supports
  */
-public record AgentRegistration(
+public record AgentRegisterRequest(
     String agentId,
     String agentUrl,
     int maxConcurrentTasks,

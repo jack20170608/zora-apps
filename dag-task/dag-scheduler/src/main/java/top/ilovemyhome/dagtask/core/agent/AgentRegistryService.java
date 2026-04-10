@@ -1,6 +1,6 @@
 package top.ilovemyhome.dagtask.core.agent;
 
-import top.ilovemyhome.dagtask.si.agent.AgentRegistration;
+import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.TaskResultReport;
@@ -20,7 +20,7 @@ public interface AgentRegistryService {
      * @param registration the agent registration information containing agent capabilities and endpoint
      * @return true if registration was successful, false otherwise
      */
-    boolean registerAgent(AgentRegistration registration);
+    boolean registerAgent(AgentRegisterRequest registration);
 
     /**
      * Unregister an existing agent instance from the scheduling center.

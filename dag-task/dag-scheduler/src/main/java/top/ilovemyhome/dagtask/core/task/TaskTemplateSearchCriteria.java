@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.si.dto;
+package top.ilovemyhome.dagtask.core.task;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -106,8 +106,8 @@ public class TaskTemplateSearchCriteria implements SearchCriteria {
         }
         if (StringUtils.isNotBlank(templateKeyPrefix)) {
             ensureNormalParamMap();
-            sqlBuilder.append(" AND template_key like '%'||:templateKeyPrefix||'%'");
-            normalParams.put("templateKeyPrefix", templateKeyPrefix);
+            sqlBuilder.append(" AND template_key like :templateKeyPrefix");
+            normalParams.put("templateKeyPrefix", templateKeyPrefix + "%");
         }
         if (StringUtils.isNotBlank(templateName)) {
             ensureNormalParamMap();

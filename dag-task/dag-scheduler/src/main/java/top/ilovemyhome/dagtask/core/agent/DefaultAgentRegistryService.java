@@ -8,8 +8,8 @@ import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
-import top.ilovemyhome.dagtask.si.agent.AgentInfo;
-import top.ilovemyhome.dagtask.si.agent.AgentRegistration;
+import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
+import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.TaskResultReport;
@@ -35,7 +35,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
     private final Jdbi jdbi;
     private final TaskRecordDao taskRecordDao;
     private final AgentRegistryDao agentRegistryDao;
-    private final ConcurrentHashMap<String, AgentInfo> agentCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AgentRegistryItem> agentCache = new ConcurrentHashMap<>();
 
     /**
      * Creates a DefaultAgentRegistryService with the required dependencies.
@@ -55,18 +55,18 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      * Loads all agents from database into the in-memory cache on startup.
      */
     private void loadAllFromDatabase() {
-        List<AgentInfo> allAgents = agentRegistryDao.findAll();
+        List<AgentRegistryItem> allAgents = agentRegistryDao.findAll();
         allAgents.forEach(agent -> agentCache.put(agent.getAgentId(), agent));
         logger.info("Loaded {} agents from database into registry cache", allAgents.size());
     }
 
     @Override
-    public boolean registerAgent(AgentRegistration registration) {
+    public boolean registerAgent(AgentRegisterRequest registration) {
         if (registration == null || StringUtils.isBlank(registration.agentId())) {
             logger.warn("Cannot register agent: invalid registration (agentId is blank)");
             return false;
         }
-        AgentInfo agentInfo = AgentInfo.fromRegistration(registration);
+        AgentRegistryItem agentRegistryItem = AgentRegistryItem.fromRegistration(registration);
         jdbi.useTransaction(h -> {
             if (agentRegistryDao.exists(registration.agentId())) {
                 // Update existing agent in database
@@ -80,12 +80,12 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
                 logger.info("Agent [{}] already exists in database, reactivating", registration.agentId());
             } else {
                 // Insert new agent into database
-                Long id = agentRegistryDao.create(agentInfo);
+                Long id = agentRegistryDao.create(agentRegistryItem);
                 logger.info("Agent [{}] registered successfully Id:{}, URL: {}, max concurrent: {}",
                     registration.agentId(), id, registration.agentUrl(), registration.maxConcurrentTasks());
             }
             // Update cache
-            agentCache.put(registration.agentId(), agentInfo);
+            agentCache.put(registration.agentId(), agentRegistryItem);
         });
 
         return true;
@@ -107,7 +107,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
         agentRegistryDao.markUnregistered(unregistration.agentId());
 
         // Update cache
-        AgentInfo existing = agentCache.get(unregistration.agentId());
+        AgentRegistryItem existing = agentCache.get(unregistration.agentId());
         if (existing != null) {
             agentCache.put(unregistration.agentId(), existing.withUnregistered());
         }
@@ -168,7 +168,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
         );
 
         // Update cache
-        AgentInfo existing = agentCache.get(statusReport.agentId());
+        AgentRegistryItem existing = agentCache.get(statusReport.agentId());
         if (existing != null) {
             agentCache.put(statusReport.agentId(), existing.withUpdatedStatus(statusReport));
         }
@@ -185,7 +185,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      * @param agentId the agent identifier
      * @return the agent information if found, empty otherwise
      */
-    public Optional<AgentInfo> getAgent(String agentId) {
+    public Optional<AgentRegistryItem> getAgent(String agentId) {
         return Optional.ofNullable(agentCache.get(agentId));
     }
 
@@ -194,9 +194,9 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      *
      * @return an unmodifiable list of active agents
      */
-    public List<AgentInfo> listActiveAgents() {
+    public List<AgentRegistryItem> listActiveAgents() {
         return agentCache.values().stream()
-            .filter(AgentInfo::isRunning)
+            .filter(AgentRegistryItem::isRunning)
             .toList();
     }
 
@@ -205,7 +205,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      *
      * @return an unmodifiable list of all agents in the registry
      */
-    public List<AgentInfo> listAllAgents() {
+    public List<AgentRegistryItem> listAllAgents() {
         return agentCache.values().stream().toList();
     }
 

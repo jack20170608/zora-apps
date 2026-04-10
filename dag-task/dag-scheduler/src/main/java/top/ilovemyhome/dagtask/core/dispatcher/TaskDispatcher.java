@@ -2,13 +2,11 @@ package top.ilovemyhome.dagtask.core.dispatcher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jdbi.v3.core.Handle;
-import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskDispatchRecord;
 import top.ilovemyhome.dagtask.si.TaskRecord;
-import top.ilovemyhome.dagtask.si.agent.AgentInfo;
+import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
 import top.ilovemyhome.dagtask.si.dto.SubmitRequest;
 import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskDispatchDao;
@@ -40,7 +38,7 @@ import java.util.stream.Collectors;
  * Filtering logic:
  * <ul>
  *     <li>Only includes agents that are marked as running (active)</li>
- *     <li>Only includes agents whose {@link AgentInfo#getSupportedExecutionKeys()} contains
+ *     <li>Only includes agents whose {@link AgentRegistryItem#getSupportedExecutionKeys()} contains
  *         the task's {@link TaskRecord#getExecutionKey()}</li>
  *     <li>Excludes agents that have already reached their maximum concurrent task limit</li>
  * </ul>
@@ -129,14 +127,14 @@ public class TaskDispatcher {
         String executionKey = task.getExecutionKey();
 
         // Step 1: Get all active agents
-        List<AgentInfo> activeAgents = agentRegistryDao.findAllActive();
+        List<AgentRegistryItem> activeAgents = agentRegistryDao.findAllActive();
         if (activeAgents.isEmpty()) {
             logger.warn("No active agents available for task {}", task.getId());
             return DispatchResult.noAvailableAgent("No active agents registered in the system");
         }
 
         // Step 2: Filter by execution key support
-        List<AgentInfo> candidates = filterCandidates(activeAgents, executionKey);
+        List<AgentRegistryItem> candidates = filterCandidates(activeAgents, executionKey);
         if (candidates.isEmpty()) {
             logger.warn("No active agents support execution key '{}' for task {}",
                 executionKey, task.getId());
@@ -151,7 +149,7 @@ public class TaskDispatcher {
         }
 
         // Step 4: Use load balancing strategy to select one agent
-        AgentInfo selected = loadBalanceStrategy.select(candidates);
+        AgentRegistryItem selected = loadBalanceStrategy.select(candidates);
         if (selected == null) {
             logger.warn("Load balance strategy returned null for {} candidates", candidates.size());
             return DispatchResult.selectionFailed();
@@ -192,7 +190,7 @@ public class TaskDispatcher {
      * @param agent the agent that is executing the task
      * @return true if the kill request was accepted by the agent
      */
-    public boolean killTask(Long taskId, AgentInfo agent) {
+    public boolean killTask(Long taskId, AgentRegistryItem agent) {
         Objects.requireNonNull(taskId, "taskId must not be null");
         Objects.requireNonNull(agent, "agent must not be null");
 
@@ -254,7 +252,7 @@ public class TaskDispatcher {
      * @param agent the agent that is executing the task
      * @return true if the force-ok request was accepted by the agent
      */
-    public boolean forceOkTask(Long taskId, AgentInfo agent) {
+    public boolean forceOkTask(Long taskId, AgentRegistryItem agent) {
         Objects.requireNonNull(taskId, "taskId must not be null");
         Objects.requireNonNull(agent, "agent must not be null");
 
@@ -297,7 +295,7 @@ public class TaskDispatcher {
      * @param executionKey the execution key to filter by
      * @return filtered list of candidate agents
      */
-    private List<AgentInfo> filterCandidates(List<AgentInfo> activeAgents, String executionKey) {
+    private List<AgentRegistryItem> filterCandidates(List<AgentRegistryItem> activeAgents, String executionKey) {
         return activeAgents.stream()
             .filter(agent -> agent.getSupportedExecutionKeys() == null
                 || agent.getSupportedExecutionKeys().isEmpty()
@@ -312,7 +310,7 @@ public class TaskDispatcher {
      * @param candidates the pre-filtered candidate list
      * @return filtered list containing only agents with available capacity
      */
-    private List<AgentInfo> filterByCapacity(List<AgentInfo> candidates) {
+    private List<AgentRegistryItem> filterByCapacity(List<AgentRegistryItem> candidates) {
         return candidates.stream()
             .filter(agent -> agent.getRunningTasks() < agent.getMaxConcurrentTasks())
             .collect(Collectors.toList());
@@ -326,7 +324,7 @@ public class TaskDispatcher {
      * @param agent the selected agent
      * @return the dispatch result
      */
-    private DispatchResult submitToAgent(TaskRecord task, AgentInfo agent) {
+    private DispatchResult submitToAgent(TaskRecord task, AgentRegistryItem agent) {
         String agentUrl = agent.getAgentUrl();
         String submitUrl = buildAgentUrl(agentUrl) + "/api/submit";
 
@@ -429,7 +427,7 @@ public class TaskDispatcher {
      * @return number of available agents for this execution key
      */
     public int countAvailableAgents(String executionKey) {
-        List<AgentInfo> active = agentRegistryDao.findAllActive();
+        List<AgentRegistryItem> active = agentRegistryDao.findAllActive();
         return filterCandidates(active, executionKey).size();
     }
 
@@ -439,9 +437,9 @@ public class TaskDispatcher {
      * @param executionKey the execution key
      * @return list of available candidate agents (active + supports execution key + has capacity)
      */
-    public List<AgentInfo> getAvailableCandidates(String executionKey) {
-        List<AgentInfo> active = agentRegistryDao.findAllActive();
-        List<AgentInfo> filtered = filterCandidates(active, executionKey);
+    public List<AgentRegistryItem> getAvailableCandidates(String executionKey) {
+        List<AgentRegistryItem> active = agentRegistryDao.findAllActive();
+        List<AgentRegistryItem> filtered = filterCandidates(active, executionKey);
         return filterByCapacity(filtered);
     }
 
@@ -463,12 +461,12 @@ public class TaskDispatcher {
      */
     public record DispatchResult(
         boolean success,
-        AgentInfo selectedAgent,
+        AgentRegistryItem selectedAgent,
         Long dispatchedTaskId,
         String message
     ) {
 
-        public static DispatchResult success(AgentInfo agent, Long taskId) {
+        public static DispatchResult success(AgentRegistryItem agent, Long taskId) {
             return new DispatchResult(true, agent, taskId,
                 String.format("Task %d dispatched successfully to agent %s at %s",
                     taskId, agent.getAgentId(), agent.getAgentUrl()));
@@ -499,25 +497,25 @@ public class TaskDispatcher {
                 "Failed to serialize request: " + message);
         }
 
-        public static DispatchResult agentQueueFull(AgentInfo agent) {
+        public static DispatchResult agentQueueFull(AgentRegistryItem agent) {
             return new DispatchResult(false, agent, null,
                 String.format("Agent %s at %s has full pending queue",
                     agent.getAgentId(), agent.getAgentUrl()));
         }
 
-        public static DispatchResult badRequest(AgentInfo agent, String response) {
+        public static DispatchResult badRequest(AgentRegistryItem agent, String response) {
             return new DispatchResult(false, agent, null,
                 String.format("Agent %s returned 400 Bad Request: %s",
                     agent.getAgentId(), response));
         }
 
-        public static DispatchResult unexpectedHttpStatus(AgentInfo agent, int statusCode, String body) {
+        public static DispatchResult unexpectedHttpStatus(AgentRegistryItem agent, int statusCode, String body) {
             return new DispatchResult(false, agent, null,
                 String.format("Agent %s returned unexpected status code %d: %s",
                     agent.getAgentId(), statusCode, body));
         }
 
-        public static DispatchResult connectionFailed(AgentInfo agent, String error) {
+        public static DispatchResult connectionFailed(AgentRegistryItem agent, String error) {
             return new DispatchResult(false, agent, null,
                 String.format("Connection failed to agent %s at %s: %s",
                     agent.getAgentId(), agent.getAgentUrl(), error));

@@ -16,7 +16,7 @@ public interface AgentSchedulerClient {
      * @param registration the agent registration information
      * @return the HTTP response from the server
      */
-    Response register(AgentRegistration registration);
+    Response register(AgentRegisterRequest registration);
 
     /**
      * Unregister this agent from the DAG scheduling server.

@@ -1,6 +1,6 @@
 package top.ilovemyhome.dagtask.core.dispatcher;
 
-import top.ilovemyhome.dagtask.si.agent.AgentInfo;
+import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,7 +22,7 @@ public class RoundRobinLoadBalance implements LoadBalanceStrategy {
     private final AtomicInteger counter = new AtomicInteger(0);
 
     @Override
-    public AgentInfo select(List<AgentInfo> candidates) {
+    public AgentRegistryItem select(List<AgentRegistryItem> candidates) {
         if (candidates == null || candidates.isEmpty()) {
             return null;
         }

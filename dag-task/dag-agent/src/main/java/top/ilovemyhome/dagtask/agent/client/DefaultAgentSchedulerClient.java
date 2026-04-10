@@ -5,7 +5,7 @@ import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
-import top.ilovemyhome.dagtask.si.agent.AgentRegistration;
+import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
@@ -59,7 +59,7 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
      * @return the HTTP response from the server containing status and any response data
      */
     @Override
-    public Response register(AgentRegistration registration) {
+    public Response register(AgentRegisterRequest registration) {
         try {
             String json = objectMapper.writeValueAsString(registration);
             HttpRequest request = HttpRequest.newBuilder()

@@ -1,22 +1,16 @@
 package top.ilovemyhome.dagtask.server.poc;
 
-import com.typesafe.config.Config;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.statement.Update;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.ilovemyhome.dagtask.core.dao.AgentRegistryDaoJdbiImpl;
-import top.ilovemyhome.dagtask.si.agent.AgentInfo;
-import top.ilovemyhome.zora.config.ConfigLoader;
 import top.ilovemyhome.zora.rdb.config.RdbConfig;
 import top.ilovemyhome.zora.rdb.pool.DataSourcePoolBuilder;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
 
 @Disabled
 public class DbTest {

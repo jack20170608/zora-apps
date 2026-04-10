@@ -1,6 +1,6 @@
 package top.ilovemyhome.dagtask.core.dispatcher;
 
-import top.ilovemyhome.dagtask.si.agent.AgentInfo;
+import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
 
 import java.util.List;
 import java.util.Random;
@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class RandomLoadBalance implements LoadBalanceStrategy {
 
     @Override
-    public AgentInfo select(List<AgentInfo> candidates) {
+    public AgentRegistryItem select(List<AgentRegistryItem> candidates) {
         if (candidates == null || candidates.isEmpty()) {
             return null;
         }

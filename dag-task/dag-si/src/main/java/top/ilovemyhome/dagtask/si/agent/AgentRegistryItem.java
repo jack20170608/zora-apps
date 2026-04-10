@@ -15,7 +15,7 @@ import java.util.stream.Stream;
  * This entity is persisted to the database for survival across server restarts.
  * </p>
  */
-public class AgentInfo {
+public class AgentRegistryItem {
 
     private Long id;
     private String agentId;
@@ -75,7 +75,7 @@ public class AgentInfo {
 
     public static final String ID_FIELD = Field.id.name();
 
-    private AgentInfo(Long id, String agentId, String agentUrl, int maxConcurrentTasks, int maxPendingTasks, List<String> supportedExecutionKeys, Instant registeredAt, Instant lastHeartbeatAt, boolean running, int pendingTasks, int runningTasks, int finishedTasks) {
+    private AgentRegistryItem(Long id, String agentId, String agentUrl, int maxConcurrentTasks, int maxPendingTasks, List<String> supportedExecutionKeys, Instant registeredAt, Instant lastHeartbeatAt, boolean running, int pendingTasks, int runningTasks, int finishedTasks) {
         this.id = id;
         this.agentId = agentId;
         this.agentUrl = agentUrl;
@@ -91,13 +91,13 @@ public class AgentInfo {
     }
 
     /**
-     * Creates an AgentInfo from a new registration.
+     * Creates an AgentRegistryItem from a new registration.
      * Sets registration time to current time and initializes status with zero counts.
      *
      * @param registration the registration information from the agent
-     * @return a new AgentInfo instance
+     * @return a new AgentRegistryItem instance
      */
-    public static AgentInfo fromRegistration(AgentRegistration registration) {
+    public static AgentRegistryItem fromRegistration(AgentRegistration registration) {
         Instant now = Instant.now();
         return builder()
             .withId(null)
@@ -116,12 +116,12 @@ public class AgentInfo {
     }
 
     /**
-     * Creates a copy of this AgentInfo with updated status from a status report.
+     * Creates a copy of this AgentRegistryItem with updated status from a status report.
      *
      * @param statusReport the status report from the agent
-     * @return a new AgentInfo instance with updated status
+     * @return a new AgentRegistryItem instance with updated status
      */
-    public AgentInfo withUpdatedStatus(AgentStatusReport statusReport) {
+    public AgentRegistryItem withUpdatedStatus(AgentStatusReport statusReport) {
         return builder(this)
             .withLastHeartbeatAt(Instant.now())
             .withRunning(statusReport.running())
@@ -132,11 +132,11 @@ public class AgentInfo {
     }
 
     /**
-     * Creates a copy of this AgentInfo marked as unregistered (not running).
+     * Creates a copy of this AgentRegistryItem marked as unregistered (not running).
      *
-     * @return a new AgentInfo instance marked as not running
+     * @return a new AgentRegistryItem instance marked as not running
      */
-    public AgentInfo withUnregistered() {
+    public AgentRegistryItem withUnregistered() {
         return builder(this)
             .withLastHeartbeatAt(Instant.now())
             .withRunning(false)
@@ -153,12 +153,12 @@ public class AgentInfo {
     }
 
     /**
-     * Creates a new builder initialized from an existing AgentInfo.
+     * Creates a new builder initialized from an existing AgentRegistryItem.
      *
-     * @param info the existing AgentInfo to copy values from
+     * @param info the existing AgentRegistryItem to copy values from
      * @return a new builder initialized with the info's values
      */
-    public static Builder builder(AgentInfo info) {
+    public static Builder builder(AgentRegistryItem info) {
         return new Builder()
             .withId(info.getId())
             .withAgentId(info.getAgentId())
@@ -276,7 +276,7 @@ public class AgentInfo {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        AgentInfo agentInfo = (AgentInfo) o;
+        AgentRegistryItem agentInfo = (AgentRegistryItem) o;
         return maxConcurrentTasks == agentInfo.maxConcurrentTasks
             && maxPendingTasks == agentInfo.maxPendingTasks
             && running == agentInfo.running
@@ -300,7 +300,7 @@ public class AgentInfo {
 
     @Override
     public String toString() {
-        return "AgentInfo{" +
+        return "AgentRegistryItem{" +
             "id=" + id +
             ", agentId='" + agentId + '\'' +
             ", agentUrl='" + agentUrl + '\'' +
@@ -317,7 +317,7 @@ public class AgentInfo {
     }
 
     /**
-     * Builder for AgentInfo.
+     * Builder for AgentRegistryItem.
      */
     public static class Builder {
         private Long id;
@@ -397,12 +397,12 @@ public class AgentInfo {
         }
 
         /**
-         * Builds a new AgentInfo with the current builder values.
+         * Builds a new AgentRegistryItem with the current builder values.
          *
-         * @return the built AgentInfo instance
+         * @return the built AgentRegistryItem instance
          */
-        public AgentInfo build() {
-            return new AgentInfo(id, agentId, agentUrl, maxConcurrentTasks, maxPendingTasks
+        public AgentRegistryItem build() {
+            return new AgentRegistryItem(id, agentId, agentUrl, maxConcurrentTasks, maxPendingTasks
                 , supportedExecutionKeys, registeredAt, lastHeartbeatAt, running, pendingTasks
                 , runningTasks, finishedTasks);
         }

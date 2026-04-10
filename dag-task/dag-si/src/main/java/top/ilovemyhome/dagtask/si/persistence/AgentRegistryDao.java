@@ -1,6 +1,7 @@
 package top.ilovemyhome.dagtask.si.persistence;
 
-import top.ilovemyhome.dagtask.si.agent.AgentInfo;
+import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
+import top.ilovemyhome.dagtask.si.dto.AgentRegistrySearchCriteria;
 import top.ilovemyhome.zora.jdbi.dao.BaseDao;
 
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.Optional;
  * Implementations handle the actual database storage of registered agent information,
  * allowing the registry to survive server restarts.
  */
-public interface AgentRegistryDao extends BaseDao<AgentInfo> {
+public interface AgentRegistryDao extends BaseDao<AgentRegistryItem> {
 
     /**
      * Find an agent by its agent ID.
@@ -21,21 +22,21 @@ public interface AgentRegistryDao extends BaseDao<AgentInfo> {
      * @param agentId the unique identifier of the agent
      * @return the agent information if found, empty otherwise
      */
-    Optional<AgentInfo> findByAgentId(String agentId);
+    Optional<AgentRegistryItem> findByAgentId(String agentId);
 
     /**
      * List all agents that are currently marked as running (active).
      *
      * @return a list of all active agents
      */
-    List<AgentInfo> findAllActive();
+    List<AgentRegistryItem> findAllActive();
 
     /**
      * List all agents regardless of their running status.
      *
      * @return a list of all agents in the registry
      */
-    List<AgentInfo> findAll();
+    List<AgentRegistryItem> findAll();
 
     /**
      * Delete an agent from the registry by agent ID.
@@ -44,6 +45,8 @@ public interface AgentRegistryDao extends BaseDao<AgentInfo> {
      * @return the number of rows deleted (0 or 1)
      */
     int deleteByAgentId(String agentId);
+
+    List<AgentRegistryItem> search(AgentRegistrySearchCriteria criteria);
 
     /**
      * Update the heartbeat timestamp and status for an agent.

@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
 import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
-import top.ilovemyhome.dagtask.si.agent.AgentRegistration;
+import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.TaskResultReport;
@@ -67,7 +67,7 @@ public class AgentRegistryApi {
     @POST
     @Path("/register")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response register(AgentRegistration registration) {
+    public Response register(AgentRegisterRequest registration) {
         LOGGER.debug("Received registration request from agent: {}", registration.agentId());
         boolean success = agentRegistryService.registerAgent(registration);
         if (success) {

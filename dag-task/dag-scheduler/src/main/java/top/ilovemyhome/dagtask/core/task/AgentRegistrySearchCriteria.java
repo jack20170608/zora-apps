@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.si.dto;
+package top.ilovemyhome.dagtask.core.task;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -92,13 +92,13 @@ public class AgentRegistrySearchCriteria implements SearchCriteria {
         }
         if (StringUtils.isNotBlank(agentIdPrefix)) {
             ensureNormalParamMap();
-            sqlBuilder.append(" AND agent_id like '%'||:agentIdPrefix||'%'");
-            normalParams.put("agentIdPrefix", agentIdPrefix);
+            sqlBuilder.append(" AND agent_id like :agentIdPrefix");
+            normalParams.put("agentIdPrefix", agentIdPrefix + "%");
         }
         if (StringUtils.isNotBlank(agentUrlPrefix)) {
             ensureNormalParamMap();
-            sqlBuilder.append(" AND agent_url like '%'||:agentUrlPrefix||'%'");
-            normalParams.put("agentUrlPrefix", agentUrlPrefix);
+            sqlBuilder.append(" AND agent_url like :agentUrlPrefix");
+            normalParams.put("agentUrlPrefix", agentUrlPrefix + "%");
         }
         if (Objects.nonNull(running)) {
             if (running) {

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.client.DefaultAgentSchedulerClient;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.agent.api.TaskAgentResource;
+import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.agent.TaskFactory;
 
@@ -91,7 +92,7 @@ public class DagTaskAgent {
 
         // Auto-register with server
         if (config.isAutoRegister()) {
-            var registration = new top.ilovemyhome.dagtask.si.agent.AgentRegistration(
+            var registration = new AgentRegisterRequest(
                     config.getAgentId(),
                     config.getBaseUrl(),
                     config.getMaxConcurrentTasks(),
