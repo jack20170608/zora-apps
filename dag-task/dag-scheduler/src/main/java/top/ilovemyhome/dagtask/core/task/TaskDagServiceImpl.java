@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.ilovemyhome.dagtask.core.dispatcher.TaskDispatcher;
 import top.ilovemyhome.dagtask.core.server.DagServerConfig;
 import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
 import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
@@ -33,12 +34,13 @@ public class TaskDagServiceImpl implements TaskDagService {
         , TaskRecordDao taskRecordDao
         , AgentRegistryDao agentRegistryDao
         , TaskTemplateDao taskTemplateDao
-    ) {
+        , TaskDispatcher taskDispatcher) {
         this.jdbi = jdbi;
         this.taskOrderDao = taskOrderDao;
         this.taskRecordDao = taskRecordDao;
         this.agentRegistryDao = agentRegistryDao;
         this.taskTemplateDao = taskTemplateDao;
+        this.taskDispatcher = taskDispatcher;
     }
 
     @Override
@@ -172,19 +174,6 @@ public class TaskDagServiceImpl implements TaskDagService {
         });
     }
 
-    @Override
-    public void receiveTaskEvent(Long taskId, TaskStatus newStatus, TaskOutput output) {
-        Objects.requireNonNull(taskId);
-        Objects.requireNonNull(newStatus);
-        Objects.requireNonNull(output);
-        List<TaskRecord> allTasks = loadByTaskId(taskId);
-        Map<Long, TaskRecord> taskIdMap = allTasks.stream().collect(Collectors.toMap(TaskRecord::getId, Function.identity()));
-
-        if (!taskIdMap.containsKey(taskId)) {
-            throw new IllegalStateException("Data issue, please check!");
-        }
-        TaskRecord targetTask = taskIdMap.get(taskId);
-    }
 
     @Override
     public List<TaskRecord> findTaskByOrderKey(String orderKey) {
@@ -205,6 +194,7 @@ public class TaskDagServiceImpl implements TaskDagService {
     private final TaskOrderDao taskOrderDao;
     private final AgentRegistryDao agentRegistryDao;
     private final TaskTemplateDao taskTemplateDao;
+    private final TaskDispatcher taskDispatcher;
     private final Jdbi jdbi;
 
     private static final Logger logger = LoggerFactory.getLogger(TaskDagServiceImpl.class);

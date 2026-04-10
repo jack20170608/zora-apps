@@ -23,8 +23,6 @@ public interface TaskDagService {
     //3.0 runtime related
     void start(String orderKey);
 
-    void receiveTaskEvent(Long taskId, TaskStatus newStatus, TaskOutput output);
-
     TaskOutput runNow(Long taskId, TaskInput input);
 
     //Force terminite the task and mark the task success
