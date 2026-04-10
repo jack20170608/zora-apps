@@ -14,7 +14,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * JDBI-based implementation of {@link AgentRegistryDao}.
@@ -42,18 +41,6 @@ public class AgentRegistryDaoJdbiImpl extends BaseDaoJdbiImpl<AgentRegistryItem>
         jdbi.registerRowMapper(AgentRegistryItem.class, new AgentInfoRowMapper());
     }
 
-    @Override
-    public Optional<AgentRegistryItem> findByAgentId(String agentId) {
-        Objects.requireNonNull(agentId, "agentId must not be null");
-        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll) + " where agent_id = :agentId ";
-        return find(sql, Map.of("agentId", agentId), null).stream().findFirst();
-    }
-
-    @Override
-    public List<AgentRegistryItem> findAllActive() {
-        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll) + " where running = true ";
-        return find(sql, Map.of(), null);
-    }
 
     @Override
     public List<AgentRegistryItem> findAll() {
