@@ -2,10 +2,13 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.jdbi.v3.core.Jdbi;
+import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.jdbi.SqlGenerator;
 import top.ilovemyhome.zora.jdbi.TableDescription;
 import top.ilovemyhome.zora.jdbi.dao.BaseDaoJdbiImpl;
+import top.ilovemyhome.zora.jdbi.page.Page;
+import top.ilovemyhome.zora.jdbi.page.Pageable;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
@@ -74,17 +77,19 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
     @Override
     public List<TaskRecord> findByOrderKey(String orderKey) {
         Objects.requireNonNull(orderKey);
-        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll)
-            + " where ORDER_KEY = :orderKey ";
-        return find(sql, Map.of("orderKey", orderKey), null);
+        TaskRecordSearchCriteria criteria = TaskRecordSearchCriteria.builder()
+                .withOrderKey(orderKey)
+                .build();
+        return search(criteria);
     }
 
     @Override
     public List<TaskRecord> findByStatus(TaskStatus status) {
         Objects.requireNonNull(status);
-        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll)
-            + " where STATUS = :status ";
-        return find(sql, Map.of("status", status), null);
+        TaskRecordSearchCriteria criteria = TaskRecordSearchCriteria.builder()
+                .withStatus(status)
+                .build();
+        return search(criteria);
     }
 
     @Override
@@ -96,9 +101,10 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
 
     @Override
     public List<TaskRecord> loadTaskForOrder(String orderKey) {
-        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll)
-            + " where ORDER_KEY = :orderKey ";
-        return find(sql, Map.of("orderKey", orderKey), null);
+        TaskRecordSearchCriteria criteria = TaskRecordSearchCriteria.builder()
+                .withOrderKey(orderKey)
+                .build();
+        return search(criteria);
     }
 
     @Override
@@ -262,5 +268,33 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
         String sql = String.format("update %s set STATUS = :status, LAST_UPDATE_DT = :lastUpdateDt where ID = :id",
             table.getName());
         return update(sql, Map.of("id", taskId, "status", newStatus, "lastUpdateDt", now), null);
+    }
+
+    /**
+     * Search tasks using dynamic search criteria.
+     *
+     * @param criteria the search criteria to use
+     * @return list of tasks matching the search criteria
+     */
+    @Override
+    public List<TaskRecord> search(TaskRecordSearchCriteria criteria) {
+        Objects.requireNonNull(criteria, "criteria must not be null");
+        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll) + criteria.whereClause();
+        return find(sql, criteria.normalParams(), criteria.listParam());
+    }
+
+    /**
+     * Search tasks with pagination using dynamic search criteria.
+     *
+     * @param criteria the search criteria to use
+     * @param pageable pagination information
+     * @return page of tasks matching the search criteria
+     */
+    @Override
+    public Page<TaskRecord> search(TaskRecordSearchCriteria criteria, Pageable pageable) {
+        Objects.requireNonNull(criteria, "criteria must not be null");
+        Objects.requireNonNull(pageable, "pageable must not be null");
+        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll) + criteria.pageableWhereClause(pageable);
+        return findAll(sql, criteria.normalParams(), criteria.listParam(), pageable);
     }
 }

@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
+import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
 import top.ilovemyhome.zora.jdbi.dao.BaseDao;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
@@ -13,26 +14,13 @@ import java.util.List;
 
 public interface TaskRecordDao extends BaseDao<TaskRecord> {
 
-    /**
-     * Find all task records by order key
-     * @param orderKey the order key
-     * @return list of task records belonging to this order
-     */
-    List<TaskRecord> findByOrderKey(String orderKey);
 
-    /**
-     * Find all task records by status
-     * @param status the task status
-     * @return list of task records with given status
-     */
-    List<TaskRecord> findByStatus(TaskStatus status);
+    List<TaskRecord> search(TaskRecordSearchCriteria criteria);
 
     //Get the next task id
     Long getNextId();
 
     int deleteByOrderKey(String orderKey);
-
-    List<TaskRecord> loadTaskForOrder(String orderKey);
 
     int createTasksForOrder(String orderKey, List<TaskRecord> listOfTask);
 
@@ -85,5 +73,14 @@ public interface TaskRecordDao extends BaseDao<TaskRecord> {
      * @return number of rows updated (1 if success, 0 if task not found)
      */
     int updateStatus(Long taskId, TaskStatus newStatus);
+
+    /**
+     * Search tasks with pagination using dynamic search criteria.
+     *
+     * @param criteria the search criteria to use
+     * @param pageable pagination information (page number, page size)
+     * @return page of tasks matching the search criteria
+     */
+    Page<TaskRecord> search(TaskRecordSearchCriteria criteria, Pageable pageable);
 
 }
