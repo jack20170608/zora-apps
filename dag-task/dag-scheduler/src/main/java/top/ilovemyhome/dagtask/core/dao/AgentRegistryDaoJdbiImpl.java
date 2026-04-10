@@ -2,7 +2,7 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.RowMapper;
-import top.ilovemyhome.dagtask.core.task.AgentRegistrySearchCriteria;
+import top.ilovemyhome.dagtask.si.dto.AgentRegistrySearchCriteria;
 import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
 import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.zora.jdbi.SqlGenerator;

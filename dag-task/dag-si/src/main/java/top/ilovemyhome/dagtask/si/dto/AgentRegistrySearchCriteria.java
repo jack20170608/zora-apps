@@ -4,37 +4,32 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
-import top.ilovemyhome.dagtask.si.TaskDispatchRecord;
 import top.ilovemyhome.zora.jdbi.SearchCriteria;
 import top.ilovemyhome.zora.jdbi.page.Pageable;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-@JsonDeserialize(builder = TaskDispatchRecordSearchCriteria.Builder.class)
-public class TaskDispatchRecordSearchCriteria implements SearchCriteria {
+@JsonDeserialize(builder = AgentRegistrySearchCriteria.Builder.class)
+public class AgentRegistrySearchCriteria implements SearchCriteria {
 
     private final List<Long> listOfId;
-    private final List<Long> listOfTaskId;
     private final String agentId;
+    private final String agentIdPrefix;
     private final String agentUrlPrefix;
-    private final List<TaskDispatchRecord.DispatchStatus> statusList;
-    private final LocalDateTime dispatchTimeAfter;
-    private final LocalDateTime dispatchTimeBefore;
+    private final Boolean running;
+    private final String supportedExecutionKey;
 
-    public TaskDispatchRecordSearchCriteria(List<Long> listOfId, List<Long> listOfTaskId, String agentId, String agentUrlPrefix,
-                                             List<TaskDispatchRecord.DispatchStatus> statusList,
-                                             LocalDateTime dispatchTimeAfter, LocalDateTime dispatchTimeBefore) {
+    public AgentRegistrySearchCriteria(List<Long> listOfId, String agentId, String agentIdPrefix, String agentUrlPrefix,
+                                   Boolean running, String supportedExecutionKey) {
         this.listOfId = listOfId;
-        this.listOfTaskId = listOfTaskId;
         this.agentId = agentId;
+        this.agentIdPrefix = agentIdPrefix;
         this.agentUrlPrefix = agentUrlPrefix;
-        this.statusList = statusList;
-        this.dispatchTimeAfter = dispatchTimeAfter;
-        this.dispatchTimeBefore = dispatchTimeBefore;
+        this.running = running;
+        this.supportedExecutionKey = supportedExecutionKey;
 
         prepareQuery();
     }
@@ -43,40 +38,35 @@ public class TaskDispatchRecordSearchCriteria implements SearchCriteria {
         return listOfId;
     }
 
-    public List<Long> getListOfTaskId() {
-        return listOfTaskId;
-    }
-
     public String getAgentId() {
         return agentId;
+    }
+
+    public String getAgentIdPrefix() {
+        return agentIdPrefix;
     }
 
     public String getAgentUrlPrefix() {
         return agentUrlPrefix;
     }
 
-    public List<TaskDispatchRecord.DispatchStatus> getStatusList() {
-        return statusList;
+    public Boolean isRunning() {
+        return running;
     }
 
-    public LocalDateTime getDispatchTimeAfter() {
-        return dispatchTimeAfter;
-    }
-
-    public LocalDateTime getDispatchTimeBefore() {
-        return dispatchTimeBefore;
+    public String getSupportedExecutionKey() {
+        return supportedExecutionKey;
     }
 
     @Override
     public String toString() {
-        return "TaskDispatchRecordSearchCriteria{" +
+        return "AgentRegistrySearchCriteria{" +
             "listOfId=" + listOfId +
-            ", listOfTaskId=" + listOfTaskId +
             ", agentId='" + agentId + '\'' +
+            ", agentIdPrefix='" + agentIdPrefix + '\'' +
             ", agentUrlPrefix='" + agentUrlPrefix + '\'' +
-            ", statusList=" + statusList +
-            ", dispatchTimeAfter=" + dispatchTimeAfter +
-            ", dispatchTimeBefore=" + dispatchTimeBefore +
+            ", running=" + running +
+            ", supportedExecutionKey='" + supportedExecutionKey + '\'' +
             ", whereClause='" + whereClause + '\'' +
             ", listParam=" + listParam +
             ", normalParams=" + normalParams +
@@ -95,35 +85,32 @@ public class TaskDispatchRecordSearchCriteria implements SearchCriteria {
             listParam.put("listOfId", listOfId);
             sqlBuilder.append(" AND id in (<listOfId>)");
         }
-        if (listOfTaskId != null && !listOfTaskId.isEmpty()) {
-            ensureListParamMap();
-            listParam.put("listOfTaskId", listOfTaskId);
-            sqlBuilder.append(" AND task_id in (<listOfTaskId>)");
-        }
         if (StringUtils.isNotBlank(agentId)) {
             ensureNormalParamMap();
             sqlBuilder.append(" AND agent_id = :agentId");
             normalParams.put("agentId", agentId);
+        }
+        if (StringUtils.isNotBlank(agentIdPrefix)) {
+            ensureNormalParamMap();
+            sqlBuilder.append(" AND agent_id like '%'||:agentIdPrefix||'%'");
+            normalParams.put("agentIdPrefix", agentIdPrefix);
         }
         if (StringUtils.isNotBlank(agentUrlPrefix)) {
             ensureNormalParamMap();
             sqlBuilder.append(" AND agent_url like '%'||:agentUrlPrefix||'%'");
             normalParams.put("agentUrlPrefix", agentUrlPrefix);
         }
-        if (statusList != null && !statusList.isEmpty()) {
-            ensureListParamMap();
-            listParam.put("statusList", statusList);
-            sqlBuilder.append(" AND status in (<statusList>)");
+        if (Objects.nonNull(running)) {
+            if (running) {
+                sqlBuilder.append(" AND running is TRUE ");
+            } else {
+                sqlBuilder.append(" AND running is FALSE ");
+            }
         }
-        if (Objects.nonNull(dispatchTimeAfter)) {
+        if (StringUtils.isNotBlank(supportedExecutionKey)) {
             ensureNormalParamMap();
-            sqlBuilder.append(" AND dispatch_time >= :dispatchTimeAfter");
-            normalParams.put("dispatchTimeAfter", dispatchTimeAfter);
-        }
-        if (Objects.nonNull(dispatchTimeBefore)) {
-            ensureNormalParamMap();
-            sqlBuilder.append(" AND dispatch_time <= :dispatchTimeBefore");
-            normalParams.put("dispatchTimeBefore", dispatchTimeBefore);
+            sqlBuilder.append(" AND supported_execution_keys like '%'||:supportedExecutionKey||'%'");
+            normalParams.put("supportedExecutionKey", supportedExecutionKey);
         }
         this.whereClause = sqlBuilder.toString();
     }
@@ -167,12 +154,11 @@ public class TaskDispatchRecordSearchCriteria implements SearchCriteria {
     @JsonPOJOBuilder()
     public static final class Builder {
         private List<Long> listOfId;
-        private List<Long> listOfTaskId;
         private String agentId;
+        private String agentIdPrefix;
         private String agentUrlPrefix;
-        private List<TaskDispatchRecord.DispatchStatus> statusList;
-        private LocalDateTime dispatchTimeAfter;
-        private LocalDateTime dispatchTimeBefore;
+        private Boolean running;
+        private String supportedExecutionKey;
 
         private Builder() {
         }
@@ -182,13 +168,13 @@ public class TaskDispatchRecordSearchCriteria implements SearchCriteria {
             return this;
         }
 
-        public Builder withListOfTaskId(List<Long> listOfTaskId) {
-            this.listOfTaskId = listOfTaskId;
+        public Builder withAgentId(String agentId) {
+            this.agentId = agentId;
             return this;
         }
 
-        public Builder withAgentId(String agentId) {
-            this.agentId = agentId;
+        public Builder withAgentIdPrefix(String agentIdPrefix) {
+            this.agentIdPrefix = agentIdPrefix;
             return this;
         }
 
@@ -197,24 +183,19 @@ public class TaskDispatchRecordSearchCriteria implements SearchCriteria {
             return this;
         }
 
-        public Builder withStatusList(List<TaskDispatchRecord.DispatchStatus> statusList) {
-            this.statusList = statusList;
+        public Builder withRunning(Boolean running) {
+            this.running = running;
             return this;
         }
 
-        public Builder withDispatchTimeAfter(LocalDateTime dispatchTimeAfter) {
-            this.dispatchTimeAfter = dispatchTimeAfter;
+        public Builder withSupportedExecutionKey(String supportedExecutionKey) {
+            this.supportedExecutionKey = supportedExecutionKey;
             return this;
         }
 
-        public Builder withDispatchTimeBefore(LocalDateTime dispatchTimeBefore) {
-            this.dispatchTimeBefore = dispatchTimeBefore;
-            return this;
-        }
-
-        public TaskDispatchRecordSearchCriteria build() {
-            return new TaskDispatchRecordSearchCriteria(listOfId, listOfTaskId, agentId, agentUrlPrefix,
-                statusList, dispatchTimeAfter, dispatchTimeBefore);
+        public AgentRegistrySearchCriteria build() {
+            return new AgentRegistrySearchCriteria(listOfId, agentId, agentIdPrefix, agentUrlPrefix,
+                running, supportedExecutionKey);
         }
     }
 }
