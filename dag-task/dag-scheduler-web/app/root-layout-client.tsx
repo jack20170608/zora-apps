@@ -22,7 +22,8 @@ export function RootLayoutClient({
     <QueryClientProvider client={queryClient}>
       <div className="flex h-screen bg-background">
         <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* pl-64 = padding-left matches sidebar width w-64 since sidebar is fixed positioning */}
+        <div className="flex-1 flex flex-col overflow-hidden pl-64">
           <Header />
           <main className="flex-1 overflow-auto p-4">
             {children}
