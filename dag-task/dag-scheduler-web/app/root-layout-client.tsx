@@ -8,6 +8,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30 * 1000,
+      throwOnError: false, // Don't throw errors to Next.js even if API fails - we handle it with mock data
     },
   },
 });
