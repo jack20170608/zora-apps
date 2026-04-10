@@ -1,64 +1,28 @@
 package top.ilovemyhome.dagtask.core.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.ilovemyhome.dagtask.si.TaskOrder;
 import top.ilovemyhome.dagtask.si.TaskTemplate;
-import top.ilovemyhome.dagtask.si.enums.OrderType;
-import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskTemplateDao;
-import top.ilovemyhome.dagtask.si.service.DagManager;
 import top.ilovemyhome.dagtask.si.service.TaskTemplateService;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-/**
- * Default implementation of {@link TaskTemplateService} with database persistence.
- * <p>
- * <b>Responsibility:</b> Only manages template CRUD and version control.
- * Actual creation of concrete {@link top.ilovemyhome.dagtask.si.TaskRecord} tasks from template
- * is delegated to {@link DagManager}.
- * </p>
- */
 public class TaskTemplateServiceImpl implements TaskTemplateService {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskTemplateServiceImpl.class);
 
     private final TaskTemplateDao taskTemplateDao;
-    private final TaskOrderDao taskOrderDao;
-    private final DagManager dagManager;
-    private final ObjectMapper objectMapper;
-
-    /**
-     * Pattern for parameter placeholders in template configuration: {{paramName}}
-     */
-    private static final Pattern PARAMETER_PATTERN = Pattern.compile("\\{\\{([a-zA-Z0-9_\\-.]+)\\}\\}");
 
     /**
      * Creates a TaskTemplateServiceImpl with required dependencies.
      *
      * @param taskTemplateDao DAO for template persistence
-     * @param taskOrderDao DAO for task order persistence
-     * @param dagManager Manager for creating concrete DAG tasks
-     * @param objectMapper JSON mapper for processing DAG definition
      */
-    public TaskTemplateServiceImpl(TaskTemplateDao taskTemplateDao,
-                                   TaskOrderDao taskOrderDao,
-                                   DagManager dagManager,
-                                   ObjectMapper objectMapper) {
+    public TaskTemplateServiceImpl(TaskTemplateDao taskTemplateDao) {
         this.taskTemplateDao = Objects.requireNonNull(taskTemplateDao, "taskTemplateDao must not be null");
-        this.taskOrderDao = Objects.requireNonNull(taskOrderDao, "taskOrderDao must not be null");
-        this.dagManager = Objects.requireNonNull(dagManager, "dagManager must not be null");
-        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
     }
 
     @Override
