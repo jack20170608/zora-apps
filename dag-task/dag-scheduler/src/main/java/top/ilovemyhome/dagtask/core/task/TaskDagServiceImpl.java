@@ -7,6 +7,7 @@ import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.server.DagServerConfig;
+import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
 import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
@@ -51,6 +52,25 @@ public class TaskDagServiceImpl implements TaskDagService {
         }
         return ImmutableList.copyOf(ids);
     }
+
+    @Override
+    public List<TaskRecord> findByOrderKey(String orderKey) {
+        Objects.requireNonNull(orderKey);
+        TaskRecordSearchCriteria criteria = TaskRecordSearchCriteria.builder()
+            .withOrderKey(orderKey)
+            .build();
+        return taskRecordDao.find(criteria);
+    }
+
+    @Override
+    public List<TaskRecord> findByStatus(TaskStatus status) {
+        Objects.requireNonNull(status);
+        TaskRecordSearchCriteria criteria = TaskRecordSearchCriteria.builder()
+            .withStatus(status)
+            .build();
+        return taskRecordDao.find(criteria);
+    }
+
 
     @Override
     public List<Long> createTasks(List<TaskRecord> records) {
@@ -164,36 +184,6 @@ public class TaskDagServiceImpl implements TaskDagService {
             throw new IllegalStateException("Data issue, please check!");
         }
         TaskRecord targetTask = taskIdMap.get(taskId);
-        /*
-        if (!(targetTask instanceof AsyncTask)) {
-            throw new IllegalArgumentException("The target task is not an AsyncTask!");
-        }
-        TaskStatus oldStatus = targetTask.getTaskStatus();
-        if (newStatus == TaskStatus.SUCCESS) {
-            if (oldStatus == TaskStatus.RUNNING || oldStatus == TaskStatus.UNKNOWN || oldStatus == TaskStatus.ERROR) {
-                targetTask.success(output);
-            } else {
-                logger.warn("Ignore the event, as the task status " + oldStatus + " not in [running, unknown, error] status.]");
-            }
-        } else if (newStatus == TaskStatus.ERROR || newStatus == TaskStatus.TIMEOUT || newStatus == TaskStatus.UNKNOWN) {
-            targetTask.failure(newStatus, output);
-        } else if (newStatus == TaskStatus.INIT) {
-            if (oldStatus == TaskStatus.ERROR || oldStatus == TaskStatus.UNKNOWN || oldStatus == TaskStatus.TIMEOUT) {
-                if (targetTask.isReady()) {
-//                    taskContext.getThreadPool().submit(targetTask);
-                }
-            }
-        } else if (newStatus == TaskStatus.SKIPPED) {
-            targetTask.skip(output);
-        }
-         */
-    }
-
-    private int countTaskByOrderKey(String orderKey) {
-        SearchCriteria searchCriteria = top.ilovemyhome.dagtask.si.dto.TaskSearchCriteria.builder()
-            .withOrderKey(orderKey)
-            .build();
-        return taskRecordDao.count(searchCriteria);
     }
 
     @Override
@@ -204,28 +194,11 @@ public class TaskDagServiceImpl implements TaskDagService {
         return taskRecordDao.find(searchCriteria);
     }
 
-    private List<TaskRecord> loadByOrderKey(String orderKey) {
-        logger.info("Loading task {}.", orderKey);
-        List<TaskRecord> taskList = taskRecordDao.loadTaskForOrder(orderKey);
-        if (Objects.isNull(taskList) || taskList.isEmpty()) {
-            throw new IllegalStateException("Empty task list, please add task for this order!");
-        }
-        logger.info("Task loaded successfully!");
-        return taskList;
-    }
 
     private DagNode toDagNode(TaskRecord record) {
         Objects.requireNonNull(record);
         return new DagNode(record.getId(), record.getName()
             , Objects.nonNull(record.getSuccessorIds()) ? Sets.newHashSet(record.getSuccessorIds()) : null);
-    }
-
-    private List<TaskRecord> loadByTaskId(Long taskId) {
-        String orderKey = taskRecordDao.getTaskOrderByTaskId(taskId);
-        if (Objects.isNull(orderKey)) {
-            throw new IllegalStateException("Cannot find the order info for taskId " + taskId);
-        }
-        return loadByOrderKey(orderKey);
     }
 
     private final TaskRecordDao taskRecordDao;

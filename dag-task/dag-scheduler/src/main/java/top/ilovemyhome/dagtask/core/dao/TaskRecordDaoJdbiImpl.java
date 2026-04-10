@@ -74,23 +74,7 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
             .one());
     }
 
-    @Override
-    public List<TaskRecord> findByOrderKey(String orderKey) {
-        Objects.requireNonNull(orderKey);
-        TaskRecordSearchCriteria criteria = TaskRecordSearchCriteria.builder()
-                .withOrderKey(orderKey)
-                .build();
-        return search(criteria);
-    }
 
-    @Override
-    public List<TaskRecord> findByStatus(TaskStatus status) {
-        Objects.requireNonNull(status);
-        TaskRecordSearchCriteria criteria = TaskRecordSearchCriteria.builder()
-                .withStatus(status)
-                .build();
-        return search(criteria);
-    }
 
     @Override
     public int deleteByOrderKey(String orderKey) {
@@ -99,13 +83,6 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
         return update(sql, Map.of("orderKey", orderKey), null);
     }
 
-    @Override
-    public List<TaskRecord> loadTaskForOrder(String orderKey) {
-        TaskRecordSearchCriteria criteria = TaskRecordSearchCriteria.builder()
-                .withOrderKey(orderKey)
-                .build();
-        return search(criteria);
-    }
 
     @Override
     public int createTasksForOrder(String orderKey, List<TaskRecord> listOfTask) {
@@ -281,20 +258,5 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
         Objects.requireNonNull(criteria, "criteria must not be null");
         String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll) + criteria.whereClause();
         return find(sql, criteria.normalParams(), criteria.listParam());
-    }
-
-    /**
-     * Search tasks with pagination using dynamic search criteria.
-     *
-     * @param criteria the search criteria to use
-     * @param pageable pagination information
-     * @return page of tasks matching the search criteria
-     */
-    @Override
-    public Page<TaskRecord> search(TaskRecordSearchCriteria criteria, Pageable pageable) {
-        Objects.requireNonNull(criteria, "criteria must not be null");
-        Objects.requireNonNull(pageable, "pageable must not be null");
-        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll) + criteria.pageableWhereClause(pageable);
-        return findAll(sql, criteria.normalParams(), criteria.listParam(), pageable);
     }
 }

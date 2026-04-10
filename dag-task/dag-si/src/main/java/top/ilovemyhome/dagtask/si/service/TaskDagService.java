@@ -9,6 +9,10 @@ import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 import java.util.List;
 
 public interface TaskDagService {
+    //1.0 query related
+    List<TaskRecord> findByOrderKey(String orderKey);
+    List<TaskRecord> findByStatus(TaskStatus status);
+
 
     //2.0 task record management
     boolean isSuccess(String orderKey);

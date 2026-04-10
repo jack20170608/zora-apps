@@ -74,13 +74,4 @@ public interface TaskRecordDao extends BaseDao<TaskRecord> {
      */
     int updateStatus(Long taskId, TaskStatus newStatus);
 
-    /**
-     * Search tasks with pagination using dynamic search criteria.
-     *
-     * @param criteria the search criteria to use
-     * @param pageable pagination information (page number, page size)
-     * @return page of tasks matching the search criteria
-     */
-    Page<TaskRecord> search(TaskRecordSearchCriteria criteria, Pageable pageable);
-
 }
