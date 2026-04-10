@@ -2,11 +2,14 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.RowMapper;
+import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
 import top.ilovemyhome.dagtask.si.TaskTemplate;
 import top.ilovemyhome.dagtask.si.persistence.TaskTemplateDao;
 import top.ilovemyhome.zora.jdbi.SqlGenerator;
 import top.ilovemyhome.zora.jdbi.TableDescription;
 import top.ilovemyhome.zora.jdbi.dao.BaseDaoJdbiImpl;
+import top.ilovemyhome.zora.jdbi.page.Page;
+import top.ilovemyhome.zora.jdbi.page.Pageable;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,46 +43,50 @@ public class TaskTemplateDaoJdbiImpl extends BaseDaoJdbiImpl<TaskTemplate> imple
         jdbi.registerRowMapper(TaskTemplate.class, new TaskTemplateRowMapper());
     }
 
-    @Override
-    public List<TaskTemplate> findByTemplateKey(String templateKey) {
-        Objects.requireNonNull(templateKey, "templateKey must not be null");
-        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll)
-            + " where template_key = :templateKey order by version desc ";
-        return find(sql, Map.of("templateKey", templateKey), null);
-    }
 
-    @Override
-    public Optional<TaskTemplate> findByKeyAndVersion(String templateKey, String version) {
-        Objects.requireNonNull(templateKey, "templateKey must not be null");
-        Objects.requireNonNull(version, "version must not be null");
-        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll)
-            + " where template_key = :templateKey and version = :version ";
-        return find(sql, Map.of("templateKey", templateKey, "version", version), null)
-            .stream().findFirst();
-    }
+//    @Override
+//    public List<TaskTemplate> findByTemplateKey(String templateKey) {
+//        Objects.requireNonNull(templateKey, "templateKey must not be null");
+//        TaskTemplateSearchCriteria criteria = TaskTemplateSearchCriteria.builder()
+//                .withTemplateKey(templateKey)
+//                .build();
+//        return find(criteria);
+//    }
+//
+//    @Override
+//    public Optional<TaskTemplate> findByKeyAndVersion(String templateKey, String version) {
+//        Objects.requireNonNull(templateKey, "templateKey must not be null");
+//        Objects.requireNonNull(version, "version must not be null");
+//        TaskTemplateSearchCriteria criteria = TaskTemplateSearchCriteria.builder()
+//                .withTemplateKey(templateKey)
+//                .withVersion(version)
+//                .build();
+//        return find(criteria).stream().findFirst();
+//    }
+//
+//    @Override
+//    public Optional<TaskTemplate> findActiveByTemplateKey(String templateKey) {
+//        Objects.requireNonNull(templateKey, "templateKey must not be null");
+//        TaskTemplateSearchCriteria criteria = TaskTemplateSearchCriteria.builder()
+//                .withTemplateKey(templateKey)
+//                .withActive(true)
+//                .build();
+//        return find(criteria).stream().findFirst();
+//    }
+//
+//    @Override
+//    public List<TaskTemplate> findAllActive() {
+//        TaskTemplateSearchCriteria criteria = TaskTemplateSearchCriteria.builder()
+//                .withActive(true)
+//                .build();
+//        return find(criteria);
+//    }
 
-    @Override
-    public Optional<TaskTemplate> findActiveByTemplateKey(String templateKey) {
-        Objects.requireNonNull(templateKey, "templateKey must not be null");
-        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll)
-            + " where template_key = :templateKey and active = true order by version desc limit 1 ";
-        return find(sql, Map.of("templateKey", templateKey), null)
-            .stream().findFirst();
-    }
-
-    @Override
-    public List<TaskTemplate> findAllActive() {
-        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll)
-            + " where active = true order by template_key, version desc ";
-        return find(sql, Map.of(), null);
-    }
-
-    @Override
-    public List<TaskTemplate> findAll() {
-        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll)
-            + " order by template_key, version desc ";
-        return find(sql, Map.of(), null);
-    }
+//    @Override
+//    public List<TaskTemplate> findAll() {
+//        TaskTemplateSearchCriteria criteria = TaskTemplateSearchCriteria.builder().build();
+//        return search(criteria);
+//    }
 
     @Override
     public int deactivateVersion(String templateKey, String version) {

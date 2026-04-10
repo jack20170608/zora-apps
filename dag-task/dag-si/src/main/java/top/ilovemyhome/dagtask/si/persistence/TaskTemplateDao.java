@@ -1,7 +1,10 @@
 package top.ilovemyhome.dagtask.si.persistence;
 
 import top.ilovemyhome.dagtask.si.TaskTemplate;
+import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
 import top.ilovemyhome.zora.jdbi.dao.BaseDao;
+import top.ilovemyhome.zora.jdbi.page.Page;
+import top.ilovemyhome.zora.jdbi.page.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,46 +16,6 @@ import java.util.Optional;
  * </p>
  */
 public interface TaskTemplateDao extends BaseDao<TaskTemplate> {
-
-    /**
-     * Find all versions of a template by its template key.
-     *
-     * @param templateKey the template business key
-     * @return list of all versions ordered by version descending
-     */
-    List<TaskTemplate> findByTemplateKey(String templateKey);
-
-    /**
-     * Find a specific version of a template by template key and version string.
-     *
-     * @param templateKey the template business key
-     * @param version the semantic version string
-     * @return the template if found, empty otherwise
-     */
-    Optional<TaskTemplate> findByKeyAndVersion(String templateKey, String version);
-
-    /**
-     * Find the currently active (latest/recommended) version of a template.
-     *
-     * @param templateKey the template business key
-     * @return the active template if found, empty otherwise
-     */
-    Optional<TaskTemplate> findActiveByTemplateKey(String templateKey);
-
-    /**
-     * Find all active templates (at least one active version across all templates).
-     * Returns only the active version for each distinct template key.
-     *
-     * @return list of active templates
-     */
-    List<TaskTemplate> findAllActive();
-
-    /**
-     * Find all templates across all versions (including inactive).
-     *
-     * @return list of all template versions
-     */
-    List<TaskTemplate> findAll();
 
     /**
      * Deactivate a specific template version.
@@ -91,4 +54,6 @@ public interface TaskTemplateDao extends BaseDao<TaskTemplate> {
      * @return true if exists, false otherwise
      */
     boolean exists(String templateKey, String version);
+
+
 }
