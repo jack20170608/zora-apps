@@ -9,6 +9,8 @@ import ReactFlow, {
   Controls,
   Background,
   MiniMap,
+  Handle,
+  Position,
   type Connection,
   type Edge,
   type Node,
@@ -226,11 +228,10 @@ function DagCanvasContent({ initialNodes = [], initialEdges = [], onSave, saving
   const nodeTypes = useMemo(() => ({
     default: ({ data, selected }: { data: DagNodeData; selected: boolean }) => (
       <div className={`shadow-md rounded-md px-4 py-2 border-2 bg-background ${selected ? 'border-primary' : 'border-border'}`}>
+        <Handle type="target" position={Position.Left} className="!bg-border !w-3 !h-3" />
         <div className="font-medium text-sm">{data.label}</div>
         <div className="text-xs text-muted-foreground">{data.type}</div>
-        {/* Add connection handles for creating edges */}
-        <div className="react-flow__handle react-flow__handle-left absolute left-[-8px] top-1/2"></div>
-        <div className="react-flow__handle react-flow__handle-right absolute right-[-8px] top-1/2"></div>
+        <Handle type="source" position={Position.Right} className="!bg-border !w-3 !h-3" />
       </div>
     ),
   }), []);
