@@ -2,9 +2,13 @@
 node_modules
 .pnp
 *.pnp.js
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # testing
 coverage
+*.lcov
 
 # production
 build
@@ -24,10 +28,27 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.tmp
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Next.js
 next-env.d.ts
