@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskDispatchRecord;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
+import top.ilovemyhome.dagtask.si.dto.AgentRegistrySearchCriteria;
 import top.ilovemyhome.dagtask.si.dto.SubmitRequest;
 import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskDispatchDao;
@@ -20,6 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static top.ilovemyhome.dagtask.si.Constants.*;
 
 /**
  * Main dispatcher that selects an appropriate agent and dispatches a ready task
@@ -127,7 +130,7 @@ public class TaskDispatcher {
         String executionKey = task.getExecutionKey();
 
         // Step 1: Get all active agents
-        List<AgentRegistryItem> activeAgents = agentRegistryDao.findAllActive();
+        List<AgentRegistryItem> activeAgents = findAllActiveAgents();
         if (activeAgents.isEmpty()) {
             logger.warn("No active agents available for task {}", task.getId());
             return DispatchResult.noAvailableAgent("No active agents registered in the system");
@@ -176,7 +179,7 @@ public class TaskDispatcher {
             .map(dispatch -> {
                 // Find the agent info
                 String agentId = dispatch.getAgentId();
-                return agentRegistryDao.findByAgentId(agentId)
+                return findAgentByAgentId(agentId)
                     .map(agent -> killTask(taskId, agent))
                     .orElse(false);
             })
@@ -194,7 +197,7 @@ public class TaskDispatcher {
         Objects.requireNonNull(taskId, "taskId must not be null");
         Objects.requireNonNull(agent, "agent must not be null");
 
-        String url = buildAgentUrl(agent.getAgentUrl()) + "/api/kill/" + taskId;
+        String url = buildAgentUrl(agent.getAgentUrl()) + API_KILL + taskId;
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -238,7 +241,7 @@ public class TaskDispatcher {
             .findFirst()
             .map(dispatch -> {
                 String agentId = dispatch.getAgentId();
-                return agentRegistryDao.findByAgentId(agentId)
+                return findAgentByAgentId(agentId)
                     .map(agent -> forceOkTask(taskId, agent))
                     .orElse(false);
             })
@@ -256,7 +259,7 @@ public class TaskDispatcher {
         Objects.requireNonNull(taskId, "taskId must not be null");
         Objects.requireNonNull(agent, "agent must not be null");
 
-        String url = buildAgentUrl(agent.getAgentUrl()) + "/api/force-ok/" + taskId;
+        String url = buildAgentUrl(agent.getAgentUrl()) + API_FORCE_OK + taskId;
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -326,7 +329,7 @@ public class TaskDispatcher {
      */
     private DispatchResult submitToAgent(TaskRecord task, AgentRegistryItem agent) {
         String agentUrl = agent.getAgentUrl();
-        String submitUrl = buildAgentUrl(agentUrl) + "/api/submit";
+        String submitUrl = buildAgentUrl(agentUrl) + API_SUBMIT;
 
         // Build the submission request matching what the agent expects
         // The executionClass is the executionKey - agent uses this to instantiate the correct executor
@@ -427,9 +430,10 @@ public class TaskDispatcher {
      * @return number of available agents for this execution key
      */
     public int countAvailableAgents(String executionKey) {
-        List<AgentRegistryItem> active = agentRegistryDao.findAllActive();
+        List<AgentRegistryItem> active = findAllActiveAgents();
         return filterCandidates(active, executionKey).size();
     }
+
 
     /**
      * Gets all available candidate agents for a given execution key.
@@ -438,9 +442,37 @@ public class TaskDispatcher {
      * @return list of available candidate agents (active + supports execution key + has capacity)
      */
     public List<AgentRegistryItem> getAvailableCandidates(String executionKey) {
-        List<AgentRegistryItem> active = agentRegistryDao.findAllActive();
+        List<AgentRegistryItem> active = findAllActiveAgents();
         List<AgentRegistryItem> filtered = filterCandidates(active, executionKey);
         return filterByCapacity(filtered);
+    }
+
+    /**
+     * Finds all currently active (running) agents from the registry.
+     * Active agents are those marked as running in the database.
+     *
+     * @return list of all active agents
+     */
+    public List<AgentRegistryItem> findAllActiveAgents() {
+        AgentRegistrySearchCriteria criteria = AgentRegistrySearchCriteria.builder()
+                .withRunning(true)
+                .build();
+        return agentRegistryDao.search(criteria);
+    }
+
+    /**
+     * Finds an agent by its unique agent ID.
+     *
+     * @param agentId the unique agent identifier to search for
+     * @return an Optional containing the agent if found, empty otherwise
+     */
+    public java.util.Optional<AgentRegistryItem> findAgentByAgentId(String agentId) {
+        AgentRegistrySearchCriteria criteria = AgentRegistrySearchCriteria.builder()
+                .withAgentId(agentId)
+                .build();
+        return agentRegistryDao.search(criteria)
+                .stream()
+                .findFirst();
     }
 
     // =========================================================================
