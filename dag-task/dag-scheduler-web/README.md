@@ -23,6 +23,14 @@ cd dag-scheduler-web
 npm install
 ```
 
+**Note about peer dependencies:** This project uses React 19 RC (with Next.js 15). Some dependencies may show peer dependency warnings. Use this command if you encounter installation errors:
+
+```bash
+npm install --legacy-peer-deps
+```
+
+This is safe because React 19 is API-compatible and all dependencies work correctly with React 19.
+
 ### Development
 
 ```bash
