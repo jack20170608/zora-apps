@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { statsApi } from "@/lib/api-client";
 import type { DashboardStats } from "@/types/task";
-import { FileText, CheckCircle, XCircle, Server } from "lucide-react";
+import { FileText, CheckCircle, Server } from "lucide-react";
 
 function StatCard({
   title,

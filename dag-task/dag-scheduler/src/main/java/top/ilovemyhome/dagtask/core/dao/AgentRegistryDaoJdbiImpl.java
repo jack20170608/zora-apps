@@ -2,6 +2,7 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.RowMapper;
+import top.ilovemyhome.dagtask.core.task.AgentRegistrySearchCriteria;
 import top.ilovemyhome.dagtask.si.agent.AgentInfo;
 import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.zora.jdbi.SqlGenerator;
@@ -58,6 +59,18 @@ public class AgentRegistryDaoJdbiImpl extends BaseDaoJdbiImpl<AgentInfo> impleme
     public List<AgentInfo> findAll() {
         String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll);
         return find(sql, Map.of(), null);
+    }
+
+    /**
+     * Search agents using dynamic search criteria.
+     *
+     * @param criteria the search criteria to use
+     * @return list of agents matching the search criteria
+     */
+    public List<AgentInfo> search(AgentRegistrySearchCriteria criteria) {
+        Objects.requireNonNull(criteria, "criteria must not be null");
+        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll) + criteria.whereClause();
+        return find(sql, criteria.normalParams(), criteria.listParam());
     }
 
     @Override
