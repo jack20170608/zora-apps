@@ -36,9 +36,11 @@ function StatCard({
 }
 
 export function StatsDashboard() {
-  const { data } = useQuery({
+  const { data, error } = useQuery({
     queryKey: ["dashboardStats"],
     queryFn: () => statsApi.getDashboardStats(),
+    // Don't throw error - just use defaults when API doesn't exist yet
+    retry: false,
   });
 
   const stats: DashboardStats = data?.data ?? {

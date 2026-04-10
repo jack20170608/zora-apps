@@ -27,6 +27,7 @@ export function TaskList() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["tasks"],
     queryFn: () => taskApi.listExecutions(),
+    retry: false,
   });
 
   if (isLoading) {

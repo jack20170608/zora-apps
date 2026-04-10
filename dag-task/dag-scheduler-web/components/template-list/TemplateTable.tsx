@@ -22,6 +22,7 @@ export function TemplateTable() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["templates"],
     queryFn: () => templateApi.listAll(),
+    retry: false,
   });
 
   if (isLoading) {
