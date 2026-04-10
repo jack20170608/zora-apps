@@ -10,7 +10,7 @@ Content-Type: application/json
 Authorization: Basic {{username}} {{password}}
 
 {
-  "agentId": "default-agent-101",
+  "agentId": "default-agent-001",
   "agentUrl": "http://localhost:9000/hahaha",
   "maxConcurrentTasks": 10,
   "maxPendingTasks": 100,
@@ -43,6 +43,7 @@ Authorization: Basic {{username}} {{password}}
   "supportedExecutionKeys": ["docker", "container"]
 }
 
+###
 # -----------------------------------------------------------------------------
 # 2. Report agent status (heartbeat)
 # Agents call this periodically to report current queue statistics
@@ -73,7 +74,7 @@ Authorization: Basic {{username}} {{password}}
   "finishedTasks": 128
 }
 
-
+###
 # -----------------------------------------------------------------------------
 # 3. Report task result after execution completes
 # -----------------------------------------------------------------------------
@@ -103,6 +104,7 @@ Authorization: Basic {{username}} {{password}}
   "endTime": "2024-01-15T11:00:00Z"
 }
 
+###
 # -----------------------------------------------------------------------------
 # 4. Unregister an agent when it's shutting down
 # -----------------------------------------------------------------------------
@@ -115,6 +117,7 @@ Authorization: Basic {{username}} {{password}}
   "agentId": "docker-agent-003"
 }
 
+###
 # -----------------------------------------------------------------------------
 # 5. Health check - verify server is running
 # -----------------------------------------------------------------------------
