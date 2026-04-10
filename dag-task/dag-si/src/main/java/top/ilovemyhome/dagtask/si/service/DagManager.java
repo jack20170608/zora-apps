@@ -68,4 +68,18 @@ public interface DagManager {
      * @return count of tasks per status
      */
     java.util.Map<top.ilovemyhome.dagtask.si.enums.TaskStatus, Long> countByStatus(String orderKey);
+
+    /**
+     * Create all TaskRecords from a parsed template DAG definition.
+     * Parses the JSON DAG definition, applies parameter substitution,
+     * and creates all task records in the database with proper dependency relationships.
+     *
+     * @param dagDefinitionJson the JSON DAG definition from the template
+     * @param orderKey the parent order key that all tasks belong to
+     * @param parameters resolved parameters for substitution
+     * @throws com.fasterxml.jackson.core.JsonProcessingException if the JSON is invalid
+     */
+    void createTasksFromDagDefinition(String dagDefinitionJson, String orderKey,
+                                       java.util.Map<String, String> parameters)
+            throws com.fasterxml.jackson.core.JsonProcessingException;
 }

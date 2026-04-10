@@ -177,10 +177,10 @@ public class TaskDagServiceImpl implements TaskDagService {
 
     @Override
     public List<TaskRecord> findTaskByOrderKey(String orderKey) {
-        SearchCriteria searchCriteria = top.ilovemyhome.dagtask.si.dto.TaskSearchCriteria.builder()
+        TaskRecordSearchCriteria criteria = TaskRecordSearchCriteria.builder()
             .withOrderKey(orderKey)
             .build();
-        return taskRecordDao.find(searchCriteria);
+        return taskRecordDao.search(criteria);
     }
 
 
