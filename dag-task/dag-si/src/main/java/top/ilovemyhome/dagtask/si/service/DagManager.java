@@ -82,4 +82,33 @@ public interface DagManager {
     void createTasksFromDagDefinition(String dagDefinitionJson, String orderKey,
                                        java.util.Map<String, String> parameters)
             throws com.fasterxml.jackson.core.JsonProcessingException;
+
+    /**
+     * Instantiate a concrete {@link top.ilovemyhome.dagtask.si.TaskOrder} from an active template.
+     * Uses the template's DAG definition and applies the provided parameter
+     * values to create a concrete task order ready for execution.
+     *
+     * @param templateKey the template business key (uses active version)
+     * @param orderKey the business key for the new task order
+     * @param orderName the name for the new task order
+     * @param parameters parameter values to inject into the template
+     * @return the instantiated task order, empty if template not found
+     */
+    java.util.Optional<top.ilovemyhome.dagtask.si.TaskOrder> instantiateFromTemplate(
+            String templateKey, String orderKey, String orderName,
+            java.util.Map<String, String> parameters);
+
+    /**
+     * Instantiate a concrete {@link top.ilovemyhome.dagtask.si.TaskOrder} from a specific template version.
+     *
+     * @param templateKey the template business key
+     * @param version the specific template version to use
+     * @param orderKey the business key for the new task order
+     * @param orderName the name for the new task order
+     * @param parameters parameter values to inject into the template
+     * @return the instantiated task order, empty if template not found
+     */
+    java.util.Optional<top.ilovemyhome.dagtask.si.TaskOrder> instantiateFromTemplate(
+            String templateKey, String version, String orderKey, String orderName,
+            java.util.Map<String, String> parameters);
 }

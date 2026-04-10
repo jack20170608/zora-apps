@@ -7,10 +7,7 @@ import org.jdbi.v3.core.argument.Argument;
 import org.jdbi.v3.core.config.ConfigRegistry;
 import top.ilovemyhome.dagtask.core.DagSchedulerServer;
 import top.ilovemyhome.dagtask.core.agent.DefaultAgentRegistryService;
-import top.ilovemyhome.dagtask.core.dao.AgentRegistryDaoJdbiImpl;
-import top.ilovemyhome.dagtask.core.dao.TaskOrderDaoJdbiImpl;
-import top.ilovemyhome.dagtask.core.dao.TaskRecordDaoJdbiImpl;
-import top.ilovemyhome.dagtask.core.dao.TaskTemplateDaoJdbiImpl;
+import top.ilovemyhome.dagtask.core.dao.*;
 import top.ilovemyhome.dagtask.core.task.TaskDagServiceImpl;
 import top.ilovemyhome.dagtask.core.task.TaskTemplateServiceImpl;
 import top.ilovemyhome.dagtask.core.task.TaskOrderServiceImpl;
@@ -160,6 +157,7 @@ public class DagSchedulerBuilder {
         var taskTemplateDao = new TaskTemplateDaoJdbiImpl(jdbiToUse);
         var taskOrderDao = new TaskOrderDaoJdbiImpl(jdbiToUse);
         var taskRecordDao = new TaskRecordDaoJdbiImpl(jdbiToUse);
+        var taskDispatchDao = new TaskDispatchDaoJdbiImpl(jdbiToUse);
 
         var taskOrderService = new TaskOrderServiceImpl(jdbiToUse, taskRecordDao, taskOrderDao);
         var agentRegistryService = new DefaultAgentRegistryService(jdbi, taskRecordDao, agentRegistryDao);

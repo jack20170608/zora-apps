@@ -7,13 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
 import top.ilovemyhome.dagtask.core.server.DagServerConfig;
+import top.ilovemyhome.dagtask.core.service.TaskTemplateServiceImpl;
+import top.ilovemyhome.dagtask.si.persistence.*;
 import top.ilovemyhome.dagtask.si.service.TaskOrderService;
 import top.ilovemyhome.dagtask.si.service.TaskTemplateService;
 import top.ilovemyhome.dagtask.si.service.TaskDagService;
-import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
-import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
-import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
-import top.ilovemyhome.dagtask.si.persistence.TaskTemplateDao;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -63,6 +61,7 @@ public class DagSchedulerServer {
     private final TaskOrderDao taskOrderDao;
     private final TaskRecordDao taskRecordDao;
     private final TaskTemplateDao taskTemplateDao;
+    private final TaskDispatchDao taskDispatchDao;
     private final ExecutorService threadPool;
 
     // Service layer
@@ -84,6 +83,7 @@ public class DagSchedulerServer {
         TaskOrderDao taskOrderDao,
         TaskRecordDao taskRecordDao,
         TaskTemplateDao taskTemplateDao,
+        TaskDispatchDao taskDispatchDao,
         AgentRegistryService agentRegistryService,
         TaskTemplateService taskTemplateService,
         TaskOrderService taskOrderService,
@@ -95,6 +95,7 @@ public class DagSchedulerServer {
         this.taskOrderDao = Objects.requireNonNull(taskOrderDao, "taskOrderDao must not be null");
         this.taskRecordDao = Objects.requireNonNull(taskRecordDao, "taskRecordDao must not be null");
         this.taskTemplateDao = Objects.requireNonNull(taskTemplateDao, "taskTemplateDao must not be null");
+        this.taskDispatchDao = Objects.requireNonNull(taskDispatchDao, "taskDispatchDao must not be null");
         this.agentRegistryService = Objects.requireNonNull(agentRegistryService, "agentRegistryService must not be null");
         this.taskTemplateService = Objects.requireNonNull(taskTemplateService, "taskTemplateService must not be null");
         this.taskOrderService = Objects.requireNonNull(taskOrderService, "taskOrderService must not be null");

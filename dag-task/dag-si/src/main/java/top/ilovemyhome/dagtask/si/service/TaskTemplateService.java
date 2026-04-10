@@ -96,33 +96,4 @@ public interface TaskTemplateService {
      * @return list of all template versions
      */
     List<TaskTemplate> getAll();
-
-    /**
-     * Instantiate a concrete {@link TaskOrder} from a template.
-     * <p>
-     * Uses the template's DAG definition and applies the provided parameter
-     * values to create a concrete task order ready for execution.
-     * </p>
-     *
-     * @param templateKey the template business key (uses active version)
-     * @param orderKey the business key for the new task order
-     * @param orderName the name for the new task order
-     * @param parameters parameter values to inject into the template
-     * @return the instantiated task order, empty if template not found
-     */
-    Optional<TaskOrder> instantiateFromTemplate(String templateKey, String orderKey,
-        String orderName, Map<String, String> parameters);
-
-    /**
-     * Instantiate a concrete {@link TaskOrder} from a specific template version.
-     *
-     * @param templateKey the template business key
-     * @param version the specific template version to use
-     * @param orderKey the business key for the new task order
-     * @param orderName the name for the new task order
-     * @param parameters parameter values to inject into the template
-     * @return the instantiated task order, empty if template not found
-     */
-    Optional<TaskOrder> instantiateFromTemplate(String templateKey, String version,
-        String orderKey, String orderName, Map<String, String> parameters);
 }
