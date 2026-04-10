@@ -16,6 +16,12 @@
 
     <!-- This is a Node.js/Next.js project, Maven does not build it -->
     <build>
+        <resources>
+            <resource>
+                <directory>metadata</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
