@@ -106,8 +106,8 @@ public class TaskTemplateSearchCriteria implements SearchCriteria {
         }
         if (StringUtils.isNotBlank(templateKeyPrefix)) {
             ensureNormalParamMap();
-            sqlBuilder.append(" AND template_key like '%'||:templateKeyPrefix||'%'");
-            normalParams.put("templateKeyPrefix", templateKeyPrefix);
+            sqlBuilder.append(" AND template_key like :templateKeyPrefix");
+            normalParams.put("templateKeyPrefix", templateKeyPrefix + "%");
         }
         if (StringUtils.isNotBlank(templateName)) {
             ensureNormalParamMap();

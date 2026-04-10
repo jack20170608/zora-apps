@@ -190,7 +190,7 @@ public class TaskDagServiceImpl implements TaskDagService {
     }
 
     private int countTaskByOrderKey(String orderKey) {
-        SearchCriteria searchCriteria = TaskSearchCriteria.builder()
+        SearchCriteria searchCriteria = top.ilovemyhome.dagtask.si.dto.TaskSearchCriteria.builder()
             .withOrderKey(orderKey)
             .build();
         return taskRecordDao.count(searchCriteria);
@@ -198,7 +198,7 @@ public class TaskDagServiceImpl implements TaskDagService {
 
     @Override
     public List<TaskRecord> findTaskByOrderKey(String orderKey) {
-        SearchCriteria searchCriteria = TaskSearchCriteria.builder()
+        SearchCriteria searchCriteria = top.ilovemyhome.dagtask.si.dto.TaskSearchCriteria.builder()
             .withOrderKey(orderKey)
             .build();
         return taskRecordDao.find(searchCriteria);

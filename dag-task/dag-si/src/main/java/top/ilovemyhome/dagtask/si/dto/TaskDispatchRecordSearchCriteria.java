@@ -107,8 +107,8 @@ public class TaskDispatchRecordSearchCriteria implements SearchCriteria {
         }
         if (StringUtils.isNotBlank(agentUrlPrefix)) {
             ensureNormalParamMap();
-            sqlBuilder.append(" AND agent_url like '%'||:agentUrlPrefix||'%'");
-            normalParams.put("agentUrlPrefix", agentUrlPrefix);
+            sqlBuilder.append(" AND agent_url like :agentUrlPrefix");
+            normalParams.put("agentUrlPrefix", agentUrlPrefix + "%");
         }
         if (statusList != null && !statusList.isEmpty()) {
             ensureListParamMap();

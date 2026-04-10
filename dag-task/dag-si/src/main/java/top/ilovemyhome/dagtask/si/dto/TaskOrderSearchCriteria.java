@@ -92,8 +92,8 @@ public class TaskOrderSearchCriteria implements SearchCriteria {
         }
         if (StringUtils.isNotBlank(namePrefix)) {
             ensureNormalParamMap();
-            sqlBuilder.append(" AND name like '%'||:namePrefix||'%'");
-            normalParams.put("namePrefix", namePrefix);
+            sqlBuilder.append(" AND name like :namePrefix");
+            normalParams.put("namePrefix", namePrefix + "%");
         }
         if (StringUtils.isNotBlank(key)) {
             ensureNormalParamMap();
@@ -102,8 +102,8 @@ public class TaskOrderSearchCriteria implements SearchCriteria {
         }
         if (StringUtils.isNotBlank(keyPrefix)) {
             ensureNormalParamMap();
-            sqlBuilder.append(" AND key like '%'||:keyPrefix||'%'");
-            normalParams.put("keyPrefix", keyPrefix);
+            sqlBuilder.append(" AND key like :keyPrefix");
+            normalParams.put("keyPrefix", keyPrefix + "%");
         }
         if (Objects.nonNull(orderType)) {
             ensureNormalParamMap();

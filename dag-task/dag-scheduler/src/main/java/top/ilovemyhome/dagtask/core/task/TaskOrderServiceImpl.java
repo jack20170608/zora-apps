@@ -60,7 +60,7 @@ public class TaskOrderServiceImpl implements TaskOrderService {
     public int deleteOrderByKey(String orderKey) {
         Objects.requireNonNull(orderKey);
         jdbi.useTransaction(h -> {
-            int runningTaskNum = taskRecordDao.count(TaskSearchCriteria.builder()
+            int runningTaskNum = taskRecordDao.count(top.ilovemyhome.dagtask.si.dto.TaskSearchCriteria.builder()
                     .withOrderKey(orderKey)
                     .withStatusList(List.of(READY, HOLD, RUNNING))
                 .build());
