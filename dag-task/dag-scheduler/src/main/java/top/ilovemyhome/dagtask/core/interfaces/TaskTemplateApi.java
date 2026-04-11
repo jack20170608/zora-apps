@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -24,19 +23,21 @@ import top.ilovemyhome.dagtask.si.service.TaskTemplateService;
 import top.ilovemyhome.dagtask.si.TaskOrder;
 import top.ilovemyhome.dagtask.si.TaskTemplate;
 import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
+import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
+import top.ilovemyhome.zora.jdbi.page.Page;
+import top.ilovemyhome.zora.jdbi.page.Pageable;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * REST API endpoints for managing DAG task templates.
  * <p>
- * This API provides complete template management including:
+ * This API provides template management corresponding to all {@link TaskTemplateService} operations:
  * <ul>
- *     <li>CRUD operations for template versions</li>
- *     <li>Version management and activation control</li>
- *     <li>Instantiation to create concrete {@link TaskOrder} from templates</li>
+ *     <li>Create new template versions</li>
+ *     <li>Update existing template versions</li>
+ *     <li>Deactivate and delete template versions</li>
+ *     <li>Search templates by criteria</li>
  * </ul>
  * <p>
  * A DAG task template is a reusable, versioned workflow definition that can be
@@ -64,126 +65,6 @@ public class TaskTemplateApi {
     @Inject
     public TaskTemplateApi(TaskTemplateService taskTemplateService) {
         this.taskTemplateService = taskTemplateService;
-    }
-
-    /**
-     * Get all active templates across all template keys.
-     * Returns only the active version for each template.
-     *
-     * @return HTTP 200 OK with list of active templates
-     */
-    @GET
-    @Operation(summary = "List all active templates", description = "Returns all currently active template versions")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved active templates",
-            content = @Content(mediaType = "application/json",
-                schema = @Schema(implementation = List.class)))
-    })
-    public Response listAllActive() {
-        List<TaskTemplate> templates = taskTemplateService.getAllActive();
-        LOGGER.debug("Retrieved {} active templates", templates.size());
-        return Response.ok().entity(ResEntityHelper.ok("Active templates retrieved successfully", templates)).build();
-    }
-
-    /**
-     * Get all templates including all versions (including inactive).
-     *
-     * @return HTTP 200 OK with list of all template versions
-     */
-    @GET
-    @Path("/all")
-    @Operation(summary = "List all templates with all versions", description = "Returns all template versions including inactive ones")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved all templates",
-            content = @Content(mediaType = "application/json",
-                schema = @Schema(implementation = List.class)))
-    })
-    public Response listAll() {
-        List<TaskTemplate> templates = taskTemplateService.getAll();
-        LOGGER.debug("Retrieved {} template versions total", templates.size());
-        return Response.ok().entity(ResEntityHelper.ok("All templates retrieved successfully", templates)).build();
-    }
-
-    /**
-     * Get all versions of a specific template by key.
-     *
-     * @param templateKey the template business key
-     * @return HTTP 200 OK with list of versions ordered descending
-     */
-    @GET
-    @Path("/{templateKey}/versions")
-    @Operation(summary = "List all versions of a template", description = "Returns all versions for a specific template key")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved versions",
-            content = @Content(mediaType = "application/json",
-                schema = @Schema(implementation = List.class)))
-    })
-    public Response listVersions(
-        @Parameter(description = "Template business key", required = true)
-        @PathParam("templateKey") String templateKey) {
-        List<TaskTemplate> versions = taskTemplateService.getVersions(templateKey);
-        LOGGER.debug("Retrieved {} versions for template [{}]", versions.size(), templateKey);
-        return Response.ok().entity(ResEntityHelper.ok("Versions retrieved successfully", versions)).build();
-    }
-
-    /**
-     * Get the currently active version of a template.
-     *
-     * @param templateKey the template business key
-     * @return HTTP 200 OK with the active template, HTTP 400 if not found
-     */
-    @GET
-    @Path("/{templateKey}/active")
-    @Operation(summary = "Get active version of a template", description = "Returns the currently active version of the template")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Template found",
-            content = @Content(mediaType = "application/json",
-                schema = @Schema(implementation = TaskTemplate.class))),
-        @ApiResponse(responseCode = "400", description = "No active template found", content = @Content)
-    })
-    public Response getActive(
-        @Parameter(description = "Template business key", required = true)
-        @PathParam("templateKey") String templateKey) {
-        Optional<TaskTemplate> template = taskTemplateService.getActive(templateKey);
-        if (template.isEmpty()) {
-            LOGGER.warn("No active template found for key [{}]", templateKey);
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(ResEntityHelper.badRequest("No active template found for key: " + templateKey))
-                .build();
-        }
-        return Response.ok().entity(ResEntityHelper.ok("Active template retrieved successfully", template.get())).build();
-    }
-
-    /**
-     * Get a specific version of a template.
-     *
-     * @param templateKey the template business key
-     * @param version the version string
-     * @return HTTP 200 OK with the template, HTTP 400 if not found
-     */
-    @GET
-    @Path("/{templateKey}/v/{version}")
-    @Operation(summary = "Get specific template version", description = "Returns a specific version of a template")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Template found",
-            content = @Content(mediaType = "application/json",
-                schema = @Schema(implementation = TaskTemplate.class))),
-        @ApiResponse(responseCode = "400", description = "Template version not found", content = @Content)
-    })
-    public Response getByVersion(
-        @Parameter(description = "Template business key", required = true)
-        @PathParam("templateKey") String templateKey,
-        @Parameter(description = "Template version", required = true)
-        @PathParam("version") String version) {
-        Optional<TaskTemplate> template = taskTemplateService.getByVersion(templateKey, version);
-        if (template.isEmpty()) {
-            LOGGER.warn("Template version not found: key=[{}], version=[{}]", templateKey, version);
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(ResEntityHelper.badRequest(String.format(
-                    "Template version not found: key=%s, version=%s", templateKey, version)))
-                .build();
-        }
-        return Response.ok().entity(ResEntityHelper.ok("Template retrieved successfully", template.get())).build();
     }
 
     /**
@@ -322,7 +203,55 @@ public class TaskTemplateApi {
                 .build();
         }
         LOGGER.info("Deleted template version: key=[{}], version=[{}]", templateKey, version);
-        return Response.ok().entity(ResEntityHelper.ok("Template version deleted successfully", null)).build();
+        return Response.ok().entity(ResEntityHelper.ok("Template deleted successfully", null)).build();
+    }
+
+    /**
+     * Search templates by criteria, returns all matching results.
+     *
+     * @param searchCriteria the search criteria to filter templates
+     * @return HTTP 200 OK with list of matching templates
+     */
+    @POST
+    @Path("/search")
+    @Operation(summary = "Search templates by criteria", description = "Returns all template versions matching the search criteria")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved matching templates",
+            content = @Content(mediaType = "application/json",
+                schema = @Schema(implementation = List.class)))
+    })
+    public Response search(
+        @Parameter(description = "Search criteria for filtering templates", required = true)
+        TaskTemplateSearchCriteria searchCriteria) {
+        List<TaskTemplate> templates = taskTemplateService.findAll(searchCriteria);
+        LOGGER.debug("Found {} templates matching search criteria", templates.size());
+        return Response.ok().entity(ResEntityHelper.ok("Templates search completed", templates)).build();
+    }
+
+    /**
+     * Search templates by criteria with pagination.
+     *
+     * @param searchCriteria the search criteria to filter templates
+     * @param page the page request containing page number and page size
+     * @return HTTP 200 OK with paginated result of matching templates
+     */
+    @POST
+    @Path("/search/page")
+    @Operation(summary = "Search templates by criteria (paged)", description = "Returns paginated template versions matching the search criteria")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved matching templates page",
+            content = @Content(mediaType = "application/json",
+                schema = @Schema(implementation = Page.class)))
+    })
+    public Response searchPaged(
+        @Parameter(description = "Search criteria for filtering templates", required = true)
+        TaskTemplateSearchCriteria searchCriteria,
+        @Parameter(description = "Pagination information (page number, page size)", required = true)
+        Pageable page) {
+        Page<TaskTemplate> result = taskTemplateService.find(searchCriteria, page);
+        LOGGER.debug("Found {} total templates matching search criteria on page {}",
+            result.getTotalElements(), result.getNumber());
+        return Response.ok().entity(ResEntityHelper.ok("Templates paged search completed", result)).build();
     }
 
 }
