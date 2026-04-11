@@ -156,13 +156,9 @@ public class DagScheduleServiceImpl implements DagScheduleService {
     @Override
     public void kill(Long taskId) {
         Objects.requireNonNull(taskId);
-
         logger.info("Force killing (marking as failed) task {}", taskId);
-        TaskOutput output = TaskOutput.builder()
-            .withSuccess(false)
-            .withMessage("Task was manually killed by operator")
-            .build();
-        onTaskCompleted(taskId, TaskStatus.FAILED, output);
+        TaskOutput output = TaskOutput.fail(taskId, null, "Task was manually killed by operator");
+        onTaskCompleted(taskId, TaskStatus.ERROR, output);
     }
 
     @Override
