@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,10 +15,13 @@ import top.ilovemyhome.dagtask.core.dag.DagNode;
 import top.ilovemyhome.dagtask.si.TaskOrder;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.TaskTemplate;
+import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
+import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
-import top.ilovemyhome.dagtask.si.service.DagManager;
+import top.ilovemyhome.dagtask.si.persistence.TaskTemplateDao;
+import top.ilovemyhome.dagtask.si.service.DagManageService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class DagManagerImpl implements DagManager {
+public class DagManageServiceImpl implements DagManageService {
 
     private final TaskRecordDao taskRecordDao;
     private final TaskOrderDao taskOrderDao;
@@ -40,12 +44,14 @@ public class DagManagerImpl implements DagManager {
     private final Jdbi jdbi;
     private final ObjectMapper objectMapper;
 
-    private static final Logger logger = LoggerFactory.getLogger(DagManagerImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(DagManageServiceImpl.class);
     private static final Pattern PARAMETER_PATTERN = Pattern.compile("\\{\\{([a-zA-Z0-9_\\-.]+)\\}\\}");
 
-    public DagManagerImpl(Jdbi jdbi, TaskOrderDao taskOrderDao, TaskRecordDao taskRecordDao,
-                          top.ilovemyhome.dagtask.si.persistence.TaskTemplateDao taskTemplateDao,
-                          ObjectMapper objectMapper) {
+    public DagManageServiceImpl(Jdbi jdbi
+        , TaskOrderDao taskOrderDao
+        , TaskRecordDao taskRecordDao,
+                                TaskTemplateDao taskTemplateDao,
+                                ObjectMapper objectMapper) {
         this.jdbi = jdbi;
         this.taskOrderDao = taskOrderDao;
         this.taskRecordDao = taskRecordDao;
@@ -53,17 +59,7 @@ public class DagManagerImpl implements DagManager {
         this.objectMapper = objectMapper;
     }
 
-    @Override
-    public List<Long> getNextTaskIds(int count) {
-        if (count <= 0) {
-            throw new IllegalArgumentException("The count must be greater than 0");
-        }
-        List<Long> ids = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            ids.add(taskRecordDao.getNextId());
-        }
-        return ids;
-    }
+
 
     @Override
     public List<Long> createTasks(List<TaskRecord> records) {
@@ -78,7 +74,7 @@ public class DagManagerImpl implements DagManager {
             throw new IllegalArgumentException("The record order key must not be empty");
         }
         records.forEach(r -> {
-            if (!StringUtils.equals(orderKey, r.getOrderKey())) {
+            if (!Strings.CS.equals(orderKey, r.getOrderKey())) {
                 throw new IllegalArgumentException("All records must have the same order key");
             }
         });
@@ -196,33 +192,6 @@ public class DagManagerImpl implements DagManager {
             taskInfos.size(), orderKey);
     }
 
-    @Override
-    public List<TaskRecord> findTasksByOrderKey(String orderKey) {
-        return taskRecordDao.findByOrderKey(orderKey);
-    }
-
-    @Override
-    public boolean exists(String orderKey) {
-        return taskRecordDao.isOrdered(orderKey);
-    }
-
-    @Override
-    public boolean isAllSuccess(String orderKey) {
-        return taskRecordDao.isSuccess(orderKey);
-    }
-
-    @Override
-    public Map<TaskStatus, Long> countByStatus(String orderKey) {
-        List<TaskRecord> allTasks = findTasksByOrderKey(orderKey);
-        Map<TaskStatus, Long> result = new HashMap<>();
-        for (TaskStatus status : TaskStatus.values()) {
-            result.put(status, 0L);
-        }
-        for (TaskRecord task : allTasks) {
-            result.computeIfPresent(task.getStatus(), (k, v) -> v + 1);
-        }
-        return result;
-    }
 
     /**
      * Builds a TaskRecord from a JSON task node in the DAG definition,
@@ -336,14 +305,14 @@ public class DagManagerImpl implements DagManager {
 
     @Override
     public Optional<TaskOrder> instantiateFromTemplate(String templateKey, String orderKey,
-                                                      String orderName, Map<String, String> parameters) {
+                                                       String orderName, Map<String, String> parameters) {
         return instantiateFromTemplate(templateKey, null, orderKey, orderName, parameters);
     }
 
     @Override
     public Optional<TaskOrder> instantiateFromTemplate(String templateKey, String version,
-                                                      String orderKey, String orderName,
-                                                      Map<String, String> parameters) {
+                                                       String orderKey, String orderName,
+                                                       Map<String, String> parameters) {
         Objects.requireNonNull(orderKey, "orderKey must not be null");
         Objects.requireNonNull(orderName, "orderName must not be null");
 
@@ -359,12 +328,7 @@ public class DagManagerImpl implements DagManager {
         }
 
         // Get template from template service
-        Optional<TaskTemplate> templateOpt;
-        if (version == null || version.isBlank()) {
-            templateOpt = taskTemplateDao.findActiveByTemplateKey(templateKey);
-        } else {
-            templateOpt = taskTemplateDao.findByKeyAndVersion(templateKey, version);
-        }
+        Optional<TaskTemplate> templateOpt = findTemplateByKey(templateKey, version);
 
         if (templateOpt.isEmpty()) {
             logger.warn("Cannot instantiate: template not found key=[{}], version=[{}]",
@@ -412,6 +376,19 @@ public class DagManagerImpl implements DagManager {
         return Optional.of(order);
     }
 
+    private Optional<TaskTemplate> findTemplateByKey(String templateKey, String version) {
+        return taskTemplateDao.find(TaskTemplateSearchCriteria.builder()
+            .withTemplateKey(templateKey)
+            .withVersion(version)
+            .build()).stream().findFirst();
+    }
+
+    private List<TaskRecord> findTasksByOrderKey(String orderKey) {
+        return this.taskRecordDao.find(TaskRecordSearchCriteria.builder()
+            .withOrderKey(orderKey)
+            .build());
+    }
+
     /**
      * Resolves parameters by merging user-provided values with defaults from the template's
      * parameter schema.
@@ -447,7 +424,7 @@ public class DagManagerImpl implements DagManager {
 
         } catch (JsonProcessingException e) {
             logger.warn("Failed to parse parameter schema for template key=[{}], version=[{}], " +
-                "using user parameters as-is: {}", template.getTemplateKey(), template.getVersion(),
+                    "using user parameters as-is: {}", template.getTemplateKey(), template.getVersion(),
                 e.getMessage());
             return userParameters;
         }
@@ -462,5 +439,6 @@ public class DagManagerImpl implements DagManager {
     /**
      * Internal record to hold task build information during the two-pass creation process.
      */
-    private record TaskBuildInfo(TaskRecord taskRecord, String taskName, Set<String> dependencies) {}
+    private record TaskBuildInfo(TaskRecord taskRecord, String taskName, Set<String> dependencies) {
+    }
 }

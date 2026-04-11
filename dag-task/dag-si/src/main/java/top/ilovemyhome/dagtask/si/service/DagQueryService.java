@@ -2,7 +2,6 @@ package top.ilovemyhome.dagtask.si.service;
 
 import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
 import top.ilovemyhome.dagtask.si.TaskRecord;
-import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 import top.ilovemyhome.zora.jdbi.page.Page;
 import top.ilovemyhome.zora.jdbi.page.Pageable;
 
@@ -13,7 +12,7 @@ import java.util.Optional;
  * Task Query Service - Provides query capabilities for task management.
  * Primarily used by management interfaces and monitoring.
  */
-public interface TaskQueryService {
+public interface DagQueryService {
 
 
     Optional<TaskRecord> getTask(Long taskId);
@@ -30,4 +29,7 @@ public interface TaskQueryService {
      * @return page of matching tasks
      */
     Page<TaskRecord> find(TaskRecordSearchCriteria criteria, Pageable pageable);
+
+
+
 }

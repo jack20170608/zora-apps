@@ -19,7 +19,7 @@ import java.util.List;
  *     <li>Manual task operations: run, force complete, kill, hold, resume</li>
  * </ul>
  */
-public interface DagScheduler {
+public interface DagScheduleService {
 
     /**
      * Start execution of a DAG.

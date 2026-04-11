@@ -9,6 +9,7 @@ import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
 import top.ilovemyhome.dagtask.core.server.DagServerConfig;
 import top.ilovemyhome.dagtask.core.service.TaskTemplateServiceImpl;
 import top.ilovemyhome.dagtask.si.persistence.*;
+import top.ilovemyhome.dagtask.si.service.DagManageService;
 import top.ilovemyhome.dagtask.si.service.TaskOrderService;
 import top.ilovemyhome.dagtask.si.service.TaskTemplateService;
 import top.ilovemyhome.dagtask.si.service.TaskDagService;
@@ -67,9 +68,10 @@ public class DagSchedulerServer {
     // Service layer
     private final AgentRegistryService agentRegistryService;
     private final TaskTemplateService taskTemplateService;
-    private final TaskOrderService taskOrderService;
-    private final TaskDagService taskDagService;
+//    private final TaskOrderService taskOrderService;
+//    private final TaskDagService taskDagService;
 
+    private final DagManageService dagManageService;
     // Components that need lifecycle management
     private final List<Startable> startableComponents = new ArrayList<>();
 
@@ -86,8 +88,9 @@ public class DagSchedulerServer {
         TaskDispatchDao taskDispatchDao,
         AgentRegistryService agentRegistryService,
         TaskTemplateService taskTemplateService,
-        TaskOrderService taskOrderService,
-        TaskDagService taskDagService) {
+//        TaskOrderService taskOrderService,
+//        TaskDagService taskDagService,
+        DagManageService dagManageService) {
         this.config = config;
         this.jdbi = Objects.requireNonNull(jdbi, "jdbi must not be null");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
@@ -98,9 +101,9 @@ public class DagSchedulerServer {
         this.taskDispatchDao = Objects.requireNonNull(taskDispatchDao, "taskDispatchDao must not be null");
         this.agentRegistryService = Objects.requireNonNull(agentRegistryService, "agentRegistryService must not be null");
         this.taskTemplateService = Objects.requireNonNull(taskTemplateService, "taskTemplateService must not be null");
-        this.taskOrderService = Objects.requireNonNull(taskOrderService, "taskOrderService must not be null");
-        this.taskDagService = Objects.requireNonNull(taskDagService, "taskDagService must not be null");
-
+//        this.taskOrderService = Objects.requireNonNull(taskOrderService, "taskOrderService must not be null");
+//        this.taskDagService = Objects.requireNonNull(taskDagService, "taskDagService must not be null");
+        this.dagManageService = Objects.requireNonNull(dagManageService, "dagManageService must not be null");
         int totalProcessorSize = Runtime.getRuntime().availableProcessors();
         int nThreads = Math.min(totalProcessorSize, 16);
         ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("TaskDagService-%d").build();
@@ -252,9 +255,6 @@ public class DagSchedulerServer {
         return threadPool;
     }
 
-    public TaskDagService getTaskDagService() {
-        return taskDagService;
-    }
 
     public TaskOrderService getTaskOrderService() {
         return taskOrderService;

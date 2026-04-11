@@ -9,21 +9,21 @@ import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
-import top.ilovemyhome.dagtask.si.service.DagScheduler;
+import top.ilovemyhome.dagtask.si.service.DagScheduleService;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class DagSchedulerImpl implements DagScheduler {
+public class DagScheduleServiceImpl implements DagScheduleService {
 
     private final TaskRecordDao taskRecordDao;
     private final TaskDispatcher taskDispatcher;
 
-    private static final Logger logger = LoggerFactory.getLogger(DagSchedulerImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(DagScheduleServiceImpl.class);
 
-    public DagSchedulerImpl(TaskRecordDao taskRecordDao, TaskDispatcher taskDispatcher) {
+    public DagScheduleServiceImpl(TaskRecordDao taskRecordDao, TaskDispatcher taskDispatcher) {
         this.taskRecordDao = taskRecordDao;
         this.taskDispatcher = taskDispatcher;
     }
