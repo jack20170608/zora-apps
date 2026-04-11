@@ -1,8 +1,7 @@
 package top.ilovemyhome.dagtask.si.service;
 
-import top.ilovemyhome.dagtask.si.TaskInput;
-import top.ilovemyhome.dagtask.si.TaskOutput;
-import top.ilovemyhome.dagtask.si.TaskRecord;
+import top.ilovemyhome.dagtask.si.*;
+import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 
 import java.util.List;
@@ -65,7 +64,7 @@ public interface DagScheduleService {
      * @param input  the input parameters
      * @return the task output after execution
      */
-    TaskOutput runNow(Long taskId, TaskInput input);
+    DispatchResult runNow(Long taskId, TaskInput input);
 
     /**
      * Force mark a task as completed successfully.

@@ -90,14 +90,7 @@ public class AgentRegistryItem {
         this.finishedTasks = finishedTasks;
     }
 
-    /**
-     * Creates an AgentRegistryItem from a new registration.
-     * Sets registration time to current time and initializes status with zero counts.
-     *
-     * @param registration the registration information from the agent
-     * @return a new AgentRegistryItem instance
-     */
-    public static AgentRegistryItem fromRegistration(AgentRegistration registration) {
+    public static AgentRegistryItem fromRegistration(AgentRegisterRequest registration) {
         Instant now = Instant.now();
         return builder()
             .withId(null)

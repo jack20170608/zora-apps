@@ -1,5 +1,6 @@
 package top.ilovemyhome.dagtask.si.persistence;
 
+import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
 import top.ilovemyhome.zora.jdbi.dao.BaseDao;
 import top.ilovemyhome.dagtask.si.TaskDispatchRecord;
 
@@ -48,7 +49,7 @@ public interface TaskDispatchDao extends BaseDao<TaskDispatchRecord> {
      * @param status the status to filter by
      * @return list of matching dispatch records
      */
-    List<TaskDispatchRecord> findByStatus(TaskDispatchRecord.DispatchStatus status);
+    List<TaskDispatchRecord> findByStatus(DispatchStatus status);
 
     /**
      * Updates the status of a dispatch record.
@@ -57,7 +58,7 @@ public interface TaskDispatchDao extends BaseDao<TaskDispatchRecord> {
      * @param newStatus the new status
      * @return number of rows updated (0 or 1)
      */
-    int updateStatus(Long taskId, TaskDispatchRecord.DispatchStatus newStatus);
+    int updateStatus(Long taskId, DispatchStatus newStatus);
 
     /**
      * Counts the number of dispatches for a specific agent.
@@ -73,7 +74,7 @@ public interface TaskDispatchDao extends BaseDao<TaskDispatchRecord> {
      * @param status the status to count
      * @return number of dispatches with this status
      */
-    int countByStatus(TaskDispatchRecord.DispatchStatus status);
+    int countByStatus(DispatchStatus status);
 
     /**
      * Deletes all dispatch records for an agent.

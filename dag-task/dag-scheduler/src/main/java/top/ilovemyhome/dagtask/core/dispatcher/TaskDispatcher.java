@@ -4,11 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.ilovemyhome.dagtask.si.DispatchResult;
 import top.ilovemyhome.dagtask.si.TaskDispatchRecord;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
 import top.ilovemyhome.dagtask.si.dto.AgentRegistrySearchCriteria;
 import top.ilovemyhome.dagtask.si.dto.SubmitRequest;
+import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
 import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskDispatchDao;
 
@@ -174,7 +176,7 @@ public class TaskDispatcher {
         Objects.requireNonNull(taskId, "taskId must not be null");
 
         return taskDispatchDao.findByTaskId(taskId)
-            .stream().filter(d -> d.getStatus() == TaskDispatchRecord.DispatchStatus.DISPATCHED)
+            .stream().filter(d -> d.getStatus() == DispatchStatus.DISPATCHED)
             .findFirst()
             .map(dispatch -> {
                 // Find the agent info
@@ -237,7 +239,7 @@ public class TaskDispatcher {
         Objects.requireNonNull(taskId, "taskId must not be null");
         return taskDispatchDao.findByTaskId(taskId)
             .stream()
-            .filter(d -> d.getStatus() == TaskDispatchRecord.DispatchStatus.DISPATCHED)
+            .filter(d -> d.getStatus() == DispatchStatus.DISPATCHED)
             .findFirst()
             .map(dispatch -> {
                 String agentId = dispatch.getAgentId();
@@ -352,7 +354,7 @@ public class TaskDispatcher {
             .withTaskId(task.getId())
             .withAgentId(agent.getAgentId())
             .withAgentUrl(agent.getAgentUrl())
-            .withStatus(TaskDispatchRecord.DispatchStatus.DISPATCHED)
+            .withStatus(DispatchStatus.DISPATCHED)
             .build();
         taskDispatchDao.create(dispatchRecord);
 
@@ -369,7 +371,7 @@ public class TaskDispatcher {
             // Update dispatch status based on agent response
             if (statusCode == 202) {
                 // Accepted - task is queued
-                taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.ACCEPTED);
+                taskDispatchDao.updateStatus(task.getId(), DispatchStatus.ACCEPTED);
                 logger.info("Task {} dispatched successfully to agent {} at {}",
                     task.getId(), agent.getAgentId(), agentUrl);
                 return DispatchResult.success(agent, task.getId());
@@ -377,30 +379,30 @@ public class TaskDispatcher {
 
             if (statusCode == 429) {
                 // Too Many Requests - agent's pending queue is full
-                taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.REJECTED);
+                taskDispatchDao.updateStatus(task.getId(), DispatchStatus.REJECTED);
                 logger.warn("Agent {} rejected task {}: pending queue is full (429)",
                     agent.getAgentId(), task.getId());
                 return DispatchResult.agentQueueFull(agent);
             }
 
             if (statusCode == 400) {
-                taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.REJECTED);
+                taskDispatchDao.updateStatus(task.getId(), DispatchStatus.REJECTED);
                 logger.warn("Agent {} rejected task {}: bad request (400), response: {}",
                     agent.getAgentId(), task.getId(), response.body());
                 return DispatchResult.badRequest(agent, response.body());
             }
 
-            taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.FAILED);
+            taskDispatchDao.updateStatus(task.getId(), DispatchStatus.FAILED);
             logger.warn("Agent {} rejected task {}: unexpected status code {}",
                 agent.getAgentId(), task.getId(), statusCode);
             return DispatchResult.unexpectedHttpStatus(agent, statusCode, response.body());
         } catch (IOException e) {
-            taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.FAILED);
+            taskDispatchDao.updateStatus(task.getId(), DispatchStatus.FAILED);
             logger.error("IOException connecting to agent {} at {} for task {}",
                 agent.getAgentId(), agentUrl, task.getId(), e);
             return DispatchResult.connectionFailed(agent, e.getMessage());
         } catch (InterruptedException e) {
-            taskDispatchDao.updateStatus(task.getId(), TaskDispatchRecord.DispatchStatus.FAILED);
+            taskDispatchDao.updateStatus(task.getId(), DispatchStatus.FAILED);
             logger.error("Interrupted while connecting to agent {} for task {}",
                 agent.getAgentId(), task.getId(), e);
             Thread.currentThread().interrupt();
@@ -479,83 +481,5 @@ public class TaskDispatcher {
     // Result record for dispatch operations
     // =========================================================================
 
-    /**
-     * Result of a task dispatch operation.
-     * <p>
-     * Contains information about whether the dispatch succeeded, and if not,
-     * what the reason for failure was.
-     * </p>
-     *
-     * @param success whether dispatch was successful
-     * @param selectedAgent the agent that accepted the task (null if failed)
-     * @param dispatchedTaskId the ID of the dispatched task (null if failed)
-     * @param message human-readable message describing the outcome
-     */
-    public record DispatchResult(
-        boolean success,
-        AgentRegistryItem selectedAgent,
-        Long dispatchedTaskId,
-        String message
-    ) {
 
-        public static DispatchResult success(AgentRegistryItem agent, Long taskId) {
-            return new DispatchResult(true, agent, taskId,
-                String.format("Task %d dispatched successfully to agent %s at %s",
-                    taskId, agent.getAgentId(), agent.getAgentUrl()));
-        }
-
-        public static DispatchResult noAvailableAgent(String reason) {
-            return new DispatchResult(false, null, null,
-                "No available agents: " + reason);
-        }
-
-        public static DispatchResult noCandidateForExecutionKey(String executionKey) {
-            return new DispatchResult(false, null, null,
-                "No active agents available that support execution key: " + executionKey);
-        }
-
-        public static DispatchResult allCandidatesAtCapacity(String executionKey) {
-            return new DispatchResult(false, null, null,
-                "All agents supporting " + executionKey + " are at full concurrent capacity");
-        }
-
-        public static DispatchResult selectionFailed() {
-            return new DispatchResult(false, null, null,
-                "Load balancing strategy failed to select an agent from candidates");
-        }
-
-        public static DispatchResult serializationError(String message) {
-            return new DispatchResult(false, null, null,
-                "Failed to serialize request: " + message);
-        }
-
-        public static DispatchResult agentQueueFull(AgentRegistryItem agent) {
-            return new DispatchResult(false, agent, null,
-                String.format("Agent %s at %s has full pending queue",
-                    agent.getAgentId(), agent.getAgentUrl()));
-        }
-
-        public static DispatchResult badRequest(AgentRegistryItem agent, String response) {
-            return new DispatchResult(false, agent, null,
-                String.format("Agent %s returned 400 Bad Request: %s",
-                    agent.getAgentId(), response));
-        }
-
-        public static DispatchResult unexpectedHttpStatus(AgentRegistryItem agent, int statusCode, String body) {
-            return new DispatchResult(false, agent, null,
-                String.format("Agent %s returned unexpected status code %d: %s",
-                    agent.getAgentId(), statusCode, body));
-        }
-
-        public static DispatchResult connectionFailed(AgentRegistryItem agent, String error) {
-            return new DispatchResult(false, agent, null,
-                String.format("Connection failed to agent %s at %s: %s",
-                    agent.getAgentId(), agent.getAgentUrl(), error));
-        }
-
-        public static DispatchResult interrupted() {
-            return new DispatchResult(false, null, null,
-                "Dispatch was interrupted by another thread");
-        }
-    }
 }

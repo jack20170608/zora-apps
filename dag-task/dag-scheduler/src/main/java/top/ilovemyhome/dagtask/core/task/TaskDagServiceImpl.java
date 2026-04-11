@@ -3,6 +3,7 @@ package top.ilovemyhome.dagtask.core.task;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,6 @@ import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskTemplateDao;
 import top.ilovemyhome.dagtask.si.service.TaskDagService;
-import top.ilovemyhome.zora.jdbi.SearchCriteria;
 import top.ilovemyhome.dagtask.core.dag.DagHelper;
 import top.ilovemyhome.dagtask.core.dag.DagNode;
 import top.ilovemyhome.dagtask.si.*;
@@ -86,7 +86,7 @@ public class TaskDagServiceImpl implements TaskDagService {
             throw new IllegalArgumentException("The record order key must not be empty");
         }
         records.forEach(r -> {
-            if (!StringUtils.equals(orderKey, r.getOrderKey())) {
+            if (!Strings.CS.equals(orderKey, r.getOrderKey())) {
                 throw new IllegalArgumentException("All records must have the same order key");
             }
         });

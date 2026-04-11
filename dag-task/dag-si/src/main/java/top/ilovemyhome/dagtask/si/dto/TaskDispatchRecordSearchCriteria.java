@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import top.ilovemyhome.dagtask.si.TaskDispatchRecord;
+import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
 import top.ilovemyhome.zora.jdbi.SearchCriteria;
 import top.ilovemyhome.zora.jdbi.page.Pageable;
 
@@ -21,12 +22,12 @@ public class TaskDispatchRecordSearchCriteria implements SearchCriteria {
     private final List<Long> listOfTaskId;
     private final String agentId;
     private final String agentUrlPrefix;
-    private final List<TaskDispatchRecord.DispatchStatus> statusList;
+    private final List<DispatchStatus> statusList;
     private final LocalDateTime dispatchTimeAfter;
     private final LocalDateTime dispatchTimeBefore;
 
     public TaskDispatchRecordSearchCriteria(List<Long> listOfId, List<Long> listOfTaskId, String agentId, String agentUrlPrefix,
-                                             List<TaskDispatchRecord.DispatchStatus> statusList,
+                                             List<DispatchStatus> statusList,
                                              LocalDateTime dispatchTimeAfter, LocalDateTime dispatchTimeBefore) {
         this.listOfId = listOfId;
         this.listOfTaskId = listOfTaskId;
@@ -55,7 +56,7 @@ public class TaskDispatchRecordSearchCriteria implements SearchCriteria {
         return agentUrlPrefix;
     }
 
-    public List<TaskDispatchRecord.DispatchStatus> getStatusList() {
+    public List<DispatchStatus> getStatusList() {
         return statusList;
     }
 
@@ -170,7 +171,7 @@ public class TaskDispatchRecordSearchCriteria implements SearchCriteria {
         private List<Long> listOfTaskId;
         private String agentId;
         private String agentUrlPrefix;
-        private List<TaskDispatchRecord.DispatchStatus> statusList;
+        private List<DispatchStatus> statusList;
         private LocalDateTime dispatchTimeAfter;
         private LocalDateTime dispatchTimeBefore;
 
@@ -197,7 +198,7 @@ public class TaskDispatchRecordSearchCriteria implements SearchCriteria {
             return this;
         }
 
-        public Builder withStatusList(List<TaskDispatchRecord.DispatchStatus> statusList) {
+        public Builder withStatusList(List<DispatchStatus> statusList) {
             this.statusList = statusList;
             return this;
         }

@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
 import top.ilovemyhome.dagtask.core.server.DagServerConfig;
-import top.ilovemyhome.dagtask.core.service.TaskTemplateServiceImpl;
 import top.ilovemyhome.dagtask.si.persistence.*;
 import top.ilovemyhome.dagtask.si.service.DagManageService;
 import top.ilovemyhome.dagtask.si.service.TaskOrderService;
@@ -255,10 +254,6 @@ public class DagSchedulerServer {
         return threadPool;
     }
 
-
-    public TaskOrderService getTaskOrderService() {
-        return taskOrderService;
-    }
 
     /**
      * Interface for components that need lifecycle management.

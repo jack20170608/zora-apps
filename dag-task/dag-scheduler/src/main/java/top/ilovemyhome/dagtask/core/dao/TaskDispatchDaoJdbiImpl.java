@@ -2,6 +2,7 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.jdbi.v3.core.Jdbi;
+import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
 import top.ilovemyhome.zora.jdbi.SqlGenerator;
 import top.ilovemyhome.zora.jdbi.TableDescription;
 import top.ilovemyhome.zora.jdbi.dao.BaseDaoJdbiImpl;
@@ -75,7 +76,7 @@ public class TaskDispatchDaoJdbiImpl extends BaseDaoJdbiImpl<TaskDispatchRecord>
             .withAgentUrl(rs.getString(TaskDispatchRecord.Field.agentUrl.getDbColumn()))
             .withDispatchTime(toLocalDateTime(rs.getTimestamp(TaskDispatchRecord.Field.dispatchTime.getDbColumn())))
             .withLastUpdateTime(toLocalDateTime(rs.getTimestamp(TaskDispatchRecord.Field.lastUpdateTime.getDbColumn())))
-            .withStatus(toEnum(TaskDispatchRecord.DispatchStatus.class, rs.getString(TaskDispatchRecord.Field.status.getDbColumn())))
+            .withStatus(toEnum(DispatchStatus.class, rs.getString(TaskDispatchRecord.Field.status.getDbColumn())))
             .withParameters(parameters)
             .build();
     }
@@ -97,7 +98,7 @@ public class TaskDispatchDaoJdbiImpl extends BaseDaoJdbiImpl<TaskDispatchRecord>
     }
 
     @Override
-    public List<TaskDispatchRecord> findByStatus(TaskDispatchRecord.DispatchStatus status) {
+    public List<TaskDispatchRecord> findByStatus(DispatchStatus status) {
         Objects.requireNonNull(status, "status must not be null");
         String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll)
             + " where STATUS = :status ";
@@ -105,7 +106,7 @@ public class TaskDispatchDaoJdbiImpl extends BaseDaoJdbiImpl<TaskDispatchRecord>
     }
 
     @Override
-    public int updateStatus(Long taskId, TaskDispatchRecord.DispatchStatus newStatus) {
+    public int updateStatus(Long taskId, DispatchStatus newStatus) {
         Objects.requireNonNull(taskId, "taskId must not be null");
         Objects.requireNonNull(newStatus, "newStatus must not be null");
         LocalDateTime now = LocalDateTime.now();
@@ -129,7 +130,7 @@ public class TaskDispatchDaoJdbiImpl extends BaseDaoJdbiImpl<TaskDispatchRecord>
     }
 
     @Override
-    public int countByStatus(TaskDispatchRecord.DispatchStatus status) {
+    public int countByStatus(DispatchStatus status) {
         Objects.requireNonNull(status, "status must not be null");
         String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.countAll)
             + " where STATUS = :status ";

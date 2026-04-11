@@ -1,13 +1,7 @@
 package top.ilovemyhome.dagtask.si.persistence;
 
 import top.ilovemyhome.dagtask.si.TaskTemplate;
-import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
 import top.ilovemyhome.zora.jdbi.dao.BaseDao;
-import top.ilovemyhome.zora.jdbi.page.Page;
-import top.ilovemyhome.zora.jdbi.page.Pageable;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * DAO interface for {@link TaskTemplate} persistence operations.

@@ -20,6 +20,7 @@ public enum TaskStatus {
      */
     READY,
 
+    DISPATCHED,
     /**
      * Held state - task has been manually paused by a user.
      * Can be transitioned back to READY to resume execution.

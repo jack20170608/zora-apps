@@ -3,7 +3,7 @@ package top.ilovemyhome.dagtask.core.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.dispatcher.TaskDispatcher;
-import top.ilovemyhome.dagtask.core.dispatcher.TaskDispatcher.DispatchResult;
+import top.ilovemyhome.dagtask.si.DispatchResult;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.TaskRecord;
@@ -57,7 +57,7 @@ public class DagScheduleServiceImpl implements DagScheduleService {
             }
 
             DispatchResult result = taskDispatcher.dispatch(task);
-            if (result.isSuccess()) {
+            if (result.success()) {
                 triggeredCount++;
                 // Update task status to DISPATCHED
                 taskRecordDao.updateStatus(task.getId(), TaskStatus.DISPATCHED);
@@ -122,7 +122,7 @@ public class DagScheduleServiceImpl implements DagScheduleService {
     }
 
     @Override
-    public TaskOutput runNow(Long taskId, TaskInput input) {
+    public DispatchResult runNow(Long taskId, TaskInput input) {
         Objects.requireNonNull(taskId);
         Objects.requireNonNull(input);
 
@@ -139,12 +139,9 @@ public class DagScheduleServiceImpl implements DagScheduleService {
         if (!result.success()) {
             throw new RuntimeException("Failed to dispatch task: " + result.message());
         }
-
         // Update status to RUNNING
         taskRecordDao.start(taskId, input, LocalDateTime.now());
-
-        // Note: This returns immediately, actual execution happens on agent
-        return TaskOutput.empty();
+        return result;
     }
 
     @Override

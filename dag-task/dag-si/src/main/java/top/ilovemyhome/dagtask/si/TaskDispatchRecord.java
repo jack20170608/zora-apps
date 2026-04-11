@@ -1,5 +1,7 @@
 package top.ilovemyhome.dagtask.si;
 
+import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
+
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Map;
@@ -33,35 +35,7 @@ public final class TaskDispatchRecord {
     private DispatchStatus status;
     private Map<String, String> parameters;
 
-    /**
-     * Dispatch status enum.
-     */
-    public enum DispatchStatus {
-        /**
-         * Task has been dispatched to the agent but not yet accepted.
-         */
-        DISPATCHED,
 
-        /**
-         * Agent has accepted the task and it's queued/running.
-         */
-        ACCEPTED,
-
-        /**
-         * Agent rejected the task (e.g., queue full).
-         */
-        REJECTED,
-
-        /**
-         * Dispatch failed due to connection/network error.
-         */
-        FAILED,
-
-        /**
-         * Task has completed execution (success or failure).
-         */
-        COMPLETED
-    }
 
     /**
      * Field definitions for database mapping.
