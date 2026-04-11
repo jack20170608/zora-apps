@@ -17,13 +17,6 @@ import java.util.Optional;
  */
 public interface TaskManager {
 
-    /**
-     * Get a task by ID.
-     *
-     * @param taskId the task ID
-     * @return Optional containing the task if found
-     */
-    Optional<TaskRecord> getTask(Long taskId);
 
     /**
      * Execute a task synchronously right now.

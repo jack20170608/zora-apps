@@ -29,17 +29,14 @@ public class TaskManagerImpl implements TaskManager {
         this.taskDispatcher = taskDispatcher;
     }
 
-    @Override
-    public Optional<TaskRecord> getTask(Long taskId) {
-        return taskRecordDao.loadTaskById(taskId);
-    }
+
 
     @Override
-    public TaskOutput runNow(Long taskId, TaskInput input) {
+    public TaskDispatcher.DispatchResult runNow(Long taskId, TaskInput input) {
         Objects.requireNonNull(taskId);
         Objects.requireNonNull(input);
 
-        Optional<TaskRecord> taskOpt = getTask(taskId);
+        Optional<TaskRecord> taskOpt = taskRecordDao.loadTaskById(taskId);
         if (taskOpt.isEmpty()) {
             throw new IllegalArgumentException("Task not found: " + taskId);
         }

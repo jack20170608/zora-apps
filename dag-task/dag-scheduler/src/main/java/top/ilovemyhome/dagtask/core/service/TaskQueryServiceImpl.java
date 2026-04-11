@@ -9,6 +9,7 @@ import top.ilovemyhome.zora.jdbi.page.Pageable;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static top.ilovemyhome.dagtask.si.Constants.MAX_QUERY_SIZE;
 
@@ -18,6 +19,11 @@ public class TaskQueryServiceImpl implements TaskQueryService {
 
     public TaskQueryServiceImpl(TaskRecordDao taskRecordDao) {
         this.taskRecordDao = taskRecordDao;
+    }
+
+    @Override
+    public Optional<TaskRecord> getTask(Long taskId) {
+        return taskRecordDao.loadTaskById(taskId);
     }
 
     @Override
