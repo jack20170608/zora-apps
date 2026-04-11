@@ -12,4 +12,8 @@ public class Constants {
 
     public static final String API_SUBMIT = API_VERSION + "/submit/";
 
+
+    //Control the max query result
+    public static final int MAX_QUERY_SIZE = 5000;
+
 }

@@ -2,7 +2,6 @@ package top.ilovemyhome.dagtask.core.service;
 
 import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
 import top.ilovemyhome.dagtask.si.TaskRecord;
-import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
 import top.ilovemyhome.dagtask.si.service.TaskQueryService;
 import top.ilovemyhome.zora.jdbi.page.Page;
@@ -10,6 +9,8 @@ import top.ilovemyhome.zora.jdbi.page.Pageable;
 
 import java.util.List;
 import java.util.Objects;
+
+import static top.ilovemyhome.dagtask.si.Constants.MAX_QUERY_SIZE;
 
 public class TaskQueryServiceImpl implements TaskQueryService {
 
@@ -20,21 +21,20 @@ public class TaskQueryServiceImpl implements TaskQueryService {
     }
 
     @Override
-    public List<TaskRecord> findByOrderKey(String orderKey) {
-        Objects.requireNonNull(orderKey);
-        return taskRecordDao.findByOrderKey(orderKey);
+    public List<TaskRecord> findAll(TaskRecordSearchCriteria criteria) {
+        Objects.requireNonNull(criteria);
+        int size = taskRecordDao.count(criteria);
+        if (size > MAX_QUERY_SIZE){
+            throw new IllegalArgumentException("Query result too large: " + size + ". Please refine your search criteria.");
+        }
+        return taskRecordDao.find(criteria);
     }
 
-    @Override
-    public List<TaskRecord> findByStatus(TaskStatus status) {
-        Objects.requireNonNull(status);
-        return taskRecordDao.findByStatus(status);
-    }
 
     @Override
-    public Page<TaskRecord> search(TaskRecordSearchCriteria criteria, Pageable pageable) {
+    public Page<TaskRecord> find(TaskRecordSearchCriteria criteria, Pageable pageable) {
         Objects.requireNonNull(criteria);
         Objects.requireNonNull(pageable);
-        return taskRecordDao.search(criteria, pageable);
+        return taskRecordDao.find(criteria, pageable);
     }
 }

@@ -95,7 +95,7 @@ public class DagSchedulerImpl implements DagScheduler {
             for (TaskRecord successor : readySuccessors) {
                 if (successor.getStatus() == TaskStatus.INIT && taskRecordDao.isReady(successor.getId())) {
                     DispatchResult result = taskDispatcher.dispatch(successor);
-                    if (result.isSuccess()) {
+                    if (result.success()) {
                         taskRecordDao.updateStatus(successor.getId(), TaskStatus.DISPATCHED);
                         triggered++;
                         logger.info("Successor task {} dispatched after completion of task {}",

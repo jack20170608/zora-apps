@@ -3,8 +3,12 @@ package top.ilovemyhome.dagtask.core.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskTemplate;
+import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
+import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
 import top.ilovemyhome.dagtask.si.persistence.TaskTemplateDao;
 import top.ilovemyhome.dagtask.si.service.TaskTemplateService;
+import top.ilovemyhome.zora.jdbi.page.Page;
+import top.ilovemyhome.zora.jdbi.page.Pageable;
 
 import java.util.List;
 import java.util.Objects;
@@ -57,8 +61,10 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
             return false;
         }
 
-        Optional<TaskTemplate> existing = taskTemplateDao.findByKeyAndVersion(
-            template.getTemplateKey(), template.getVersion());
+        Optional<TaskTemplate> existing = taskTemplateDao.find(TaskTemplateSearchCriteria.builder()
+                .withTemplateKey(template.getTemplateKey())
+                .withVersion(template.getVersion())
+                .build()).stream().findFirst();
         if (existing.isEmpty()) {
             logger.warn("Cannot update template: not found key=[{}], version=[{}]",
                 template.getTemplateKey(), template.getVersion());
@@ -109,27 +115,15 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     }
 
     @Override
-    public List<TaskTemplate> getVersions(String templateKey) {
-        return taskTemplateDao.findByTemplateKey(templateKey);
+    public List<TaskTemplate> findAll(TaskTemplateSearchCriteria searchCriteria) {
+        Objects.requireNonNull(searchCriteria, "searchCriteria must not be null");
+        return taskTemplateDao.find(searchCriteria);
     }
 
     @Override
-    public Optional<TaskTemplate> getActive(String templateKey) {
-        return taskTemplateDao.findActiveByTemplateKey(templateKey);
-    }
-
-    @Override
-    public Optional<TaskTemplate> getByVersion(String templateKey, String version) {
-        return taskTemplateDao.findByKeyAndVersion(templateKey, version);
-    }
-
-    @Override
-    public List<TaskTemplate> getAllActive() {
-        return taskTemplateDao.findAllActive();
-    }
-
-    @Override
-    public List<TaskTemplate> getAll() {
-        return taskTemplateDao.findAll();
+    public Page<TaskTemplate> find(TaskTemplateSearchCriteria searchCriteria, Pageable page) {
+        Objects.requireNonNull(searchCriteria, "searchCriteria must not be null");
+        Objects.requireNonNull(page, "page must not be null");
+        return taskTemplateDao.find(searchCriteria, page);
     }
 }

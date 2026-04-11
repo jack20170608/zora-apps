@@ -49,7 +49,7 @@ public class TaskManagerImpl implements TaskManager {
 
         // Dispatch the task for execution
         var result = taskDispatcher.dispatch(task);
-        if (!result.isSuccess()) {
+        if (!result.success()) {
             throw new RuntimeException("Failed to dispatch task: " + result.message());
         }
 

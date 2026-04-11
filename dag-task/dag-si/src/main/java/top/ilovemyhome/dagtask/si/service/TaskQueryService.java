@@ -14,21 +14,9 @@ import java.util.List;
  */
 public interface TaskQueryService {
 
-    /**
-     * Find all tasks by order key.
-     *
-     * @param orderKey the order key
-     * @return list of matching tasks
-     */
-    List<TaskRecord> findByOrderKey(String orderKey);
 
-    /**
-     * Find all tasks with a specific status.
-     *
-     * @param status the task status
-     * @return list of matching tasks
-     */
-    List<TaskRecord> findByStatus(TaskStatus status);
+    List<TaskRecord> findAll(TaskRecordSearchCriteria criteria);
+
 
     /**
      * Search tasks by dynamic criteria with pagination.
@@ -37,5 +25,5 @@ public interface TaskQueryService {
      * @param pageable pagination information
      * @return page of matching tasks
      */
-    Page<TaskRecord> search(TaskRecordSearchCriteria criteria, Pageable pageable);
+    Page<TaskRecord> find(TaskRecordSearchCriteria criteria, Pageable pageable);
 }
