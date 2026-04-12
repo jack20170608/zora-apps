@@ -9,7 +9,9 @@ import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.agent.TaskFactory;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
+import top.ilovemyhome.dagtask.si.agent.TaskResultReport;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Handles automatic queue processing: when a worker thread becomes available,
  * the next task is taken from the pending queue and executed.
  */
-public class TaskExecutionManager {
+public class TaskExecutionEngine {
 
     private final AgentConfiguration config;
     private final AgentSchedulerClient agentSchedulerClient;
@@ -48,7 +50,7 @@ public class TaskExecutionManager {
     private final AtomicBoolean running = new AtomicBoolean(true);
     private Thread queueProcessor;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskExecutionManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskExecutionEngine.class);
 
     /**
      * Record representing a task waiting in the pending queue.
@@ -76,8 +78,8 @@ public class TaskExecutionManager {
             List<String> supportedExecutionKeys
     ) {}
 
-    public TaskExecutionManager(AgentConfiguration config, AgentSchedulerClient agentSchedulerClient,
-                                ExecutorService taskExecutor, ObjectMapper objectMapper, TaskFactory taskFactory) {
+    public TaskExecutionEngine(AgentConfiguration config, AgentSchedulerClient agentSchedulerClient,
+                               ExecutorService taskExecutor, ObjectMapper objectMapper, TaskFactory taskFactory) {
         this.config = config;
         this.agentSchedulerClient = agentSchedulerClient;
         this.taskExecutor = taskExecutor;
@@ -128,11 +130,10 @@ public class TaskExecutionManager {
      * Submits a new task for execution.
      *
      * @param taskId         the task ID
-     * @param executionClass the fully qualified execution class name
      * @param inputJson      the input JSON (can be null)
      * @return submission result indicating if accepted and why
      */
-    public SubmissionResult submit(Long taskId, String executionClass, String inputJson) {
+    public SubmissionResult submit(Long taskId, String inputJson) {
         // Check for duplicate task ID
         if (runningTasks.containsKey(taskId)) {
             return SubmissionResult.duplicate(taskId);
@@ -144,10 +145,10 @@ public class TaskExecutionManager {
         }
 
         // Create execution instance
-        TaskExecution execution = taskFactory.createTaskForExecution(executionClass);
-        if (execution == null) {
-            return SubmissionResult.executionCreationFailed(executionClass);
-        }
+//        TaskExecution execution = taskFactory.createTaskForExecution(executionClass);
+//        if (execution == null) {
+//            return SubmissionResult.executionCreationFailed(executionClass);
+//        }
 
         // Parse input
         TaskInput input;
@@ -158,7 +159,7 @@ public class TaskExecutionManager {
         }
 
         // Try to add to pending queue
-        PendingTask pendingTask = new PendingTask(taskId, execution, input);
+        PendingTask pendingTask = new PendingTask(taskId, null, input);
         boolean added = pendingQueue.offer(pendingTask);
         if (!added) {
             return SubmissionResult.queueFull(config.getMaxPendingTasks(), pendingQueue.size());
@@ -213,8 +214,8 @@ public class TaskExecutionManager {
         if (removedPending) {
             LOGGER.info("Task {} force-ok from pending queue", taskId);
             finishedTasks.add(new FinishedTask(taskId, true, true, 0));
-            var report = new top.ilovemyhome.dagtask.si.agent.TaskResultReport(
-                    config.getAgentId(), taskId, true, "{\"forced\":true}"
+            var report = new TaskResultReport(
+                    config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
             );
             agentSchedulerClient.reportTaskResult(report);
             return ForceOkResult.successFromPending(taskId);
@@ -226,8 +227,8 @@ public class TaskExecutionManager {
             runningTask.future().cancel(true);
             LOGGER.info("Task {} force-ok from running", taskId);
             finishedTasks.add(new FinishedTask(taskId, true, true, 0));
-            var report = new top.ilovemyhome.dagtask.si.agent.TaskResultReport(
-                    config.getAgentId(), taskId, true, "{\"forced\":true}"
+            var report = new TaskResultReport(
+                    config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
             );
             agentSchedulerClient.reportTaskResult(report);
             return ForceOkResult.successFromRunning(taskId);
@@ -264,7 +265,7 @@ public class TaskExecutionManager {
             long duration = System.currentTimeMillis() - startTime;
             LOGGER.info("Completed execution of task {} in {}ms", taskId, duration);
             var report = new top.ilovemyhome.dagtask.si.agent.TaskResultReport(
-                    config.getAgentId(), taskId, output.isSuccess(), serializeOutput(output)
+                    config.getAgentId(), taskId, output.isSuccess(), serializeOutput(output), null
             );
             agentSchedulerClient.reportTaskResult(report);
             finishTask(taskId, true, output.isSuccess(), duration);
@@ -272,7 +273,7 @@ public class TaskExecutionManager {
             long duration = System.currentTimeMillis() - startTime;
             LOGGER.error("Task {} execution failed after {}ms", taskId, duration, e);
             var report = new top.ilovemyhome.dagtask.si.agent.TaskResultReport(
-                    config.getAgentId(), taskId, false, e.getMessage()
+                    config.getAgentId(), taskId, false, e.getMessage(), null
             );
             agentSchedulerClient.reportTaskResult(report);
             finishTask(taskId, false, false, duration);

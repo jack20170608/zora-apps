@@ -25,7 +25,7 @@ public class DagTaskAgent {
     private final AgentConfiguration config;
     private final AgentSchedulerClient agentSchedulerClient;
     private final ExecutorService taskExecutor;
-    private final TaskExecutionManager executionManager;
+    private final TaskExecutionEngine executionManager;
     private final TaskAgentResource resource;
     private boolean running = false;
 
@@ -40,7 +40,7 @@ public class DagTaskAgent {
         this.taskExecutor = Executors.newFixedThreadPool(config.getMaxConcurrentTasks());
         ObjectMapper objectMapper = new ObjectMapper();
         TaskFactory taskFactory = new DefaultTaskFactory();
-        this.executionManager = new TaskExecutionManager(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
+        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
         this.resource = new TaskAgentResource(this, executionManager);
     }
 
@@ -58,7 +58,7 @@ public class DagTaskAgent {
         }
         ObjectMapper objectMapper = new ObjectMapper();
         TaskFactory taskFactory = new DefaultTaskFactory();
-        this.executionManager = new TaskExecutionManager(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
+        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
         this.resource = new TaskAgentResource(this, executionManager);
     }
 
@@ -73,7 +73,7 @@ public class DagTaskAgent {
         this.taskExecutor = Objects.requireNonNull(taskExecutor, "taskExecutor is required");
         Objects.requireNonNull(objectMapper, "objectMapper is required");
         TaskFactory taskFactory = new DefaultTaskFactory();
-        this.executionManager = new TaskExecutionManager(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
+        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
         this.resource = new TaskAgentResource(this, executionManager);
     }
 
@@ -150,7 +150,7 @@ public class DagTaskAgent {
         return taskExecutor;
     }
 
-    public TaskExecutionManager getExecutionManager() {
+    public TaskExecutionEngine getExecutionManager() {
         return executionManager;
     }
 

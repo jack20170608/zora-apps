@@ -5,7 +5,6 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -22,21 +21,21 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.core.DagTaskAgent;
-import top.ilovemyhome.dagtask.agent.core.TaskExecutionManager;
+import top.ilovemyhome.dagtask.agent.core.TaskExecutionEngine;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.si.Constants;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
-import top.ilovemyhome.dagtask.si.agent.TaskFactory;
 import top.ilovemyhome.dagtask.si.dto.OperationRequest;
-import top.ilovemyhome.dagtask.si.dto.SubmitRequest;
+import top.ilovemyhome.dagtask.si.enums.OpsType;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
 /**
  * Combined REST API resource for DAG task agent.
- * Delegates all task lifecycle management to {@link TaskExecutionManager}.
+ * Delegates all task lifecycle management to {@link TaskExecutionEngine}.
  * Provides all API endpoints:
  * - POST /api/submit - Submit task for execution
  * - POST /api/kill/{taskId} - Kill a running or pending task
@@ -56,7 +55,7 @@ import java.util.concurrent.ExecutorService;
 public class TaskAgentResource {
 
     private final DagTaskAgent agent;
-    private final TaskExecutionManager executionManager;
+    private final TaskExecutionEngine executionManager;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskAgentResource.class);
 
@@ -64,11 +63,10 @@ public class TaskAgentResource {
                              ExecutorService taskExecutor, DagTaskAgent agent) {
         this.agent = agent;
         ObjectMapper objectMapper = new ObjectMapper();
-        TaskFactory taskFactory = new DefaultTaskFactory();
-        this.executionManager = new TaskExecutionManager(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
+        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
     }
 
-    public TaskAgentResource(DagTaskAgent agent, TaskExecutionManager executionManager) {
+    public TaskAgentResource(DagTaskAgent agent, TaskExecutionEngine executionManager) {
         this.agent = agent;
         this.executionManager = executionManager;
     }
@@ -92,7 +90,7 @@ public class TaskAgentResource {
                              "Rejects the request with HTTP 429 if the pending queue is full (backpressure).")
     @RequestBody(description = "Task submission request containing task ID, execution class name, and input JSON",
                   required = true,
-                  content = @Content(schema = @Schema(implementation = SubmitRequest.class)))
+                  content = @Content(schema = @Schema(implementation = OperationRequest.class)))
     @ApiResponses({
             @ApiResponse(responseCode = "202", description = "Task accepted for execution",
                          content = @Content(mediaType = MediaType.APPLICATION_JSON)),
@@ -101,16 +99,17 @@ public class TaskAgentResource {
             @ApiResponse(responseCode = "429", description = "Pending queue is full, too many pending tasks",
                          content = @Content(mediaType = MediaType.APPLICATION_JSON))
     })
-    public Response submit(SubmitRequest request) {
+    public Response submit(OperationRequest request) {
         Long taskId = request.taskId();
-        String executionClass = request.executionClass();
         String inputJson = request.input();
-
-        LOGGER.info("Received task submission: taskId={}, executionClass={}", taskId, executionClass);
-
-        TaskExecutionManager.SubmissionResult result =
-                executionManager.submit(taskId, executionClass, inputJson);
-
+        LOGGER.info("Received task submission: taskId={}, input={}", taskId, inputJson);
+        if (!Objects.equals(request.opsType() , OpsType.SUBMIT)){
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of("error", "Operation type " + request.opsType() + " is not submit."))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
+        }
+        TaskExecutionEngine.SubmissionResult result = executionManager.submit(taskId, inputJson);
         if (!result.accepted()) {
             if (result.queueFull()) {
                 return Response.status(Response.Status.TOO_MANY_REQUESTS)
@@ -145,21 +144,85 @@ public class TaskAgentResource {
 
     @POST
     @Path(Constants.API_KILL)
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Kill a running or pending task",
                description = "Attempts to interrupt and kill a task that is either waiting in the pending queue or currently running. " +
                              "Once killed, the task is marked as failed and moved to the finished queue.")
-    @Parameter(name = "taskId", description = "ID of the task to kill", required = true)
+    @RequestBody(description = "Cancel operation request containing task ID",
+                  required = true,
+                  content = @Content(schema = @Schema(implementation = OperationRequest.class)))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Kill operation completed successfully",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
+            @ApiResponse(responseCode = "400", description = "Invalid operation type",
                          content = @Content(mediaType = MediaType.APPLICATION_JSON)),
             @ApiResponse(responseCode = "404", description = "Task not found in pending or running queues",
                          content = @Content(mediaType = MediaType.APPLICATION_JSON)),
             @ApiResponse(responseCode = "500", description = "Failed to cancel the running task",
                          content = @Content(mediaType = MediaType.APPLICATION_JSON))
     })
-    public Response kill(OperationRequest operationRequest) {
-        TaskExecutionManager.KillResult result = executionManager.kill(operationRequest.taskId());
+    public Response kill(OperationRequest request) {
+        if (!Objects.equals(request.opsType() , OpsType.KILL)){
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of("error", "Operation type " + request.opsType() + " is not kill."))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
+        }
+        TaskExecutionEngine.KillResult result = executionManager.kill(request.taskId());
+
+        if (!result.success()) {
+            if (!result.found()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(Map.of("error", result.message()))
+                        .header("Content-Type", MediaType.APPLICATION_JSON)
+                        .build();
+            }
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", result.message()))
+                    .header("Content-Type", MediaType.APPLICATION_JSON)
+                    .build();
+        }
+
+        return Response.ok(Map.of(
+                "success", true,
+                "message", result.message()
+        ))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
+    }
+
+    // ========== Cancel endpoint ==========
+
+    @POST
+    @Path(Constants.API_CANCEL)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Cancel a running or pending task",
+               description = "Attempts to cancel a task that is either waiting in the pending queue or currently running. " +
+                             "Once cancelled, the task is marked as failed and moved to the finished queue. " +
+                             "This is equivalent to the kill operation with a different endpoint path.")
+    @RequestBody(description = "Cancel operation request containing task ID",
+                  required = true,
+                  content = @Content(schema = @Schema(implementation = OperationRequest.class)))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cancel operation completed successfully",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
+            @ApiResponse(responseCode = "400", description = "Invalid operation type",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
+            @ApiResponse(responseCode = "404", description = "Task not found in pending or running queues",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
+            @ApiResponse(responseCode = "500", description = "Failed to cancel the running task",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    })
+    public Response cancel(OperationRequest request) {
+        if (!Objects.equals(request.opsType(), OpsType.CANCEL)) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of("error", "Operation type " + request.opsType() + " is not cancel."))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
+        }
+        TaskExecutionEngine.KillResult result = executionManager.kill(request.taskId());
 
         if (!result.success()) {
             if (!result.found()) {
@@ -198,8 +261,14 @@ public class TaskAgentResource {
             @ApiResponse(responseCode = "404", description = "Task not found in pending or running queues",
                          content = @Content(mediaType = MediaType.APPLICATION_JSON))
     })
-    public Response forceOk(@PathParam("taskId") Long taskId) {
-        TaskExecutionManager.ForceOkResult result = executionManager.forceOk(taskId);
+    public Response forceOk(OperationRequest request) {
+        TaskExecutionEngine.ForceOkResult result = executionManager.forceOk(request.taskId());
+        if (!Objects.equals(request.opsType() , OpsType.FORCE_OK)){
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of("error", "Operation type " + request.opsType() + " is not forceOk."))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
+        }
 
         if (!result.success()) {
             return Response.status(Response.Status.NOT_FOUND)
@@ -219,9 +288,8 @@ public class TaskAgentResource {
     // ========== Health endpoint ==========
 
     @GET
-    @Path("/health")
+    @Path(Constants.API_HEALTH)
     @Produces(MediaType.APPLICATION_JSON)
-    // @Description(value = "Get agent health", details = "Returns the current health status including queue statistics")
     @Operation(summary = "Get agent health status",
                description = "Returns detailed health statistics about the agent including " +
                              "running status, configuration, queue sizes, and supported execution keys. " +
@@ -230,7 +298,7 @@ public class TaskAgentResource {
                  content = @Content(mediaType = MediaType.APPLICATION_JSON))
     public Response health() {
         AgentConfiguration config = agent.getConfig();
-        TaskExecutionManager.Statistics stats = executionManager.getStatistics();
+        TaskExecutionEngine.Statistics stats = executionManager.getStatistics();
 
         Map<String, Object> health = new HashMap<>();
         health.put("running", agent.isRunning());
@@ -253,9 +321,8 @@ public class TaskAgentResource {
     // ========== Ping endpoint ==========
 
     @GET
-    @Path("/ping")
+    @Path(Constants.API_PING)
     @Produces(MediaType.TEXT_PLAIN)
-    // @Description(value = "Ping the agent", details = "Returns pong if agent is alive")
     @Operation(summary = "Ping heartbeat check",
                description = "Simple heartbeat check to verify the agent is running and responding. " +
                              "Always returns the string 'pong' with 200 OK status.")
@@ -265,9 +332,5 @@ public class TaskAgentResource {
         return Response.ok("pong")
                 .header("Content-Type", MediaType.TEXT_PLAIN)
                 .build();
-    }
-
-    private static class DefaultTaskFactory implements TaskFactory {
-        // Use default implementation
     }
 }
