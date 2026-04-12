@@ -100,7 +100,7 @@ Authorization: Basic {{username}} {{password}}
   "agentId": "python-worker-002",
   "taskId": 2,
   "success": false,
-  "outputJson": "{\"errorMessage\": \"Timeout waiting for process exit\", \"durationMs\": 30000}",
+  "output": "{\"errorMessage\": \"Timeout waiting for process exit\", \"durationMs\": 30000}",
   "endTime": "2024-01-15T11:00:00Z"
 }
 
@@ -117,10 +117,3 @@ Authorization: Basic {{username}} {{password}}
   "agentId": "docker-agent-003"
 }
 
-###
-# -----------------------------------------------------------------------------
-# 5. Health check - verify server is running
-# -----------------------------------------------------------------------------
-### get health info
-GET {{baseUrl}}/actuator/health
-Authorization: Basic {{username}} {{password}}
