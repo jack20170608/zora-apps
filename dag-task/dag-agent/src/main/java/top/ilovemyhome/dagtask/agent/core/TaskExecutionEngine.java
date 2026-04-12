@@ -15,23 +15,20 @@ import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-
-import static javax.security.auth.callback.ConfirmationCallback.OK;
 
 /**
  * Manages the entire task execution lifecycle across three queues:
@@ -55,8 +52,6 @@ public class TaskExecutionEngine {
     private final ArrayBlockingQueue<PendingTask> pendingQueue;
     private final Set<Long> pendingTaskIds = ConcurrentHashMap.newKeySet();
     private final ConcurrentHashMap<Long, RunningTask> runningTasks;
-    private final ConcurrentLinkedQueue<FinishedTask> finishedTasks;
-    private final AtomicInteger maxFinishedSize;
 
     // Background queue processor
     private final AtomicBoolean running = new AtomicBoolean(true);
@@ -70,10 +65,9 @@ public class TaskExecutionEngine {
     // Background dead letter retry thread - automatically retries persisted failed reports
     private final AtomicBoolean deadLetterRetryRunning = new AtomicBoolean(true);
     private Thread deadLetterRetryThread;
-    private java.io.File deadLetterFile;
+    private File deadLetterFile;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskExecutionEngine.class);
-    private static final int DEFAULT_MAX_FINISHED_SIZE = 1000;
     private static final int DEFAULT_REPORT_QUEUE_CAPACITY = 100;
     // Retry interval for dead letter - 30 seconds
     private static final long DEFAULT_DEAD_LETTER_RETRY_INTERVAL_MS = 30000L;
@@ -91,18 +85,11 @@ public class TaskExecutionEngine {
     }
 
     /**
-     * Record representing a finished task.
-     */
-    public record FinishedTask(Long taskId, boolean completedNormally, boolean success, long durationMs) {
-    }
-
-    /**
      * Statistics snapshot for health reporting.
      */
     public record Statistics(
         int pendingSize,
         int runningSize,
-        int finishedSize,
         int supportedExecutionKeysCount,
         List<String> supportedExecutionKeys
     ) {
@@ -117,8 +104,6 @@ public class TaskExecutionEngine {
 
         this.pendingQueue = new ArrayBlockingQueue<>(config.getMaxPendingTasks());
         this.runningTasks = new ConcurrentHashMap<>();
-        this.finishedTasks = new ConcurrentLinkedQueue<>();
-        this.maxFinishedSize = new AtomicInteger(DEFAULT_MAX_FINISHED_SIZE);
         this.resultReportQueue = new ArrayBlockingQueue<>(DEFAULT_REPORT_QUEUE_CAPACITY);
         initDeadLetterFile();
     }
@@ -130,7 +115,6 @@ public class TaskExecutionEngine {
         , AgentSchedulerClient agentSchedulerClient
         , ExecutorService executorService
         , ObjectMapper objectMapper
-        , int maxFinishedSize
         , int reportQueueCapacity) {
         this.config = config;
         this.agentSchedulerClient = agentSchedulerClient;
@@ -139,8 +123,6 @@ public class TaskExecutionEngine {
 
         this.pendingQueue = new ArrayBlockingQueue<>(config.getMaxPendingTasks());
         this.runningTasks = new ConcurrentHashMap<>();
-        this.finishedTasks = new ConcurrentLinkedQueue<>();
-        this.maxFinishedSize = new AtomicInteger(maxFinishedSize);
         this.resultReportQueue = new ArrayBlockingQueue<>(reportQueueCapacity);
         initDeadLetterFile();
     }
@@ -194,8 +176,6 @@ public class TaskExecutionEngine {
                                 Thread.currentThread().interrupt();
                                 // If interrupted, drop the task
                                 LOGGER.error("Interrupted while waiting to reinsert task {}, dropping", pendingTask.taskId());
-                                finishedTasks.add(new FinishedTask(pendingTask.taskId(), false, false, 0));
-                                trimFinishedQueueIfNeeded();
                             }
                         }
                     });
@@ -611,8 +591,7 @@ public class TaskExecutionEngine {
      * Finishes a task that was interrupted (kill/cancel/force-ok).
      */
     private void finishInterrupted(Long taskId, boolean success) {
-        finishedTasks.add(new FinishedTask(taskId, true, success, 0));
-        trimFinishedQueueIfNeeded();
+        // Task already removed from running or pending, nothing more to do
     }
 
     /**
@@ -622,7 +601,6 @@ public class TaskExecutionEngine {
         return new Statistics(
             pendingQueue.size(),
             runningTasks.size(),
-            finishedTasks.size(),
             config.getSupportedExecutionKeys().size(),
             new ArrayList<>(config.getSupportedExecutionKeys())
         );
@@ -668,43 +646,7 @@ public class TaskExecutionEngine {
      */
     private void finishTask(Long taskId, boolean completedNormally, boolean success, long durationMs) {
         runningTasks.remove(taskId);
-        finishedTasks.add(new FinishedTask(taskId, completedNormally, success, durationMs));
-        trimFinishedQueueIfNeeded();
         LOGGER.debug("Moved task {} from running to finished", taskId);
-    }
-
-    /**
-     * Trims the finished queue if it exceeds the maximum size limit.
-     * Removes the oldest entries when limit is reached.
-     */
-    private void trimFinishedQueueIfNeeded() {
-        int maxSize = maxFinishedSize.get();
-        if (finishedTasks.size() > maxSize) {
-            // Remove oldest half to avoid trimming every time
-            int toRemove = finishedTasks.size() - maxSize / 2;
-            for (int i = 0; i < toRemove && !finishedTasks.isEmpty(); i++) {
-                finishedTasks.poll();
-            }
-            LOGGER.debug("Trimmed finished queue to {} entries", finishedTasks.size());
-        }
-    }
-
-    /**
-     * Sets the maximum size for the finished tasks queue.
-     *
-     * @param maxSize maximum number of finished tasks to keep
-     */
-    public void setMaxFinishedSize(int maxSize) {
-        this.maxFinishedSize.set(maxSize);
-    }
-
-    /**
-     * Clears all finished tasks from the finished queue.
-     * Can be called periodically to free memory.
-     */
-    public void clearFinishedQueue() {
-        finishedTasks.clear();
-        LOGGER.info("Cleared finished tasks queue");
     }
 
     /**

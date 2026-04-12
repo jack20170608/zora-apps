@@ -312,7 +312,6 @@ public class TaskAgentResource {
         health.put("supportedExecutionKeys", stats.supportedExecutionKeys());
         health.put("pendingSize", stats.pendingSize());
         health.put("runningSize", stats.runningSize());
-        health.put("finishedSize", stats.finishedSize());
 
         return Response.ok(health)
                 .header("Content-Type", MediaType.APPLICATION_JSON)
