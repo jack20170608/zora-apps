@@ -12,7 +12,7 @@ import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
-import top.ilovemyhome.dagtask.si.agent.TaskResultReport;
+import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 
 import java.util.List;
 import java.util.Objects;
@@ -117,32 +117,32 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
     }
 
     @Override
-    public boolean reportTaskResult(TaskResultReport taskResultReport) {
-        if (taskResultReport == null || StringUtils.isBlank(taskResultReport.agentId())) {
+    public boolean reportTaskResult(TaskExecuteResult taskExecuteResult) {
+        if (taskExecuteResult == null || StringUtils.isBlank(taskExecuteResult.agentId())) {
             logger.warn("Cannot process task result: invalid report");
             return false;
         }
 
-        Optional<TaskRecord> taskRecordOpt = taskRecordDao.findOne(Long.valueOf(taskResultReport.taskId()));
+        Optional<TaskRecord> taskRecordOpt = taskRecordDao.findOne(Long.valueOf(taskExecuteResult.taskId()));
         if (taskRecordOpt.isEmpty()) {
             logger.warn("Task [{}] not found when processing result report from agent [{}]",
-                taskResultReport.taskId(), taskResultReport.agentId());
+                taskExecuteResult.taskId(), taskExecuteResult.agentId());
             return false;
         }
 
         TaskRecord taskRecord = taskRecordOpt.get();
         TaskOutput output;
-        if (taskResultReport.success()) {
-            output = TaskOutput.success(taskResultReport.taskId(), taskResultReport.output());
+        if (taskExecuteResult.success()) {
+            output = TaskOutput.success(taskExecuteResult.taskId(), taskExecuteResult.output());
         } else {
-            output = TaskOutput.fail(taskResultReport.taskId(), taskResultReport.output(), "Task execution failed on agent");
+            output = TaskOutput.fail(taskExecuteResult.taskId(), taskExecuteResult.output(), "Task execution failed on agent");
         }
 
         // Task status should be already set to RUNNING by scheduler before dispatching
         // Update the task to final status based on the result from agent
-        taskRecordDao.stop(taskResultReport.taskId(), taskRecord.getStatus(), output, java.time.LocalDateTime.now());
+        taskRecordDao.stop(taskExecuteResult.taskId(), taskRecord.getStatus(), output, java.time.LocalDateTime.now());
         logger.debug("Processed task result for task [{}] from agent [{}], success: {}",
-            taskResultReport.taskId(), taskResultReport.agentId(), taskResultReport.success());
+            taskExecuteResult.taskId(), taskExecuteResult.agentId(), taskExecuteResult.success());
         return true;
     }
 

@@ -9,13 +9,14 @@ import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
-import top.ilovemyhome.dagtask.si.agent.TaskResultReport;
+import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 
 /**
  * HTTP-based implementation of {@link AgentSchedulerClient} that communicates with the DAG scheduling server.
@@ -128,13 +129,13 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
     /**
      * Reports the result of a task execution back to the DAG scheduling server.
      *
-     * @param taskResultReport the task result report containing agent ID, task ID, success status, and output
+     * @param results the task result report containing agent ID, task ID, success status, and output
      * @return the HTTP response from the server
      */
     @Override
-    public Response reportTaskResult(TaskResultReport taskResultReport) {
+    public Response reportTaskResult(List<TaskExecuteResult> results) {
         try {
-            String json = objectMapper.writeValueAsString(taskResultReport);
+            String json = objectMapper.writeValueAsString(results);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(config.getDagServerUrl() + "/api/agent/report"))
                     .header("Content-Type", "application/json")
@@ -146,7 +147,7 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
                     .entity(response.body())
                     .build();
         } catch (IOException | InterruptedException e) {
-            LOGGER.error("Failed to report result for task {}", taskResultReport.taskId(), e);
+            LOGGER.error("Failed to report result for task {}", results.size(), e);
             Thread.currentThread().interrupt();
             return Response.serverError()
                     .entity(e.getMessage())

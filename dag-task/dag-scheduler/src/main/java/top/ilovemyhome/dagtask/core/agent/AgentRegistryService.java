@@ -3,7 +3,9 @@ package top.ilovemyhome.dagtask.core.agent;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
-import top.ilovemyhome.dagtask.si.agent.TaskResultReport;
+import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
+
+import java.util.List;
 
 /**
  * Service interface for the server-side handling of agent registration and status reporting.
@@ -33,10 +35,15 @@ public interface AgentRegistryService {
     /**
      * Process a task execution result reported by an agent.
      *
-     * @param taskResultReport the task result report containing execution outcome
+     * @param taskExecuteResult the task result report containing execution outcome
      * @return true if the result was processed successfully, false otherwise
      */
-    boolean reportTaskResult(TaskResultReport taskResultReport);
+    boolean reportTaskResult(TaskExecuteResult taskExecuteResult);
+
+    //Todo by jack
+    default boolean reportTaskResult(List<TaskExecuteResult> results){
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 
     /**
      * Update the status of an agent. This is called periodically by agents to report

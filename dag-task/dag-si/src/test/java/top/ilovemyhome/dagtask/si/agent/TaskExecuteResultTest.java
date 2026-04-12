@@ -7,7 +7,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class TaskResultReportTest {
+class TaskExecuteResultTest {
 
     @Test
     void testFullConstructor_allFieldsSetCorrectly() {
@@ -19,7 +19,7 @@ class TaskResultReportTest {
         Instant endTime = Instant.now().minusSeconds(10);
 
         // When
-        TaskResultReport report = new TaskResultReport(agentId, taskId, success, output, endTime);
+        TaskExecuteResult report = new TaskExecuteResult(agentId, taskId, success, output, endTime);
 
         // Then
         assertThat(report.agentId()).isEqualTo("agent-001");
@@ -38,7 +38,7 @@ class TaskResultReportTest {
         String output = "Task failed with timeout";
 
         // When
-        TaskResultReport report = new TaskResultReport(agentId, taskId, success, output);
+        TaskExecuteResult report = new TaskExecuteResult(agentId, taskId, success, output);
 
         // Then
         assertThat(report.agentId()).isEqualTo("agent-002");
@@ -59,7 +59,7 @@ class TaskResultReportTest {
         String output = "null end time test";
 
         // When
-        TaskResultReport report = new TaskResultReport(agentId, taskId, success, output, null);
+        TaskExecuteResult report = new TaskExecuteResult(agentId, taskId, success, output, null);
 
         // Then
         assertThat(report.agentId()).isEqualTo("agent-003");
@@ -73,21 +73,21 @@ class TaskResultReportTest {
     @Test
     void testNullAgentId_throwsNpe() {
         // When agentId is null
-        assertThatThrownBy(() -> new TaskResultReport(null, 123L, true, "output", null))
+        assertThatThrownBy(() -> new TaskExecuteResult(null, 123L, true, "output", null))
             .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void testNullTaskId_throwsNpe() {
         // When taskId is null
-        assertThatThrownBy(() -> new TaskResultReport("agent-001", null, true, "output", null))
+        assertThatThrownBy(() -> new TaskExecuteResult("agent-001", null, true, "output", null))
             .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void testNullOutput_allowed() {
         // output can be null (no validation)
-        TaskResultReport report = new TaskResultReport("agent-004", 22222L, false, null, null);
+        TaskExecuteResult report = new TaskExecuteResult("agent-004", 22222L, false, null, null);
 
         assertThat(report.agentId()).isEqualTo("agent-004");
         assertThat(report.taskId()).isEqualTo(22222L);

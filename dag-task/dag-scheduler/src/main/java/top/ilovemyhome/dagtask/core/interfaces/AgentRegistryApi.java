@@ -14,7 +14,9 @@ import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
-import top.ilovemyhome.dagtask.si.agent.TaskResultReport;
+import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
+
+import java.util.List;
 
 /**
  * REST API endpoints for agent communication with the scheduling center.
@@ -111,17 +113,16 @@ public class AgentRegistryApi {
      * this endpoint to report the result back to the scheduling center. The scheduler
      * then updates the task status and proceeds to schedule any successor tasks.
      *
-     * @param taskResultReport the task result report containing task ID, success flag,
+     * @param taskExecuteResult the task result report containing task ID, success flag,
      *                         and output JSON
      * @return HTTP 200 OK if result processed successfully, HTTP 400 Bad Request if failed
      */
     @POST
     @Path("/task/result")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response reportTaskResult(TaskResultReport taskResultReport) {
-        LOGGER.debug("Received task result from agent [{}] for task [{}]",
-            taskResultReport.agentId(), taskResultReport.taskId());
-        boolean success = agentRegistryService.reportTaskResult(taskResultReport);
+    public Response reportTaskResult(List<TaskExecuteResult> taskExecuteResult) {
+        LOGGER.debug("Received task result for tasks [{}]", taskExecuteResult);
+        boolean success = agentRegistryService.reportTaskResult(taskExecuteResult);
         if (success) {
             return Response.ok().entity(ResEntityHelper.ok("Task result processed successfully", null)).build();
         } else {

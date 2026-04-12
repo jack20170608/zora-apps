@@ -1,18 +1,23 @@
 package top.ilovemyhome.dagtask.agent.core;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
+import top.ilovemyhome.dagtask.si.TaskResultReportFailException;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.agent.TaskFactory;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
-import top.ilovemyhome.dagtask.si.agent.TaskResultReport;
+import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -25,6 +30,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+
+import static javax.security.auth.callback.ConfirmationCallback.OK;
 
 /**
  * Manages the entire task execution lifecycle across three queues:
@@ -57,7 +64,7 @@ public class TaskExecutionEngine {
 
     // Background result reporter thread
     private final AtomicBoolean reporterRunning = new AtomicBoolean(true);
-    private final BlockingQueue<TaskResultReport> resultReportQueue;
+    private final BlockingQueue<TaskExecuteResult> resultReportQueue;
     private Thread resultReporterThread;
 
     // Background dead letter retry thread - automatically retries persisted failed reports
@@ -210,12 +217,16 @@ public class TaskExecutionEngine {
             LOGGER.info("Task result reporter thread started");
             while (reporterRunning.get()) {
                 try {
-                    singleProcess(resultReportQueue, report -> {
+                    batchProcess(resultReportQueue, results -> {
                         try {
-                            agentSchedulerClient.reportTaskResult(report);
+                            var httpResponse = agentSchedulerClient.reportTaskResult(results);
+                            if (httpResponse.getStatus() != Response.Status.OK.getStatusCode()){
+                                throw new TaskResultReportFailException("Report task result failed with status code " + httpResponse.getStatus());
+                            }
                         } catch (Exception e) {
-                            LOGGER.error("Failed to report task result {} to scheduler server, persisting to dead letter file", report.taskId(), e);
-                            persistToDeadLetterFile(report);
+                            List<Long> taskIds = results.stream().map(TaskExecuteResult::taskId).toList();
+                            LOGGER.error("Failed to report task result {} to scheduler server, persisting to dead letter file", taskIds, e);
+                            persistToDeadLetterFile(results);
                         }
                     });
 
@@ -307,24 +318,18 @@ public class TaskExecutionEngine {
             LOGGER.info("Reporting {} pending tasks as failed since agent is shutting down", pendingCount);
             List<PendingTask> remainingPending = new ArrayList<>();
             pendingQueue.drainTo(remainingPending);
-            for (PendingTask pending : remainingPending) {
-                Long taskId = pending.taskId();
-                // Report task as failed - agent shutdown
-                var report = new TaskResultReport(
-                    config.getAgentId(), taskId, false,
-                    "Task was pending when agent shutdown, never executed", null
-                );
-                try {
-                    agentSchedulerClient.reportTaskResult(report);
-                } catch (Exception e) {
-                    LOGGER.error("Failed to report pending task {} as failed during shutdown", taskId, e);
-                    // Persist directly to dead letter file
-                    persistToDeadLetterFile(report);
-                }
-                pendingTaskIds.remove(taskId);
-                finishedTasks.add(new FinishedTask(taskId, false, false, 0));
+
+            List<TaskExecuteResult> results = null;
+            try {
+                results = remainingPending.stream().map(p -> TaskExecuteResult.of(config.getAgentId(), p.taskId, false, "Task was pending when agent shutdown, never executed"))
+                    .toList();
+                agentSchedulerClient.reportTaskResult(results);
+                pendingTaskIds.clear();
+            } catch (Exception e) {
+                LOGGER.error("Failed to report pending task {} as failed during shutdown", results, e);
+                // Persist directly to dead letter file
+                persistToDeadLetterFile(results);
             }
-            trimFinishedQueueIfNeeded();
             LOGGER.info("Finished reporting {} pending tasks", pendingCount);
         }
 
@@ -366,23 +371,24 @@ public class TaskExecutionEngine {
     }
 
     /**
-     * Persists a single failed report to the dead letter file (appends).
+     * Persists a single failed results to the dead letter file (appends).
      * Uses one JSON entry per line for incremental appending.
      */
-    private void persistToDeadLetterFile(TaskResultReport report) {
+    private void persistToDeadLetterFile(List<TaskExecuteResult> results) {
+        List<Long> taskIds = results.stream().map(TaskExecuteResult::taskId).toList();
         if (deadLetterFile == null) {
-            LOGGER.debug("No dead letter file configured, dropping failed report for task {}", report.taskId());
+            LOGGER.debug("No dead letter file configured, dropping failed results for tasks {}", taskIds);
             return;
         }
         try {
-            // Append as JSON line (one report per line)
-            java.io.FileWriter writer = new java.io.FileWriter(deadLetterFile, true);
-            String json = objectMapper.writeValueAsString(report);
+            // Append as JSON line (one results per line)
+            FileWriter writer = new FileWriter(deadLetterFile, true);
+            String json = objectMapper.writeValueAsString(results);
             writer.write(json + System.lineSeparator());
             writer.close();
-            LOGGER.debug("Persisted failed report for task {} to dead letter file", report.taskId());
+            LOGGER.debug("Persisted failed results for task {} to dead letter file", taskIds);
         } catch (Exception e) {
-            LOGGER.error("Failed to persist failed report for task {} to dead letter file", report.taskId(), e);
+            LOGGER.error("Failed to persist failed results for task {} to dead letter file", taskIds, e);
         }
     }
 
@@ -401,7 +407,7 @@ public class TaskExecutionEngine {
         }
 
         int successCount = 0;
-        List<TaskResultReport> remainingFailed = new ArrayList<>();
+        List<TaskExecuteResult> remainingFailed = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(deadLetterFile))) {
             String line;
@@ -410,14 +416,15 @@ public class TaskExecutionEngine {
                     continue;
                 }
                 try {
-                    TaskResultReport report = objectMapper.readValue(line, TaskResultReport.class);
-                    agentSchedulerClient.reportTaskResult(report);
+                    List<TaskExecuteResult> reports = objectMapper.readValue(line, new TypeReference<>() {
+                    });
+                    agentSchedulerClient.reportTaskResult(reports);
                     // Success - don't add back to remaining
                     successCount++;
-                    LOGGER.debug("Successfully retried dead letter report for task {}", report.taskId());
+                    LOGGER.debug("Successfully retried dead letter reports for task {}", reports.taskId());
                 } catch (Exception e) {
                     // Still failing - keep for next retry
-                    TaskResultReport report = objectMapper.readValue(line, TaskResultReport.class);
+                    TaskExecuteResult report = objectMapper.readValue(line, TaskExecuteResult.class);
                     remainingFailed.add(report);
                     LOGGER.debug("Still failed to report task {} from dead letter, will retry later", report.taskId());
                 }
@@ -430,7 +437,7 @@ public class TaskExecutionEngine {
         // Rewrite the file with only remaining failed reports
         if (!remainingFailed.isEmpty()) {
             try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(deadLetterFile))) {
-                for (TaskResultReport report : remainingFailed) {
+                for (TaskExecuteResult report : remainingFailed) {
                     writer.println(objectMapper.writeValueAsString(report));
                 }
             } catch (Exception e) {
@@ -575,7 +582,7 @@ public class TaskExecutionEngine {
                 pendingTaskIds.remove(taskId);
                 LOGGER.info("Task {} force-ok from pending queue", taskId);
                 finishInterrupted(taskId, true);
-                var report = new TaskResultReport(
+                var report = new TaskExecuteResult(
                     config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
                 );
                 agentSchedulerClient.reportTaskResult(report);
@@ -590,7 +597,7 @@ public class TaskExecutionEngine {
             runningTask.future().cancel(true);
             LOGGER.info("Task {} force-ok from running", taskId);
             finishInterrupted(taskId, true);
-            var report = new TaskResultReport(
+            var report = new TaskExecuteResult(
                 config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
             );
             agentSchedulerClient.reportTaskResult(report);
@@ -636,7 +643,7 @@ public class TaskExecutionEngine {
             TaskOutput output = execution.execute(input);
             long duration = System.currentTimeMillis() - startTime;
             LOGGER.info("Completed execution of task {} in {}ms", taskId, duration);
-            var report = new top.ilovemyhome.dagtask.si.agent.TaskResultReport(
+            var report = new TaskExecuteResult(
                 config.getAgentId(), taskId, output.isSuccess(), serializeOutput(output), null
             );
             // Offer to report queue, if queue full drop it (we already logged completion)
@@ -647,7 +654,7 @@ public class TaskExecutionEngine {
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
             LOGGER.error("Task {} execution failed after {}ms", taskId, duration, e);
-            var report = new TaskResultReport(config.getAgentId(), taskId, false, e.getMessage());
+            var report = new TaskExecuteResult(config.getAgentId(), taskId, false, e.getMessage());
             // Offer to report queue, if queue full drop it
             if (!resultReportQueue.offer(report)) {
                 LOGGER.warn("Result report queue full, dropping report for task {}", taskId);

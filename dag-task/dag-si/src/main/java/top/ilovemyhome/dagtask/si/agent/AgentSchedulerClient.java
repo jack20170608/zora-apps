@@ -2,6 +2,8 @@ package top.ilovemyhome.dagtask.si.agent;
 
 import jakarta.ws.rs.core.Response;
 
+import java.util.List;
+
 /**
  * Client interface for agents to communicate with the DAG scheduling server.
  * Defines the contract for agent registration, unregistration, result reporting and status reporting.
@@ -26,13 +28,7 @@ public interface AgentSchedulerClient {
      */
     Response unregister(AgentUnregistration unregistration);
 
-    /**
-     * Report the result of a task execution back to the scheduling server.
-     *
-     * @param taskResultReport the task execution result report
-     * @return the HTTP response from the server
-     */
-    Response reportTaskResult(TaskResultReport taskResultReport);
+    Response reportTaskResult(List<TaskExecuteResult> results);
 
     /**
      * Report current agent status and queue statistics back to the scheduling server.
