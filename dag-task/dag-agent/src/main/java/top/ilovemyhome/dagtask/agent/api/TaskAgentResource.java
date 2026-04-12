@@ -21,6 +21,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.core.DagTaskAgent;
+import top.ilovemyhome.dagtask.agent.core.ForceOkResult;
+import top.ilovemyhome.dagtask.agent.core.KillResult;
+import top.ilovemyhome.dagtask.agent.core.SubmissionResult;
 import top.ilovemyhome.dagtask.agent.core.TaskExecutionEngine;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.si.Constants;
@@ -107,7 +110,7 @@ public class TaskAgentResource {
         String inputJson = request.input();
         LOGGER.info("Received task submission: taskId={}, executionClass={}, input={}",
             taskId, executionClass, inputJson);
-        TaskExecutionEngine.SubmissionResult result = executionEngine.submit(taskId, executionClass, inputJson);
+        SubmissionResult result = executionEngine.submit(taskId, executionClass, inputJson);
         if (!result.accepted()) {
             if (result.queueFull()) {
                 return Response.status(Response.Status.TOO_MANY_REQUESTS)
@@ -167,7 +170,7 @@ public class TaskAgentResource {
                 .header("Content-Type", MediaType.APPLICATION_JSON)
                 .build();
         }
-        TaskExecutionEngine.KillResult result = executionEngine.kill(request.taskId());
+        KillResult result = executionEngine.kill(request.taskId());
 
         if (!result.success()) {
             if (!result.found()) {
@@ -220,7 +223,7 @@ public class TaskAgentResource {
                 .header("Content-Type", MediaType.APPLICATION_JSON)
                 .build();
         }
-        TaskExecutionEngine.KillResult result = executionEngine.cancel(request.taskId());
+        KillResult result = executionEngine.cancel(request.taskId());
 
         if (!result.success()) {
             if (!result.found()) {
@@ -260,7 +263,7 @@ public class TaskAgentResource {
                          content = @Content(mediaType = MediaType.APPLICATION_JSON))
     })
     public Response forceOk(OperationRequest request) {
-        TaskExecutionEngine.ForceOkResult result = executionEngine.forceOk(request.taskId());
+        ForceOkResult result = executionEngine.forceOk(request.taskId());
         if (!Objects.equals(request.opsType() , OpsType.FORCE_OK)){
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(Map.of("error", "Operation type " + request.opsType() + " is not forceOk."))
