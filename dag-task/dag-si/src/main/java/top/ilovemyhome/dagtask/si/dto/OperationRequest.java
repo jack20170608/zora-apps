@@ -10,6 +10,7 @@ import java.util.Objects;
 public record OperationRequest(
     Long taskId,
     OpsType opsType,
+    String executionClass,
     String input,
     Boolean force,
     PriorityType priorityType,

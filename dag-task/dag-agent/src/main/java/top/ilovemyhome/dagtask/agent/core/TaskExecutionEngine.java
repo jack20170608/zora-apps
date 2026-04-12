@@ -15,12 +15,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Manages the entire task execution lifecycle across three queues:
@@ -40,16 +43,19 @@ public class TaskExecutionEngine {
     private final ExecutorService taskExecutor;
     private final ObjectMapper objectMapper;
 
-    // Three state queues
+    // Three state queues + index for O(1) duplicate check
     private final ArrayBlockingQueue<PendingTask> pendingQueue;
+    private final Set<Long> pendingTaskIds = ConcurrentHashMap.newKeySet();
     private final ConcurrentHashMap<Long, RunningTask> runningTasks;
     private final ConcurrentLinkedQueue<FinishedTask> finishedTasks;
+    private final AtomicInteger maxFinishedSize;
 
     // Background queue processor
     private final AtomicBoolean running = new AtomicBoolean(true);
     private Thread queueProcessor;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskExecutionEngine.class);
+    private static final int DEFAULT_MAX_FINISHED_SIZE = 1000;
 
     /**
      * Record representing a task waiting in the pending queue.
@@ -87,6 +93,24 @@ public class TaskExecutionEngine {
         this.pendingQueue = new ArrayBlockingQueue<>(config.getMaxPendingTasks());
         this.runningTasks = new ConcurrentHashMap<>();
         this.finishedTasks = new ConcurrentLinkedQueue<>();
+        this.maxFinishedSize = new AtomicInteger(DEFAULT_MAX_FINISHED_SIZE);
+    }
+
+    /**
+     * Constructor with custom maximum finished queue size.
+     */
+    public TaskExecutionEngine(AgentConfiguration config, AgentSchedulerClient agentSchedulerClient,
+                               ExecutorService taskExecutor, ObjectMapper objectMapper,
+                               int maxFinishedSize) {
+        this.config = config;
+        this.agentSchedulerClient = agentSchedulerClient;
+        this.taskExecutor = taskExecutor;
+        this.objectMapper = objectMapper;
+
+        this.pendingQueue = new ArrayBlockingQueue<>(config.getMaxPendingTasks());
+        this.runningTasks = new ConcurrentHashMap<>();
+        this.finishedTasks = new ConcurrentLinkedQueue<>();
+        this.maxFinishedSize = new AtomicInteger(maxFinishedSize);
     }
 
     /**
@@ -99,6 +123,7 @@ public class TaskExecutionEngine {
             while (running.get()) {
                 try {
                     PendingTask pendingTask = pendingQueue.take();
+                    pendingTaskIds.remove(pendingTask.taskId());
                     Future<?> future = taskExecutor.submit(() -> executeTask(pendingTask));
                     RunningTask runningTask = new RunningTask(pendingTask, future);
                     runningTasks.put(pendingTask.taskId(), runningTask);
@@ -106,10 +131,13 @@ public class TaskExecutionEngine {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
+                } catch (Exception e) {
+                    LOGGER.error("Unexpected error in queue processor, continuing processing", e);
                 }
             }
             LOGGER.info("Task execution manager queue processor stopped");
         });
+        queueProcessor.setName("task-execution-queue-processor");
         queueProcessor.setDaemon(true);
         queueProcessor.start();
     }
@@ -128,25 +156,21 @@ public class TaskExecutionEngine {
      * Submits a new task for execution.
      *
      * @param taskId         the task ID
+     * @param executionClass the execution class name to instantiate
      * @param inputJson      the input JSON (can be null)
      * @return submission result indicating if accepted and why
      */
-    public SubmissionResult submit(Long taskId, String inputJson) {
-        // Check for duplicate task ID
-        if (runningTasks.containsKey(taskId)) {
-            return SubmissionResult.duplicate(taskId);
-        }
-        boolean alreadyInPending = pendingQueue.stream()
-                .anyMatch(p -> p.taskId().equals(taskId));
-        if (alreadyInPending) {
+    public SubmissionResult submit(Long taskId, String executionClass, String inputJson) {
+        // Check for duplicate task ID - O(1) check using indexes
+        if (runningTasks.containsKey(taskId) || pendingTaskIds.contains(taskId)) {
             return SubmissionResult.duplicate(taskId);
         }
 
         // Create execution instance
-//        TaskExecution execution = taskFactory.createTaskForExecution(executionClass);
-//        if (execution == null) {
-//            return SubmissionResult.executionCreationFailed(executionClass);
-//        }
+        TaskExecution execution = TaskFactory.createTaskForExecution(executionClass);
+        if (execution == null) {
+            return SubmissionResult.executionCreationFailed(executionClass);
+        }
 
         // Parse input
         TaskInput input;
@@ -157,12 +181,13 @@ public class TaskExecutionEngine {
         }
 
         // Try to add to pending queue
-        PendingTask pendingTask = new PendingTask(taskId, null, input);
+        PendingTask pendingTask = new PendingTask(taskId, execution, input);
         boolean added = pendingQueue.offer(pendingTask);
         if (!added) {
             return SubmissionResult.queueFull(config.getMaxPendingTasks(), pendingQueue.size());
         }
 
+        pendingTaskIds.add(taskId);
         LOGGER.info("Task {} added to pending queue. Pending size: {}", taskId, pendingQueue.size());
         return SubmissionResult.accepted(taskId, pendingQueue.size());
     }
@@ -174,12 +199,34 @@ public class TaskExecutionEngine {
      * @return kill result
      */
     public KillResult kill(Long taskId) {
-        // Check pending queue first
-        boolean removedPending = pendingQueue.removeIf(p -> p.taskId().equals(taskId));
-        if (removedPending) {
-            LOGGER.info("Task {} removed from pending queue before execution", taskId);
-            finishedTasks.add(new FinishedTask(taskId, true, false, 0));
-            return KillResult.successFromPending(taskId);
+        return cancelOrKill(taskId);
+    }
+
+    /**
+     * Cancels a task (can be in pending or running).
+     * Identical to kill operation provided for semantic consistency.
+     *
+     * @param taskId the task ID to cancel
+     * @return cancel result
+     */
+    public KillResult cancel(Long taskId) {
+        return cancelOrKill(taskId);
+    }
+
+    /**
+     * Common implementation for both kill and cancel operations.
+     */
+    private KillResult cancelOrKill(Long taskId) {
+        // Check pending queue first using our index for fast check then remove
+        if (pendingTaskIds.contains(taskId)) {
+            boolean removed = pendingQueue.removeIf(p -> p.taskId().equals(taskId));
+            if (removed) {
+                pendingTaskIds.remove(taskId);
+                LOGGER.info("Task {} removed from pending queue before execution", taskId);
+                finishInterrupted(taskId, false);
+                return KillResult.successFromPending(taskId);
+            }
+            pendingTaskIds.remove(taskId); // clean up stale entry
         }
 
         // Check running
@@ -190,11 +237,11 @@ public class TaskExecutionEngine {
 
         boolean cancelled = runningTask.future().cancel(true);
         if (cancelled) {
-            LOGGER.info("Task {} killed successfully from running", taskId);
-            finishedTasks.add(new FinishedTask(taskId, true, false, 0));
+            LOGGER.info("Task {} cancelled successfully from running", taskId);
+            finishInterrupted(taskId, false);
             return KillResult.successFromRunning(taskId);
         } else {
-            LOGGER.warn("Failed to kill task {}", taskId);
+            LOGGER.warn("Failed to cancel task {}", taskId);
             return KillResult.failedToCancel(taskId);
         }
     }
@@ -208,15 +255,19 @@ public class TaskExecutionEngine {
      */
     public ForceOkResult forceOk(Long taskId) {
         // Remove from pending
-        boolean removedPending = pendingQueue.removeIf(p -> p.taskId().equals(taskId));
-        if (removedPending) {
-            LOGGER.info("Task {} force-ok from pending queue", taskId);
-            finishedTasks.add(new FinishedTask(taskId, true, true, 0));
-            var report = new TaskResultReport(
-                    config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
-            );
-            agentSchedulerClient.reportTaskResult(report);
-            return ForceOkResult.successFromPending(taskId);
+        if (pendingTaskIds.contains(taskId)) {
+            boolean removed = pendingQueue.removeIf(p -> p.taskId().equals(taskId));
+            if (removed) {
+                pendingTaskIds.remove(taskId);
+                LOGGER.info("Task {} force-ok from pending queue", taskId);
+                finishInterrupted(taskId, true);
+                var report = new TaskResultReport(
+                        config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
+                );
+                agentSchedulerClient.reportTaskResult(report);
+                return ForceOkResult.successFromPending(taskId);
+            }
+            pendingTaskIds.remove(taskId); // clean up stale entry
         }
 
         // Remove from running
@@ -224,7 +275,7 @@ public class TaskExecutionEngine {
         if (runningTask != null) {
             runningTask.future().cancel(true);
             LOGGER.info("Task {} force-ok from running", taskId);
-            finishedTasks.add(new FinishedTask(taskId, true, true, 0));
+            finishInterrupted(taskId, true);
             var report = new TaskResultReport(
                     config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
             );
@@ -233,6 +284,14 @@ public class TaskExecutionEngine {
         }
 
         return ForceOkResult.notFound(taskId);
+    }
+
+    /**
+     * Finishes a task that was interrupted (kill/cancel/force-ok).
+     */
+    private void finishInterrupted(Long taskId, boolean success) {
+        finishedTasks.add(new FinishedTask(taskId, true, success, 0));
+        trimFinishedQueueIfNeeded();
     }
 
     /**
@@ -284,7 +343,41 @@ public class TaskExecutionEngine {
     private void finishTask(Long taskId, boolean completedNormally, boolean success, long durationMs) {
         runningTasks.remove(taskId);
         finishedTasks.add(new FinishedTask(taskId, completedNormally, success, durationMs));
+        trimFinishedQueueIfNeeded();
         LOGGER.debug("Moved task {} from running to finished", taskId);
+    }
+
+    /**
+     * Trims the finished queue if it exceeds the maximum size limit.
+     * Removes the oldest entries when limit is reached.
+     */
+    private void trimFinishedQueueIfNeeded() {
+        int maxSize = maxFinishedSize.get();
+        if (finishedTasks.size() > maxSize) {
+            // Remove oldest half to avoid trimming every time
+            int toRemove = finishedTasks.size() - maxSize / 2;
+            for (int i = 0; i < toRemove && !finishedTasks.isEmpty(); i++) {
+                finishedTasks.poll();
+            }
+            LOGGER.debug("Trimmed finished queue to {} entries", finishedTasks.size());
+        }
+    }
+
+    /**
+     * Sets the maximum size for the finished tasks queue.
+     * @param maxSize maximum number of finished tasks to keep
+     */
+    public void setMaxFinishedSize(int maxSize) {
+        this.maxFinishedSize.set(maxSize);
+    }
+
+    /**
+     * Clears all finished tasks from the finished queue.
+     * Can be called periodically to free memory.
+     */
+    public void clearFinishedQueue() {
+        finishedTasks.clear();
+        LOGGER.info("Cleared finished tasks queue");
     }
 
     private TaskInput parseInput(String inputJson) throws Exception {

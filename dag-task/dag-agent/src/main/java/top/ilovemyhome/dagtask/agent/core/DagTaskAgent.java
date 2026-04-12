@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.client.DefaultAgentSchedulerClient;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.agent.api.TaskAgentResource;
+import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.agent.TaskFactory;
@@ -56,7 +57,6 @@ public class DagTaskAgent {
             this.taskExecutor = Executors.newFixedThreadPool(config.getMaxConcurrentTasks());
         }
         ObjectMapper objectMapper = new ObjectMapper();
-        TaskFactory taskFactory = new DefaultTaskFactory();
         this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
         this.resource = new TaskAgentResource(this, executionManager);
     }
@@ -154,10 +154,6 @@ public class DagTaskAgent {
 
     public TaskAgentResource getResource() {
         return resource;
-    }
-
-    private static class DefaultTaskFactory implements TaskFactory {
-        // Use default implementation
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DagTaskAgent.class);

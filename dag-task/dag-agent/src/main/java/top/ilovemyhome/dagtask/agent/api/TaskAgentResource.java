@@ -25,6 +25,7 @@ import top.ilovemyhome.dagtask.agent.core.TaskExecutionEngine;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.si.Constants;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
+import top.ilovemyhome.dagtask.si.agent.TaskFactory;
 import top.ilovemyhome.dagtask.si.dto.OperationRequest;
 import top.ilovemyhome.dagtask.si.enums.OpsType;
 
@@ -101,15 +102,17 @@ public class TaskAgentResource {
     })
     public Response submit(OperationRequest request) {
         Long taskId = request.taskId();
+        String executionClass = request.executionClass();
         String inputJson = request.input();
-        LOGGER.info("Received task submission: taskId={}, input={}", taskId, inputJson);
+        LOGGER.info("Received task submission: taskId={}, executionClass={}, input={}",
+            taskId, executionClass, inputJson);
         if (!Objects.equals(request.opsType() , OpsType.SUBMIT)){
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(Map.of("error", "Operation type " + request.opsType() + " is not submit."))
                 .header("Content-Type", MediaType.APPLICATION_JSON)
                 .build();
         }
-        TaskExecutionEngine.SubmissionResult result = executionEngine.submit(taskId, inputJson);
+        TaskExecutionEngine.SubmissionResult result = executionEngine.submit(taskId, executionClass, inputJson);
         if (!result.accepted()) {
             if (result.queueFull()) {
                 return Response.status(Response.Status.TOO_MANY_REQUESTS)
