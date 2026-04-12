@@ -7,14 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.PUT;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
@@ -26,6 +19,7 @@ import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
 import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
 import top.ilovemyhome.zora.jdbi.page.Page;
 import top.ilovemyhome.zora.jdbi.page.Pageable;
+import top.ilovemyhome.zora.jdbi.page.impl.PageRequest;
 
 import java.util.List;
 
@@ -232,7 +226,8 @@ public class TaskTemplateApi {
      * Search templates by criteria with pagination.
      *
      * @param searchCriteria the search criteria to filter templates
-     * @param page the page request containing page number and page size
+     * @param page page number (0-indexed)
+     * @param pageSize number of items per page
      * @return HTTP 200 OK with paginated result of matching templates
      */
     @POST
@@ -246,9 +241,12 @@ public class TaskTemplateApi {
     public Response searchPaged(
         @Parameter(description = "Search criteria for filtering templates", required = true)
         TaskTemplateSearchCriteria searchCriteria,
-        @Parameter(description = "Pagination information (page number, page size)", required = true)
-        Pageable page) {
-        Page<TaskTemplate> result = taskTemplateService.find(searchCriteria, page);
+        @Parameter(description = "Page number (0-indexed), default 0", required = false)
+        @QueryParam("page") @DefaultValue("0") int page,
+        @Parameter(description = "Page size, default 20", required = false)
+        @QueryParam("pageSize") @DefaultValue("20") int pageSize) {
+        Pageable pageRequest = new PageRequest(page, pageSize);
+        Page<TaskTemplate> result = taskTemplateService.find(searchCriteria, pageRequest);
         LOGGER.debug("Found {} total templates matching search criteria on page {}",
             result.getTotalElements(), result.getNumber());
         return Response.ok().entity(ResEntityHelper.ok("Templates paged search completed", result)).build();
