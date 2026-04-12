@@ -11,6 +11,7 @@ import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
 import top.ilovemyhome.dagtask.si.dto.AgentRegistrySearchCriteria;
 import top.ilovemyhome.dagtask.si.dto.SubmitRequest;
 import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
+import top.ilovemyhome.dagtask.si.enums.TaskType;
 import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskDispatchDao;
 
@@ -337,6 +338,7 @@ public class TaskDispatcher {
         // The executionClass is the executionKey - agent uses this to instantiate the correct executor
         SubmitRequest submitRequest = new SubmitRequest(
             task.getId(),
+            TaskType.JAVA_CLASS_NAME,
             task.getExecutionKey(),
             task.getInput()
         );

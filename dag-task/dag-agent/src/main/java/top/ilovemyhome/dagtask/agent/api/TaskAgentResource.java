@@ -27,6 +27,7 @@ import top.ilovemyhome.dagtask.si.Constants;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.agent.TaskFactory;
 import top.ilovemyhome.dagtask.si.dto.OperationRequest;
+import top.ilovemyhome.dagtask.si.dto.SubmitRequest;
 import top.ilovemyhome.dagtask.si.enums.OpsType;
 
 import java.util.HashMap;
@@ -91,7 +92,7 @@ public class TaskAgentResource {
                              "Rejects the request with HTTP 429 if the pending queue is full (backpressure).")
     @RequestBody(description = "Task submission request containing task ID, execution class name, and input JSON",
                   required = true,
-                  content = @Content(schema = @Schema(implementation = OperationRequest.class)))
+                  content = @Content(schema = @Schema(implementation = SubmitRequest.class)))
     @ApiResponses({
             @ApiResponse(responseCode = "202", description = "Task accepted for execution",
                          content = @Content(mediaType = MediaType.APPLICATION_JSON)),
@@ -100,18 +101,12 @@ public class TaskAgentResource {
             @ApiResponse(responseCode = "429", description = "Pending queue is full, too many pending tasks",
                          content = @Content(mediaType = MediaType.APPLICATION_JSON))
     })
-    public Response submit(OperationRequest request) {
+    public Response submit(SubmitRequest request) {
         Long taskId = request.taskId();
         String executionClass = request.executionClass();
         String inputJson = request.input();
         LOGGER.info("Received task submission: taskId={}, executionClass={}, input={}",
             taskId, executionClass, inputJson);
-        if (!Objects.equals(request.opsType() , OpsType.SUBMIT)){
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(Map.of("error", "Operation type " + request.opsType() + " is not submit."))
-                .header("Content-Type", MediaType.APPLICATION_JSON)
-                .build();
-        }
         TaskExecutionEngine.SubmissionResult result = executionEngine.submit(taskId, executionClass, inputJson);
         if (!result.accepted()) {
             if (result.queueFull()) {

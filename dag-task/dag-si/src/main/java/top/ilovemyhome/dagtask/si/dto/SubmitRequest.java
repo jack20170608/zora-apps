@@ -25,4 +25,7 @@ public record SubmitRequest(
         requestDt = requestDt == null ? Instant.now()  : requestDt;
     }
 
+    public SubmitRequest(Long taskId, TaskType taskType, String executionClass, String input){
+        this(taskId, taskType, null, PriorityType.NORMAL, executionClass, input, "SYSTEM", Instant.now());
+    }
 }

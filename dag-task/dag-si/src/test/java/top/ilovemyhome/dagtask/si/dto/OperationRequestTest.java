@@ -2,7 +2,6 @@ package top.ilovemyhome.dagtask.si.dto;
 
 import org.junit.jupiter.api.Test;
 import top.ilovemyhome.dagtask.si.enums.OpsType;
-import top.ilovemyhome.dagtask.si.enums.PriorityType;
 
 import java.time.Instant;
 
@@ -15,24 +14,20 @@ class OperationRequestTest {
     void testConstructor_withAllParameters() {
         // Given
         Long taskId = 123L;
-        OpsType opsType = OpsType.SUBMIT;
-        String input = "{\"param1\":\"value1\"}";
+        OpsType opsType = OpsType.KILL;
         Boolean force = Boolean.TRUE;
-        PriorityType priority = PriorityType.HIGH;
-        String reason = "Manual submission";
+        String reason = "Kill hanging task";
         String dealer = "admin";
         Instant requestDt = Instant.now().minusSeconds(60);
 
         // When
-        OperationRequest request = new OperationRequest(taskId, opsType, input, force, priority, reason, dealer, requestDt);
+        OperationRequest request = new OperationRequest(taskId, opsType, force, reason, dealer, requestDt);
 
         // Then
         assertThat(request.taskId()).isEqualTo(123L);
-        assertThat(request.opsType()).isEqualTo(OpsType.SUBMIT);
-        assertThat(request.input()).isEqualTo("{\"param1\":\"value1\"}");
+        assertThat(request.opsType()).isEqualTo(OpsType.KILL);
         assertThat(request.force()).isTrue();
-        assertThat(request.priorityType()).isEqualTo(PriorityType.HIGH);
-        assertThat(request.reason()).isEqualTo("Manual submission");
+        assertThat(request.reason()).isEqualTo("Kill hanging task");
         assertThat(request.dealer()).isEqualTo("admin");
         assertThat(request.requestDt()).isEqualTo(requestDt);
     }
@@ -42,19 +37,16 @@ class OperationRequestTest {
         // Given
         Long taskId = 456L;
         OpsType opsType = OpsType.KILL;
-        String input = null;
         String reason = "Kill hanging task";
         String dealer = "operator";
 
         // When
-        OperationRequest request = new OperationRequest(taskId, opsType, input, null, null, reason, dealer, null);
+        OperationRequest request = new OperationRequest(taskId, opsType, null, reason, dealer, null);
 
         // Then - verify default values are set correctly
         assertThat(request.taskId()).isEqualTo(456L);
         assertThat(request.opsType()).isEqualTo(OpsType.KILL);
-        assertThat(request.input()).isNull();
         assertThat(request.force()).isFalse();
-        assertThat(request.priorityType()).isEqualTo(PriorityType.NORMAL);
         assertThat(request.reason()).isEqualTo("Kill hanging task");
         assertThat(request.dealer()).isEqualTo("operator");
         assertThat(request.requestDt()).isNotNull();
@@ -69,7 +61,7 @@ class OperationRequestTest {
         OpsType opsType = OpsType.HOLD;
 
         // When force is null
-        OperationRequest request = new OperationRequest(taskId, opsType, null, null, null, "test", "tester", null);
+        OperationRequest request = new OperationRequest(taskId, opsType, null, "test", "tester", null);
 
         // Then force should be false
         assertThat(request.force()).isFalse();
@@ -82,7 +74,7 @@ class OperationRequestTest {
         OpsType opsType = OpsType.HOLD;
 
         // When force is explicitly false
-        OperationRequest request = new OperationRequest(taskId, opsType, null, Boolean.FALSE, null, "test", "tester", null);
+        OperationRequest request = new OperationRequest(taskId, opsType, Boolean.FALSE, "test", "tester", null);
 
         // Then force should still be false
         assertThat(request.force()).isFalse();
@@ -95,58 +87,44 @@ class OperationRequestTest {
         OpsType opsType = OpsType.HOLD;
 
         // When force is explicitly true
-        OperationRequest request = new OperationRequest(taskId, opsType, null, Boolean.TRUE, null, null, "tester", null);
+        OperationRequest request = new OperationRequest(taskId, opsType, Boolean.TRUE, "test", "tester", null);
 
         // Then force should still be true
         assertThat(request.force()).isTrue();
     }
 
     @Test
-    void testConstructor_partialArgs_keepsExplicitValues() {
-        // Given
-        Long taskId = 789L;
-        OpsType opsType = OpsType.HOLD;
-        String input = "{\"debug\":true}";
-        Boolean force = Boolean.TRUE;
-        String reason = "Hold for maintenance";
-        String dealer = "devops";
-
-        // When
-        OperationRequest request = new OperationRequest(taskId, opsType, input, force, PriorityType.LOW, reason, dealer, null);
-
-        // Then
-        assertThat(request.taskId()).isEqualTo(789L);
-        assertThat(request.opsType()).isEqualTo(OpsType.HOLD);
-        assertThat(request.input()).isEqualTo("{\"debug\":true}");
-        assertThat(request.force()).isTrue();
-        assertThat(request.priorityType()).isEqualTo(PriorityType.LOW);
-        assertThat(request.reason()).isEqualTo("Hold for maintenance");
-        assertThat(request.dealer()).isEqualTo("devops");
-        assertThat(request.requestDt()).isNotNull();
+    void testConstructor_submitOperation_throwsIllegalArgument() {
+        // When opsType is SUBMIT
+        assertThatThrownBy(() -> new OperationRequest(123L, OpsType.SUBMIT, null, "submit", "tester", null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("submit request");
     }
 
     @Test
     void testConstructor_withNullTaskId_throwsNpe() {
         // When taskId is null
-        assertThatThrownBy(() -> new OperationRequest(null, OpsType.SUBMIT, null, null, null, null, "tester", null))
+        assertThatThrownBy(() -> new OperationRequest(null, OpsType.KILL, null, "test", "tester", null))
             .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void testConstructor_withNullOpsType_throwsNpe() {
         // When opsType is null
-        assertThatThrownBy(() -> new OperationRequest(123L, null, null, null, null, null, "tester", null))
+        assertThatThrownBy(() -> new OperationRequest(123L, null, null, "test", "tester", null))
             .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    void testAllOpsTypes_canCreateRequest() {
+    void testAllNonSubmitOpsTypes_canCreateRequest() {
         Long taskId = 100L;
         for (OpsType opsType : OpsType.values()) {
-            OperationRequest request = new OperationRequest(taskId, opsType, null, null, null, "test", "tester", null);
+            if (opsType == OpsType.SUBMIT) {
+                continue; // SUBMIT is not allowed, tested separately
+            }
+            OperationRequest request = new OperationRequest(taskId, opsType, null, "test", "tester", null);
             assertThat(request.opsType()).isEqualTo(opsType);
             assertThat(request.force()).isFalse();
-            assertThat(request.priorityType()).isEqualTo(PriorityType.NORMAL);
         }
     }
 }
