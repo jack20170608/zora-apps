@@ -24,8 +24,10 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.core.DagTaskAgent;
 import top.ilovemyhome.dagtask.agent.core.TaskExecutionManager;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
+import top.ilovemyhome.dagtask.si.Constants;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.agent.TaskFactory;
+import top.ilovemyhome.dagtask.si.dto.OperationRequest;
 import top.ilovemyhome.dagtask.si.dto.SubmitRequest;
 
 import java.util.HashMap;
@@ -42,7 +44,7 @@ import java.util.concurrent.ExecutorService;
  * - GET /api/health - Get agent health status with queue statistics
  * - GET /api/ping - Heartbeat check
  */
-@Path("/api")
+@Path(Constants.API_VERSION)
 @OpenAPIDefinition(
         info = @Info(
                 title = "DAG Task Agent API",
@@ -142,9 +144,8 @@ public class TaskAgentResource {
     // ========== Kill endpoint ==========
 
     @POST
-    @Path("/kill/{taskId}")
+    @Path(Constants.API_KILL)
     @Produces(MediaType.APPLICATION_JSON)
-    // @Description(value = "Kill running task", details = "Attempts to interrupt and kill a running or pending task")
     @Operation(summary = "Kill a running or pending task",
                description = "Attempts to interrupt and kill a task that is either waiting in the pending queue or currently running. " +
                              "Once killed, the task is marked as failed and moved to the finished queue.")
@@ -157,8 +158,8 @@ public class TaskAgentResource {
             @ApiResponse(responseCode = "500", description = "Failed to cancel the running task",
                          content = @Content(mediaType = MediaType.APPLICATION_JSON))
     })
-    public Response kill(@PathParam("taskId") Long taskId) {
-        TaskExecutionManager.KillResult result = executionManager.kill(taskId);
+    public Response kill(OperationRequest operationRequest) {
+        TaskExecutionManager.KillResult result = executionManager.kill(operationRequest.taskId());
 
         if (!result.success()) {
             if (!result.found()) {
@@ -184,9 +185,8 @@ public class TaskAgentResource {
     // ========== Force Ok endpoint ==========
 
     @POST
-    @Path("/force-ok/{taskId}")
+    @Path(Constants.API_FORCE_OK)
     @Produces(MediaType.APPLICATION_JSON)
-    // @Description(value = "Force task success", details = "Marks a running or pending task as completed successfully")
     @Operation(summary = "Force a task to complete successfully",
                description = "Forces a task that is either waiting in the pending queue or currently running " +
                              "to complete immediately with a successful result. " +
