@@ -242,7 +242,7 @@ public class TaskTemplateApi {
         @Parameter(description = "Search criteria for filtering templates", required = true)
         TaskTemplateSearchCriteria searchCriteria,
         @Parameter(description = "Page number (0-indexed), default 0", required = false)
-        @QueryParam("page") @DefaultValue("0") int page,
+        @QueryParam("page") @DefaultValue("1") int page,
         @Parameter(description = "Page size, default 20", required = false)
         @QueryParam("pageSize") @DefaultValue("20") int pageSize) {
         Pageable pageRequest = new PageRequest(page, pageSize);

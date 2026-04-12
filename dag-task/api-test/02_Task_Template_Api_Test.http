@@ -157,14 +157,14 @@ Authorization: Basic {{username}} {{password}}
 # 4. Search templates with pagination
 # -----------------------------------------------------------------------------
 ### Search all templates, first page with 10 items per page
-POST {{baseUrl}}/api/v1/template/search/page?page=0&pageSize=10
+POST {{baseUrl}}/api/v1/template/search/page?pageSize=10
 Content-Type: application/json
 Authorization: Basic {{username}} {{password}}
 
 {}
 
 ### Search active templates, second page with 2 items per page
-POST {{baseUrl}}/api/v1/template/search/page?page=1&pageSize=2
+POST {{baseUrl}}/api/v1/template/search/page?page=3&pageSize=1
 Content-Type: application/json
 Authorization: Basic {{username}} {{password}}
 
