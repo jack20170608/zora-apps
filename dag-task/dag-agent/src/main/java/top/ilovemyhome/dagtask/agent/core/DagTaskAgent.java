@@ -39,8 +39,7 @@ public class DagTaskAgent {
         this.agentSchedulerClient = new DefaultAgentSchedulerClient(config);
         this.taskExecutor = Executors.newFixedThreadPool(config.getMaxConcurrentTasks());
         ObjectMapper objectMapper = new ObjectMapper();
-        TaskFactory taskFactory = new DefaultTaskFactory();
-        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
+        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
         this.resource = new TaskAgentResource(this, executionManager);
     }
 
@@ -58,7 +57,7 @@ public class DagTaskAgent {
         }
         ObjectMapper objectMapper = new ObjectMapper();
         TaskFactory taskFactory = new DefaultTaskFactory();
-        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
+        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
         this.resource = new TaskAgentResource(this, executionManager);
     }
 
@@ -72,8 +71,7 @@ public class DagTaskAgent {
         this.agentSchedulerClient = Objects.requireNonNull(agentSchedulerClient, "AgentSchedulerClient is required");
         this.taskExecutor = Objects.requireNonNull(taskExecutor, "taskExecutor is required");
         Objects.requireNonNull(objectMapper, "objectMapper is required");
-        TaskFactory taskFactory = new DefaultTaskFactory();
-        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
+        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
         this.resource = new TaskAgentResource(this, executionManager);
     }
 

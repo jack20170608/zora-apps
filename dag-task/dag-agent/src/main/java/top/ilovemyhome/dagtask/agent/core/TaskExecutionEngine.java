@@ -39,7 +39,6 @@ public class TaskExecutionEngine {
     private final AgentSchedulerClient agentSchedulerClient;
     private final ExecutorService taskExecutor;
     private final ObjectMapper objectMapper;
-    private final TaskFactory taskFactory;
 
     // Three state queues
     private final ArrayBlockingQueue<PendingTask> pendingQueue;
@@ -79,12 +78,11 @@ public class TaskExecutionEngine {
     ) {}
 
     public TaskExecutionEngine(AgentConfiguration config, AgentSchedulerClient agentSchedulerClient,
-                               ExecutorService taskExecutor, ObjectMapper objectMapper, TaskFactory taskFactory) {
+                               ExecutorService taskExecutor, ObjectMapper objectMapper) {
         this.config = config;
         this.agentSchedulerClient = agentSchedulerClient;
         this.taskExecutor = taskExecutor;
         this.objectMapper = objectMapper;
-        this.taskFactory = taskFactory;
 
         this.pendingQueue = new ArrayBlockingQueue<>(config.getMaxPendingTasks());
         this.runningTasks = new ConcurrentHashMap<>();

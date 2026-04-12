@@ -55,7 +55,7 @@ import java.util.concurrent.ExecutorService;
 public class TaskAgentResource {
 
     private final DagTaskAgent agent;
-    private final TaskExecutionEngine executionManager;
+    private final TaskExecutionEngine executionEngine;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskAgentResource.class);
 
@@ -63,12 +63,12 @@ public class TaskAgentResource {
                              ExecutorService taskExecutor, DagTaskAgent agent) {
         this.agent = agent;
         ObjectMapper objectMapper = new ObjectMapper();
-        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper, taskFactory);
+        this.executionEngine = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
     }
 
-    public TaskAgentResource(DagTaskAgent agent, TaskExecutionEngine executionManager) {
+    public TaskAgentResource(DagTaskAgent agent, TaskExecutionEngine executionEngine) {
         this.agent = agent;
-        this.executionManager = executionManager;
+        this.executionEngine = executionEngine;
     }
 
     /**
@@ -76,13 +76,13 @@ public class TaskAgentResource {
      * Called after server startup by DagTaskAgent.
      */
     public void startQueueProcessor() {
-        executionManager.start();
+        executionEngine.start();
     }
 
     // ========== Submit endpoint ==========
 
     @POST
-    @Path("/submit")
+    @Path(Constants.API_SUBMIT)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Submit a new task for execution",
@@ -109,7 +109,7 @@ public class TaskAgentResource {
                 .header("Content-Type", MediaType.APPLICATION_JSON)
                 .build();
         }
-        TaskExecutionEngine.SubmissionResult result = executionManager.submit(taskId, inputJson);
+        TaskExecutionEngine.SubmissionResult result = executionEngine.submit(taskId, inputJson);
         if (!result.accepted()) {
             if (result.queueFull()) {
                 return Response.status(Response.Status.TOO_MANY_REQUESTS)
@@ -169,7 +169,7 @@ public class TaskAgentResource {
                 .header("Content-Type", MediaType.APPLICATION_JSON)
                 .build();
         }
-        TaskExecutionEngine.KillResult result = executionManager.kill(request.taskId());
+        TaskExecutionEngine.KillResult result = executionEngine.kill(request.taskId());
 
         if (!result.success()) {
             if (!result.found()) {
@@ -222,7 +222,7 @@ public class TaskAgentResource {
                 .header("Content-Type", MediaType.APPLICATION_JSON)
                 .build();
         }
-        TaskExecutionEngine.KillResult result = executionManager.kill(request.taskId());
+        TaskExecutionEngine.KillResult result = executionEngine.cancel(request.taskId());
 
         if (!result.success()) {
             if (!result.found()) {
@@ -262,7 +262,7 @@ public class TaskAgentResource {
                          content = @Content(mediaType = MediaType.APPLICATION_JSON))
     })
     public Response forceOk(OperationRequest request) {
-        TaskExecutionEngine.ForceOkResult result = executionManager.forceOk(request.taskId());
+        TaskExecutionEngine.ForceOkResult result = executionEngine.forceOk(request.taskId());
         if (!Objects.equals(request.opsType() , OpsType.FORCE_OK)){
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(Map.of("error", "Operation type " + request.opsType() + " is not forceOk."))
@@ -298,7 +298,7 @@ public class TaskAgentResource {
                  content = @Content(mediaType = MediaType.APPLICATION_JSON))
     public Response health() {
         AgentConfiguration config = agent.getConfig();
-        TaskExecutionEngine.Statistics stats = executionManager.getStatistics();
+        TaskExecutionEngine.Statistics stats = executionEngine.getStatistics();
 
         Map<String, Object> health = new HashMap<>();
         health.put("running", agent.isRunning());
