@@ -24,6 +24,8 @@ class AgentConfigurationLoadTest {
                   autoRegister = false
                   maxConcurrentTasks = 8
                   maxPendingTasks = 200
+                  deadLetterPersistenceFile = ""
+                  deadLetterPersistencePath = ""
                   supportedExecutionKeys = [
                     "top.ilovemyhome.dagtask.core.TestTaskExecution",
                     "com.example.MyCustomTask",
@@ -61,6 +63,8 @@ class AgentConfigurationLoadTest {
                     autoRegister = true
                     maxConcurrentTasks = 4
                     maxPendingTasks = 100
+                    deadLetterPersistenceFile = ""
+                    deadLetterPersistencePath = ""
                     supportedExecutionKeys = []
                   }
                 }
@@ -89,6 +93,8 @@ class AgentConfigurationLoadTest {
                   autoRegister = true
                   maxConcurrentTasks = 4
                   maxPendingTasks = 100
+                  deadLetterPersistenceFile = ""
+                  deadLetterPersistencePath = ""
                   supportedExecutionKeys = []
                 }
                 """;
@@ -116,6 +122,8 @@ class AgentConfigurationLoadTest {
                   autoRegister = true
                   maxConcurrentTasks = 4
                   maxPendingTasks = 100
+                  deadLetterPersistenceFile = ""
+                  deadLetterPersistencePath = ""
                   supportedExecutionKeys = []
                 }
                 """;

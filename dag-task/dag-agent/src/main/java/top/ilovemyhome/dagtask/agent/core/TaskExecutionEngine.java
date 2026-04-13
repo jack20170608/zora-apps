@@ -65,7 +65,9 @@ public class TaskExecutionEngine {
     // Background dead letter retry thread - automatically retries persisted failed reports
     private final AtomicBoolean deadLetterRetryRunning = new AtomicBoolean(true);
     private Thread deadLetterRetryThread;
-    private File deadLetterFile;
+    // Dead letter persistence - can be either file (legacy mode) or directory (new mode)
+    private File deadLetterPersistenceFile;
+    private File deadLetterPersistenceDir;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskExecutionEngine.class);
     private static final int DEFAULT_REPORT_QUEUE_CAPACITY = 100;
@@ -105,7 +107,7 @@ public class TaskExecutionEngine {
         this.pendingQueue = new ArrayBlockingQueue<>(config.getMaxPendingTasks());
         this.runningTasks = new ConcurrentHashMap<>();
         this.resultReportQueue = new ArrayBlockingQueue<>(DEFAULT_REPORT_QUEUE_CAPACITY);
-        initDeadLetterFile();
+        initDeadLetterPersistence();
     }
 
     /**
@@ -124,26 +126,46 @@ public class TaskExecutionEngine {
         this.pendingQueue = new ArrayBlockingQueue<>(config.getMaxPendingTasks());
         this.runningTasks = new ConcurrentHashMap<>();
         this.resultReportQueue = new ArrayBlockingQueue<>(reportQueueCapacity);
-        initDeadLetterFile();
+        initDeadLetterPersistence();
     }
 
     /**
-     * Initializes the dead letter file if persistence is configured.
+     * Initializes dead letter persistence - detects if config is file or directory.
      */
-    private void initDeadLetterFile() {
-        String path = config.getDeadLetterPersistenceFile();
-        if (path != null && !path.isBlank()) {
-            this.deadLetterFile = new java.io.File(path);
+    private void initDeadLetterPersistence() {
+        // Priority: new path config first
+        String pathConfig = config.getDeadLetterPersistencePath();
+        String fileConfig = config.getDeadLetterPersistenceFile();
+
+        if (pathConfig != null && !pathConfig.isBlank()) {
+            // New directory mode
+            this.deadLetterPersistenceDir = new java.io.File(pathConfig);
+            this.deadLetterPersistenceFile = null;
+            // Ensure directory exists
+            if (!deadLetterPersistenceDir.exists()) {
+                deadLetterPersistenceDir.mkdirs();
+            }
+            LOGGER.info("Dead letter persistence configured in directory: {}", deadLetterPersistenceDir.getAbsolutePath());
+            return;
+        }
+
+        if (fileConfig != null && !fileConfig.isBlank()) {
+            // Legacy file mode - keep for backward compatibility
+            this.deadLetterPersistenceFile = new java.io.File(fileConfig);
+            this.deadLetterPersistenceDir = null;
             // Ensure parent directories exist
-            java.io.File parent = this.deadLetterFile.getParentFile();
+            java.io.File parent = this.deadLetterPersistenceFile.getParentFile();
             if (parent != null && !parent.exists()) {
                 parent.mkdirs();
             }
-            LOGGER.info("Dead letter persistence configured at: {}", this.deadLetterFile.getAbsolutePath());
-        } else {
-            this.deadLetterFile = null;
-            LOGGER.info("No dead letter persistence file configured, failed reports will be dropped");
+            LOGGER.info("Dead letter persistence configured (legacy file mode): {}", this.deadLetterPersistenceFile.getAbsolutePath());
+            return;
         }
+
+        // No persistence configured
+        this.deadLetterPersistenceFile = null;
+        this.deadLetterPersistenceDir = null;
+        LOGGER.info("No dead letter persistence configured, failed reports will be dropped");
     }
 
     /**
@@ -226,7 +248,7 @@ public class TaskExecutionEngine {
         resultReporterThread.start();
 
         // Start dead letter retry thread if persistence is configured
-        if (deadLetterFile != null) {
+        if (deadLetterPersistenceDir != null || deadLetterPersistenceFile != null) {
             deadLetterRetryThread = new Thread(() -> {
                 LOGGER.info("Dead letter retry thread started");
                 while (deadLetterRetryRunning.get()) {
@@ -351,45 +373,152 @@ public class TaskExecutionEngine {
     }
 
     /**
-     * Persists a single failed results to the dead letter file (appends).
-     * Uses one JSON entry per line for incremental appending.
+     * Persists failed results to dead letter. In directory mode creates a new file per batch.
+     * In file mode appends to the existing file (legacy).
      */
     private void persistToDeadLetterFile(List<TaskExecuteResult> results) {
         List<Long> taskIds = results.stream().map(TaskExecuteResult::taskId).toList();
-        if (deadLetterFile == null) {
-            LOGGER.debug("No dead letter file configured, dropping failed results for tasks {}", taskIds);
+
+        // Directory mode - new file per batch
+        if (deadLetterPersistenceDir != null) {
+            try {
+                // Generate unique filename: YYYYMMDD-HHMMss-<UUID>.json
+                String timestamp = java.time.format.DateTimeFormatter
+                    .ofPattern("yyyyMMdd-HHmmss")
+                    .format(java.time.LocalDateTime.now());
+                String filename = timestamp + "-" + java.util.UUID.randomUUID() + ".json";
+                File newFile = new java.io.File(deadLetterPersistenceDir, filename);
+
+                // Write the entire batch as JSON
+                FileWriter writer = new FileWriter(newFile);
+                String json = objectMapper.writeValueAsString(results);
+                writer.write(json);
+                writer.close();
+                LOGGER.debug("Persisted failed results for task {} to dead letter file {}", taskIds, filename);
+            } catch (Exception e) {
+                LOGGER.error("Failed to persist failed results for task {} to dead letter directory", taskIds, e);
+            }
             return;
         }
-        try {
-            // Append as JSON line (one results per line)
-            FileWriter writer = new FileWriter(deadLetterFile, true);
-            String json = objectMapper.writeValueAsString(results);
-            writer.write(json + System.lineSeparator());
-            writer.close();
-            LOGGER.debug("Persisted failed results for task {} to dead letter file", taskIds);
-        } catch (Exception e) {
-            LOGGER.error("Failed to persist failed results for task {} to dead letter file", taskIds, e);
+
+        // Legacy file mode - append to single file
+        if (deadLetterPersistenceFile != null) {
+            try {
+                // Append as JSON line (one results per line)
+                FileWriter writer = new FileWriter(deadLetterPersistenceFile, true);
+                String json = objectMapper.writeValueAsString(results);
+                writer.write(json + System.lineSeparator());
+                writer.close();
+                LOGGER.debug("Persisted failed results for task {} to dead letter file", taskIds);
+            } catch (Exception e) {
+                LOGGER.error("Failed to persist failed results for task {} to dead letter file", taskIds, e);
+            }
+            return;
         }
+
+        // No persistence configured
+        LOGGER.debug("No dead letter persistence configured, dropping failed results for tasks {}", taskIds);
     }
 
     /**
-     * Retries all persisted failed reports from the dead letter file once.
-     * Successfully reported entries are removed from the file.
-     * Failed entries remain for the next retry cycle.
+     * Retries all persisted failed reports once.
+     * In directory mode: processes each file individually, deletes after processing regardless of outcome.
+     * In file mode: uses original rewrite logic.
      * @return number of reports successfully reported
      */
     private int retryPersistedDeadLetterOnce() {
-        if (deadLetterFile == null || !deadLetterFile.exists()) {
+        // Directory mode
+        if (deadLetterPersistenceDir != null) {
+            return retryPersistedInDirectory();
+        }
+
+        // Legacy file mode
+        if (deadLetterPersistenceFile != null && deadLetterPersistenceFile.exists()) {
+            return retryPersistedInSingleFile();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Retry processing in directory mode: list all files, process each one, delete after processing.
+     */
+    private int retryPersistedInDirectory() {
+        int totalSuccessCount = 0;
+        File[] files = deadLetterPersistenceDir.listFiles();
+        if (files == null || files.length == 0) {
             return 0;
         }
-        if (deadLetterFile.length() == 0) {
+
+        for (File file : files) {
+            if (!file.isFile() || file.getName().startsWith(".")) {
+                continue; // skip directories and hidden files
+            }
+
+            try {
+                // Read the entire file content
+                String json = java.nio.file.Files.readString(file.toPath());
+                if (json.isBlank()) {
+                    Files.deleteIfExists(file.toPath());
+                    continue;
+                }
+
+                // Parse as list of TaskExecuteResult
+                List<TaskExecuteResult> reports = objectMapper.readValue(json,
+                    new TypeReference<List<TaskExecuteResult>>() {});
+
+                // Try to report all
+                int successInFile = 0;
+                try {
+                    agentSchedulerClient.reportTaskResult(reports);
+                    // All succeeded
+                    totalSuccessCount += reports.size();
+                    LOGGER.debug("Successfully retried {} dead letter reports from file {}",
+                        reports.size(), file.getName());
+                } catch (Exception e) {
+                    // Some or all failed - report individually to count successes
+                    for (TaskExecuteResult report : reports) {
+                        try {
+                            agentSchedulerClient.reportTaskResult(List.of(report));
+                            successInFile++;
+                            totalSuccessCount++;
+                            LOGGER.debug("Successfully retried dead letter report for task {}",
+                                report.taskId());
+                        } catch (Exception ex) {
+                            // Still failed - drop it, will be re-persisted if it fails again
+                            LOGGER.debug("Still failed to report task {} from dead letter, will drop",
+                                report.taskId());
+                        }
+                    }
+                }
+
+                // Always delete the file after processing - failures get re-persisted as new files
+                Files.deleteIfExists(file.toPath());
+
+            } catch (Exception e) {
+                LOGGER.error("Error processing dead letter file {}, will skip for now",
+                    file.getName(), e);
+            }
+        }
+
+        if (totalSuccessCount > 0) {
+            LOGGER.info("Retried {} successfully from dead letter directory", totalSuccessCount);
+        }
+        return totalSuccessCount;
+    }
+
+    /**
+     * Retry processing in legacy single file mode. Keeps the original logic.
+     */
+    private int retryPersistedInSingleFile() {
+        if (deadLetterPersistenceFile.length() == 0) {
             return 0;
         }
 
         int successCount = 0;
         List<TaskExecuteResult> remainingFailed = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(deadLetterFile))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(deadLetterPersistenceFile))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.isBlank()) {
@@ -400,23 +529,28 @@ public class TaskExecutionEngine {
                     });
                     agentSchedulerClient.reportTaskResult(reports);
                     // Success - don't add back to remaining
-                    successCount++;
-                    LOGGER.debug("Successfully retried dead letter reports for task {}", reports.taskId());
+                    successCount += reports.size();
+                    LOGGER.debug("Successfully retried {} dead letter reports from this line", reports.size());
                 } catch (Exception e) {
                     // Still failing - keep for next retry
-                    TaskExecuteResult report = objectMapper.readValue(line, TaskExecuteResult.class);
-                    remainingFailed.add(report);
-                    LOGGER.debug("Still failed to report task {} from dead letter, will retry later", report.taskId());
+                    // Note: original code tried to parse as single report, keep that behavior
+                    try {
+                        TaskExecuteResult report = objectMapper.readValue(line, TaskExecuteResult.class);
+                        remainingFailed.add(report);
+                        LOGGER.debug("Still failed to report task {} from dead letter, will retry later", report.taskId());
+                    } catch (Exception ex) {
+                        LOGGER.debug("Failed to parse failed report from dead letter, dropping", ex);
+                    }
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Error reading dead letter file {}", deadLetterFile.getAbsolutePath(), e);
+            LOGGER.error("Error reading dead letter file {}", deadLetterPersistenceFile.getAbsolutePath(), e);
             return 0;
         }
 
         // Rewrite the file with only remaining failed reports
         if (!remainingFailed.isEmpty()) {
-            try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(deadLetterFile))) {
+            try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(deadLetterPersistenceFile))) {
                 for (TaskExecuteResult report : remainingFailed) {
                     writer.println(objectMapper.writeValueAsString(report));
                 }
@@ -426,7 +560,7 @@ public class TaskExecutionEngine {
         } else {
             // No failures left - truncate the file
             try {
-                new java.io.PrintWriter(deadLetterFile).close();
+                new java.io.PrintWriter(deadLetterPersistenceFile).close();
             } catch (Exception e) {
                 LOGGER.error("Failed to truncate empty dead letter file", e);
             }
@@ -446,8 +580,8 @@ public class TaskExecutionEngine {
      * @throws Exception if file reading fails
      */
     public int recoverPersistedDeadLetter(String filePath) throws Exception {
-        if (deadLetterFile == null) {
-            LOGGER.debug("No dead letter persistence file configured, skipping recovery");
+        if (deadLetterPersistenceDir == null && deadLetterPersistenceFile == null) {
+            LOGGER.debug("No dead letter persistence configured, skipping recovery");
             return 0;
         }
         return retryPersistedDeadLetterOnce();
@@ -565,7 +699,7 @@ public class TaskExecutionEngine {
                 var report = new TaskExecuteResult(
                     config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
                 );
-                agentSchedulerClient.reportTaskResult(report);
+                agentSchedulerClient.reportTaskResult(List.of(report));
                 return ForceOkResult.successFromPending(taskId);
             }
             pendingTaskIds.remove(taskId); // clean up stale entry
@@ -580,7 +714,7 @@ public class TaskExecutionEngine {
             var report = new TaskExecuteResult(
                 config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
             );
-            agentSchedulerClient.reportTaskResult(report);
+            agentSchedulerClient.reportTaskResult(List.of(report));
             return ForceOkResult.successFromRunning(taskId);
         }
 
@@ -650,27 +784,44 @@ public class TaskExecutionEngine {
     }
 
     /**
-     * Returns the number of failed reports in the dead letter file.
-     * Note: this counts lines in the file, may count blank lines as empty.
+     * Returns the number of failed reports in the dead letter.
+     * For directory mode: counts all non-empty files (each file is at least one report).
+     * For file mode: counts lines in the file.
      */
     public int getDeadLetterQueueSize() {
-        if (deadLetterFile == null || !deadLetterFile.exists()) {
-            return 0;
-        }
-        // Count the number of non-empty lines in the file
-        int count = 0;
-        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(deadLetterFile))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (!line.isBlank()) {
+        // Directory mode
+        if (deadLetterPersistenceDir != null && deadLetterPersistenceDir.exists()) {
+            File[] files = deadLetterPersistenceDir.listFiles();
+            if (files == null) {
+                return 0;
+            }
+            int count = 0;
+            for (File file : files) {
+                if (file.isFile() && file.length() > 0 && !file.getName().startsWith(".")) {
                     count++;
                 }
             }
-        } catch (Exception e) {
-            LOGGER.warn("Failed to count dead letter entries from file", e);
-            return 0;
+            return count;
         }
-        return count;
+
+        // Legacy file mode
+        if (deadLetterPersistenceFile != null && deadLetterPersistenceFile.exists()) {
+            // Count the number of non-empty lines in the file
+            int count = 0;
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(deadLetterPersistenceFile))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (!line.isBlank()) {
+                        count++;
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.warn("Failed to count dead letter entries from file", e);
+                return 0;
+            }
+            return count;
+        }
+        return 0;
     }
 
     /**
