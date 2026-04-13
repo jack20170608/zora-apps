@@ -19,6 +19,7 @@ public class AgentConfiguration {
     private int maxConcurrentTasks = 4;
     private int maxPendingTasks = 100;
     private String deadLetterPersistenceFile;
+    private String deadLetterPersistencePath;
     private List<String> supportedExecutionKeys = new ArrayList<>();
 
     // Required for Typesafe Config bean reflection
@@ -33,6 +34,7 @@ public class AgentConfiguration {
         this.maxConcurrentTasks = builder.maxConcurrentTasks;
         this.maxPendingTasks = builder.maxPendingTasks;
         this.deadLetterPersistenceFile = builder.deadLetterPersistenceFile;
+        this.deadLetterPersistencePath = builder.deadLetterPersistencePath;
         if (builder.supportedExecutionKeys != null) {
             this.supportedExecutionKeys = new ArrayList<>(builder.supportedExecutionKeys);
         }
@@ -103,6 +105,14 @@ public class AgentConfiguration {
         this.deadLetterPersistenceFile = deadLetterPersistenceFile;
     }
 
+    public String getDeadLetterPersistencePath() {
+        return deadLetterPersistencePath;
+    }
+
+    public void setDeadLetterPersistencePath(String deadLetterPersistencePath) {
+        this.deadLetterPersistencePath = deadLetterPersistencePath;
+    }
+
     public String getBaseUrl() {
         return agentUrl;
     }
@@ -144,6 +154,7 @@ public class AgentConfiguration {
                 ", maxConcurrentTasks=" + maxConcurrentTasks +
                 ", maxPendingTasks=" + maxPendingTasks +
                 ", deadLetterPersistenceFile='" + deadLetterPersistenceFile + '\'' +
+                ", deadLetterPersistencePath='" + deadLetterPersistencePath + '\'' +
                 ", supportedExecutionKeysCount=" + supportedExecutionKeys.size() +
                 '}';
     }
@@ -157,6 +168,7 @@ public class AgentConfiguration {
         private int maxConcurrentTasks = 4;
         private int maxPendingTasks = 100;
         private String deadLetterPersistenceFile;
+        private String deadLetterPersistencePath;
         private List<String> supportedExecutionKeys;
 
         public Builder agentUrl(String agentUrl) {
@@ -191,6 +203,11 @@ public class AgentConfiguration {
 
         public Builder deadLetterPersistenceFile(String deadLetterPersistenceFile) {
             this.deadLetterPersistenceFile = deadLetterPersistenceFile;
+            return this;
+        }
+
+        public Builder deadLetterPersistencePath(String deadLetterPersistencePath) {
+            this.deadLetterPersistencePath = deadLetterPersistencePath;
             return this;
         }
 
