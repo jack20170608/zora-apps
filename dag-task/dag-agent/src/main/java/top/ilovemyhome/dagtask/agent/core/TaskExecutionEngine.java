@@ -606,18 +606,20 @@ public class TaskExecutionEngine {
             var report = new TaskExecuteResult(
                 config.getAgentId(), taskId, output.isSuccess(), serializeOutput(output), null
             );
-            // Offer to report queue, if queue full drop it (we already logged completion)
+            // Offer to report queue, if queue full persist directly to dead letter (don't drop)
             if (!resultReportQueue.offer(report)) {
-                LOGGER.warn("Result report queue full, dropping report for task {}", taskId);
+                LOGGER.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
+                persistToDeadLetterFile(List.of(report));
             }
             finishTask(taskId, true, output.isSuccess(), duration);
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
             LOGGER.error("Task {} execution failed after {}ms", taskId, duration, e);
             var report = new TaskExecuteResult(config.getAgentId(), taskId, false, e.getMessage());
-            // Offer to report queue, if queue full drop it
+            // Offer to report queue, if queue full persist directly to dead letter (don't drop)
             if (!resultReportQueue.offer(report)) {
-                LOGGER.warn("Result report queue full, dropping report for task {}", taskId);
+                LOGGER.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
+                persistToDeadLetterFile(List.of(report));
             }
             finishTask(taskId, false, false, duration);
         }
