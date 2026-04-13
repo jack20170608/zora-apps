@@ -18,7 +18,6 @@ public class AgentConfiguration {
     private boolean autoRegister = true;
     private int maxConcurrentTasks = 4;
     private int maxPendingTasks = 100;
-    private String deadLetterPersistenceFile;
     private String deadLetterPersistencePath;
     private List<String> supportedExecutionKeys = new ArrayList<>();
 
@@ -33,7 +32,6 @@ public class AgentConfiguration {
         this.autoRegister = builder.autoRegister;
         this.maxConcurrentTasks = builder.maxConcurrentTasks;
         this.maxPendingTasks = builder.maxPendingTasks;
-        this.deadLetterPersistenceFile = builder.deadLetterPersistenceFile;
         this.deadLetterPersistencePath = builder.deadLetterPersistencePath;
         if (builder.supportedExecutionKeys != null) {
             this.supportedExecutionKeys = new ArrayList<>(builder.supportedExecutionKeys);
@@ -97,14 +95,6 @@ public class AgentConfiguration {
         this.supportedExecutionKeys = new ArrayList<>(supportedExecutionKeys);
     }
 
-    public String getDeadLetterPersistenceFile() {
-        return deadLetterPersistenceFile;
-    }
-
-    public void setDeadLetterPersistenceFile(String deadLetterPersistenceFile) {
-        this.deadLetterPersistenceFile = deadLetterPersistenceFile;
-    }
-
     public String getDeadLetterPersistencePath() {
         return deadLetterPersistencePath;
     }
@@ -153,7 +143,6 @@ public class AgentConfiguration {
                 ", autoRegister=" + autoRegister +
                 ", maxConcurrentTasks=" + maxConcurrentTasks +
                 ", maxPendingTasks=" + maxPendingTasks +
-                ", deadLetterPersistenceFile='" + deadLetterPersistenceFile + '\'' +
                 ", deadLetterPersistencePath='" + deadLetterPersistencePath + '\'' +
                 ", supportedExecutionKeysCount=" + supportedExecutionKeys.size() +
                 '}';
@@ -167,7 +156,6 @@ public class AgentConfiguration {
         private boolean autoRegister = true;
         private int maxConcurrentTasks = 4;
         private int maxPendingTasks = 100;
-        private String deadLetterPersistenceFile;
         private String deadLetterPersistencePath;
         private List<String> supportedExecutionKeys;
 
@@ -198,11 +186,6 @@ public class AgentConfiguration {
 
         public Builder maxPendingTasks(int maxPendingTasks) {
             this.maxPendingTasks = maxPendingTasks;
-            return this;
-        }
-
-        public Builder deadLetterPersistenceFile(String deadLetterPersistenceFile) {
-            this.deadLetterPersistenceFile = deadLetterPersistenceFile;
             return this;
         }
 

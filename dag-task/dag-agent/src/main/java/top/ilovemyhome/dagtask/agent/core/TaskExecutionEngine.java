@@ -65,8 +65,7 @@ public class TaskExecutionEngine {
     // Background dead letter retry thread - automatically retries persisted failed reports
     private final AtomicBoolean deadLetterRetryRunning = new AtomicBoolean(true);
     private Thread deadLetterRetryThread;
-    // Dead letter persistence - can be either file (legacy mode) or directory (new mode)
-    private File deadLetterPersistenceFile;
+    // Dead letter persistence - directory mode, each failed batch is a separate file
     private File deadLetterPersistenceDir;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskExecutionEngine.class);
@@ -130,17 +129,13 @@ public class TaskExecutionEngine {
     }
 
     /**
-     * Initializes dead letter persistence - detects if config is file or directory.
+     * Initializes dead letter persistence directory.
      */
     private void initDeadLetterPersistence() {
-        // Priority: new path config first
         String pathConfig = config.getDeadLetterPersistencePath();
-        String fileConfig = config.getDeadLetterPersistenceFile();
 
         if (pathConfig != null && !pathConfig.isBlank()) {
-            // New directory mode
             this.deadLetterPersistenceDir = new java.io.File(pathConfig);
-            this.deadLetterPersistenceFile = null;
             // Ensure directory exists
             if (!deadLetterPersistenceDir.exists()) {
                 deadLetterPersistenceDir.mkdirs();
@@ -149,21 +144,7 @@ public class TaskExecutionEngine {
             return;
         }
 
-        if (fileConfig != null && !fileConfig.isBlank()) {
-            // Legacy file mode - keep for backward compatibility
-            this.deadLetterPersistenceFile = new java.io.File(fileConfig);
-            this.deadLetterPersistenceDir = null;
-            // Ensure parent directories exist
-            java.io.File parent = this.deadLetterPersistenceFile.getParentFile();
-            if (parent != null && !parent.exists()) {
-                parent.mkdirs();
-            }
-            LOGGER.info("Dead letter persistence configured (legacy file mode): {}", this.deadLetterPersistenceFile.getAbsolutePath());
-            return;
-        }
-
         // No persistence configured
-        this.deadLetterPersistenceFile = null;
         this.deadLetterPersistenceDir = null;
         LOGGER.info("No dead letter persistence configured, failed reports will be dropped");
     }
@@ -248,7 +229,7 @@ public class TaskExecutionEngine {
         resultReporterThread.start();
 
         // Start dead letter retry thread if persistence is configured
-        if (deadLetterPersistenceDir != null || deadLetterPersistenceFile != null) {
+        if (deadLetterPersistenceDir != null) {
             deadLetterRetryThread = new Thread(() -> {
                 LOGGER.info("Dead letter retry thread started");
                 while (deadLetterRetryRunning.get()) {
@@ -373,8 +354,8 @@ public class TaskExecutionEngine {
     }
 
     /**
-     * Persists failed results to dead letter. In directory mode creates a new file per batch.
-     * In file mode appends to the existing file (legacy).
+     * Persists failed results to dead letter directory.
+     * Each failed batch creates a new unique file.
      */
     private void persistToDeadLetterFile(List<TaskExecuteResult> results) {
         List<Long> taskIds = results.stream().map(TaskExecuteResult::taskId).toList();
@@ -401,40 +382,19 @@ public class TaskExecutionEngine {
             return;
         }
 
-        // Legacy file mode - append to single file
-        if (deadLetterPersistenceFile != null) {
-            try {
-                // Append as JSON line (one results per line)
-                FileWriter writer = new FileWriter(deadLetterPersistenceFile, true);
-                String json = objectMapper.writeValueAsString(results);
-                writer.write(json + System.lineSeparator());
-                writer.close();
-                LOGGER.debug("Persisted failed results for task {} to dead letter file", taskIds);
-            } catch (Exception e) {
-                LOGGER.error("Failed to persist failed results for task {} to dead letter file", taskIds, e);
-            }
-            return;
-        }
-
         // No persistence configured
         LOGGER.debug("No dead letter persistence configured, dropping failed results for tasks {}", taskIds);
     }
 
     /**
-     * Retries all persisted failed reports once.
-     * In directory mode: processes each file individually, deletes after processing regardless of outcome.
-     * In file mode: uses original rewrite logic.
+     * Retries all persisted failed reports once from the dead letter directory.
+     * Processes each file individually, deletes after processing regardless of outcome.
      * @return number of reports successfully reported
      */
     private int retryPersistedDeadLetterOnce() {
         // Directory mode
         if (deadLetterPersistenceDir != null) {
             return retryPersistedInDirectory();
-        }
-
-        // Legacy file mode
-        if (deadLetterPersistenceFile != null && deadLetterPersistenceFile.exists()) {
-            return retryPersistedInSingleFile();
         }
 
         return 0;
@@ -508,71 +468,6 @@ public class TaskExecutionEngine {
     }
 
     /**
-     * Retry processing in legacy single file mode. Keeps the original logic.
-     */
-    private int retryPersistedInSingleFile() {
-        if (deadLetterPersistenceFile.length() == 0) {
-            return 0;
-        }
-
-        int successCount = 0;
-        List<TaskExecuteResult> remainingFailed = new ArrayList<>();
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(deadLetterPersistenceFile))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.isBlank()) {
-                    continue;
-                }
-                try {
-                    List<TaskExecuteResult> reports = objectMapper.readValue(line, new TypeReference<>() {
-                    });
-                    agentSchedulerClient.reportTaskResult(reports);
-                    // Success - don't add back to remaining
-                    successCount += reports.size();
-                    LOGGER.debug("Successfully retried {} dead letter reports from this line", reports.size());
-                } catch (Exception e) {
-                    // Still failing - keep for next retry
-                    // Note: original code tried to parse as single report, keep that behavior
-                    try {
-                        TaskExecuteResult report = objectMapper.readValue(line, TaskExecuteResult.class);
-                        remainingFailed.add(report);
-                        LOGGER.debug("Still failed to report task {} from dead letter, will retry later", report.taskId());
-                    } catch (Exception ex) {
-                        LOGGER.debug("Failed to parse failed report from dead letter, dropping", ex);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error reading dead letter file {}", deadLetterPersistenceFile.getAbsolutePath(), e);
-            return 0;
-        }
-
-        // Rewrite the file with only remaining failed reports
-        if (!remainingFailed.isEmpty()) {
-            try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(deadLetterPersistenceFile))) {
-                for (TaskExecuteResult report : remainingFailed) {
-                    writer.println(objectMapper.writeValueAsString(report));
-                }
-            } catch (Exception e) {
-                LOGGER.error("Failed to rewrite dead letter file with remaining failures", e);
-            }
-        } else {
-            // No failures left - truncate the file
-            try {
-                new java.io.PrintWriter(deadLetterPersistenceFile).close();
-            } catch (Exception e) {
-                LOGGER.error("Failed to truncate empty dead letter file", e);
-            }
-        }
-
-        if (successCount > 0) {
-            LOGGER.info("Retried {} successfully from dead letter, {} remaining", successCount, remainingFailed.size());
-        }
-        return successCount;
-    }
-
-    /**
      * Retries all entries from a persisted dead letter file after restart.
      * This is the public API to manually trigger a retry if needed.
      * @param filePath path to the persisted dead letter file (ignored, uses configured path)
@@ -580,7 +475,7 @@ public class TaskExecutionEngine {
      * @throws Exception if file reading fails
      */
     public int recoverPersistedDeadLetter(String filePath) throws Exception {
-        if (deadLetterPersistenceDir == null && deadLetterPersistenceFile == null) {
+        if (deadLetterPersistenceDir == null) {
             LOGGER.debug("No dead letter persistence configured, skipping recovery");
             return 0;
         }
@@ -785,8 +680,7 @@ public class TaskExecutionEngine {
 
     /**
      * Returns the number of failed reports in the dead letter.
-     * For directory mode: counts all non-empty files (each file is at least one report).
-     * For file mode: counts lines in the file.
+     * For directory mode: counts all non-empty files (each file is at least one report batch).
      */
     public int getDeadLetterQueueSize() {
         // Directory mode
@@ -800,24 +694,6 @@ public class TaskExecutionEngine {
                 if (file.isFile() && file.length() > 0 && !file.getName().startsWith(".")) {
                     count++;
                 }
-            }
-            return count;
-        }
-
-        // Legacy file mode
-        if (deadLetterPersistenceFile != null && deadLetterPersistenceFile.exists()) {
-            // Count the number of non-empty lines in the file
-            int count = 0;
-            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(deadLetterPersistenceFile))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (!line.isBlank()) {
-                        count++;
-                    }
-                }
-            } catch (Exception e) {
-                LOGGER.warn("Failed to count dead letter entries from file", e);
-                return 0;
             }
             return count;
         }
