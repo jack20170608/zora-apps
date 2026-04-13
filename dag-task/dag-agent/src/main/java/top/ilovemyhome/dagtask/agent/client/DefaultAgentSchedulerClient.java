@@ -155,39 +155,5 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
         }
     }
 
-    /**
-     * Reports the current agent status including queue statistics back to the DAG scheduling server.
-     * This can be used for health monitoring and load balancing.
-     *
-     * @param agentStatusReport the agent status report containing current queue statistics and configuration
-     * @return the HTTP response from the server
-     */
-    @Override
-    public Response reportStatus(AgentStatusReport agentStatusReport) {
-        try {
-            String json = objectMapper.writeValueAsString(agentStatusReport);
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(config.getDagServerUrl() + "/api/agent/status"))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            boolean success = response.statusCode() >= 200 && response.statusCode() < 300;
-            if (!success) {
-                LOGGER.warn("Agent {} status report failed with status {}", agentStatusReport.agentId(), response.statusCode());
-            }
-            return Response.status(response.statusCode())
-                    .entity(response.body())
-                    .build();
-        } catch (IOException | InterruptedException e) {
-            LOGGER.error("Failed to report agent status to DAG server", e);
-            Thread.currentThread().interrupt();
-            return Response.serverError()
-                    .entity(e.getMessage())
-                    .build();
-        }
-    }
-
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAgentSchedulerClient.class);
 }

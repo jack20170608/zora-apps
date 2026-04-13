@@ -30,12 +30,4 @@ public interface AgentSchedulerClient {
 
     Response reportTaskResult(List<TaskExecuteResult> results);
 
-    /**
-     * Report current agent status and queue statistics back to the scheduling server.
-     * This is used for health monitoring and load balancing.
-     *
-     * @param agentStatusReport the agent status report containing queue statistics
-     * @return the HTTP response from the server
-     */
-    Response reportStatus(AgentStatusReport agentStatusReport);
 }
