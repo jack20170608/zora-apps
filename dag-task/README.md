@@ -286,8 +286,8 @@ dag-agent {
   maxConcurrentTasks = 4
   maxPendingTasks = 100
   
-  # 死信队列持久化文件
-  deadLetterPersistenceFile = "./dead-letter.jsonl"
+  # 死信队列持久化目录（每个失败批次一个文件，读写分离）
+  deadLetterPersistencePath = "./dead-letter"
   
   # 支持的执行类型
   supportedExecutionKeys = [
@@ -332,7 +332,10 @@ Agent会自动持久化失败的结果上报，并在后台定期重试：
 
 ```java
 // 自动重试配置
-deadLetterPersistenceFile = "./dead-letter.jsonl"
+// 目录模式（推荐）- 每个失败批次一个文件，读写分离
+deadLetterPersistencePath = "./dead-letter"
+// 兼容旧配置 - 单个文件模式
+// deadLetterPersistenceFile = "./dead-letter.jsonl"
 retryInterval = 30000  // 30秒重试一次
 ```
 
