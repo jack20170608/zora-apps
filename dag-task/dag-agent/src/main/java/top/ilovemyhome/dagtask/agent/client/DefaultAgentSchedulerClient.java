@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
-import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
@@ -141,13 +140,12 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .build();
-
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             boolean success = response.statusCode() >= 200 && response.statusCode() < 300;
             if (success) {
-                LOGGER.debug("Agent {} status reported successfully", statusReport.agentId());
+                LOGGER.debug("Result {} reported successfully", json);
             } else {
-                LOGGER.warn("Agent {} status report failed with status {}", statusReport.agentId(), response.statusCode());
+                LOGGER.warn("Result {} report failed with status {}", json, response.statusCode());
             }
             return Response.status(response.statusCode())
                     .entity(response.body())
