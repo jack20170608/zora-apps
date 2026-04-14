@@ -46,9 +46,6 @@ public class WebServerBootstrap {
 
         LOGGER.info("Starting MuServer for DAG Task Agent on {}:{}", host, port);
         long start = System.currentTimeMillis();
-
-        TaskAgentResource resource = appContext.getDagTaskAgent().getResource();
-
         MuServerBuilder muServerBuilder = MuServerBuilder.httpServer()
                 .withHttpPort(port)
                 .withInterface(host)

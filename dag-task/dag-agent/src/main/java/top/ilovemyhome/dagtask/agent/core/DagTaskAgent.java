@@ -5,10 +5,8 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.client.DefaultAgentSchedulerClient;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.agent.api.TaskAgentResource;
-import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
-import top.ilovemyhome.dagtask.si.agent.TaskFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -26,7 +24,7 @@ public class DagTaskAgent {
     private final AgentConfiguration config;
     private final AgentSchedulerClient agentSchedulerClient;
     private final ExecutorService taskExecutor;
-    private final TaskExecutionEngine executionManager;
+    private final TaskExecutionEngine executionEngine;
     private final TaskAgentResource resource;
     private boolean running = false;
 
@@ -40,8 +38,8 @@ public class DagTaskAgent {
         this.agentSchedulerClient = new DefaultAgentSchedulerClient(config);
         this.taskExecutor = Executors.newFixedThreadPool(config.getMaxConcurrentTasks());
         ObjectMapper objectMapper = new ObjectMapper();
-        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
-        this.resource = new TaskAgentResource(this, executionManager);
+        this.executionEngine = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
+        this.resource = new TaskAgentResource(this, executionEngine);
     }
 
     /**
@@ -57,8 +55,8 @@ public class DagTaskAgent {
             this.taskExecutor = Executors.newFixedThreadPool(config.getMaxConcurrentTasks());
         }
         ObjectMapper objectMapper = new ObjectMapper();
-        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
-        this.resource = new TaskAgentResource(this, executionManager);
+        this.executionEngine = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
+        this.resource = new TaskAgentResource(this, executionEngine);
     }
 
     /**
@@ -71,8 +69,8 @@ public class DagTaskAgent {
         this.agentSchedulerClient = Objects.requireNonNull(agentSchedulerClient, "AgentSchedulerClient is required");
         this.taskExecutor = Objects.requireNonNull(taskExecutor, "taskExecutor is required");
         Objects.requireNonNull(objectMapper, "objectMapper is required");
-        this.executionManager = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
-        this.resource = new TaskAgentResource(this, executionManager);
+        this.executionEngine = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
+        this.resource = new TaskAgentResource(this, executionEngine);
     }
 
 
@@ -82,7 +80,7 @@ public class DagTaskAgent {
      */
     public void start() {
         // Start the task queue processor
-        executionManager.start();
+        executionEngine.start();
         running = true;
 
         LOGGER.info("DAG Task Agent started, agentUrl={}, maxConcurrent={}, maxPending={}",
@@ -119,7 +117,7 @@ public class DagTaskAgent {
      */
     public void stop(boolean unregister) {
         running = false;
-        executionManager.stop();
+        executionEngine.stop();
         if (unregister) {
             var unregistration = new top.ilovemyhome.dagtask.si.agent.AgentUnregistration(config.getAgentId());
             var response = agentSchedulerClient.unregister(unregistration);
@@ -148,8 +146,8 @@ public class DagTaskAgent {
         return taskExecutor;
     }
 
-    public TaskExecutionEngine getExecutionManager() {
-        return executionManager;
+    public TaskExecutionEngine getExecutionEngine() {
+        return executionEngine;
     }
 
     public TaskAgentResource getResource() {
