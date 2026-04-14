@@ -332,7 +332,7 @@ public class TaskDispatcher {
      */
     private DispatchResult submitToAgent(TaskRecord task, AgentRegistryItem agent) {
         String agentUrl = agent.getAgentUrl();
-        String submitUrl = buildAgentUrl(agentUrl) + API_SUBMIT;
+        String submitUrl = buildAgentUrl(agentUrl) + API_VERSION + API_SUBMIT;
 
         // Build the submission request matching what the agent expects
         // The executionClass is the executionKey - agent uses this to instantiate the correct executor
