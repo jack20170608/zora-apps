@@ -2,6 +2,7 @@ package top.ilovemyhome.dagtask.core.dispatcher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.DispatchResult;
@@ -9,11 +10,14 @@ import top.ilovemyhome.dagtask.si.TaskDispatchRecord;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
 import top.ilovemyhome.dagtask.si.dto.AgentRegistrySearchCriteria;
+import top.ilovemyhome.dagtask.si.dto.OperationRequest;
 import top.ilovemyhome.dagtask.si.dto.SubmitRequest;
 import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
+import top.ilovemyhome.dagtask.si.enums.OpsType;
 import top.ilovemyhome.dagtask.si.enums.TaskType;
 import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskDispatchDao;
+import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 
 import java.io.IOException;
 import java.net.URI;
@@ -21,6 +25,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -189,40 +194,30 @@ public class TaskDispatcher {
             .orElse(false);
     }
 
-    /**
-     * Requests a task to be killed on its executing agent.
-     *
-     * @param taskId the task ID to kill
-     * @param agent the agent that is executing the task
-     * @return true if the kill request was accepted by the agent
-     */
-    public boolean killTask(Long taskId, AgentRegistryItem agent) {
-        Objects.requireNonNull(taskId, "taskId must not be null");
-        Objects.requireNonNull(agent, "agent must not be null");
-
-        String url = buildAgentUrl(agent.getAgentUrl()) + API_KILL + taskId;
+    public boolean killTask(TaskDispatchRecord dispatchItem, String dealer, String reason) {
+        Objects.requireNonNull(dispatchItem, "dispatchDetail must not be null");
+        var taskId = dispatchItem.getTaskId();
+        var agentId = dispatchItem.getAgentId();
+        String url = buildAgentUrl(dispatchItem.getAgentUrl()) + API_VERSION + API_KILL ;
+        OperationRequest operationRequest = new OperationRequest(dispatchItem.getTaskId(), OpsType.KILL, true, reason, dealer, Instant.now());
+        String body = JacksonUtil.toJson(operationRequest);
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .POST(HttpRequest.BodyPublishers.noBody())
-                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
                 .build();
-
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             int statusCode = response.statusCode();
-
             if (statusCode >= 200 && statusCode < 300) {
-                logger.info("Kill request accepted for task {} on agent {}", taskId, agent.getAgentId());
+                logger.info("Kill request accepted for task {} on agent {}", taskId, agentId);
                 return true;
             }
-
-            logger.warn("Kill request failed for task {} on agent {}, status code: {}",
-                taskId, agent.getAgentId(), statusCode);
+            logger.warn("Kill request failed for task {} on agent {}, status code: {}", taskId, agentId, statusCode);
             return false;
         } catch (IOException | InterruptedException e) {
-            logger.error("IOException sending kill request to agent {} for task {}",
-                agent.getAgentId(), taskId, e);
+            logger.error("IOException sending kill request to agent {} for task {}", agentId, taskId, e);
             Thread.currentThread().interrupt();
             return false;
         }
