@@ -227,6 +227,12 @@ public class TaskAgentResource {
                     .build();
         }
 
+        // Report the result to the scheduler server
+        var report = new top.ilovemyhome.dagtask.si.agent.TaskExecuteResult(
+            agent.getConfig().getAgentId(), request.taskId(), true, "{\"forced\":true}", java.time.Instant.now()
+        );
+        executionEngine.reportResult(report);
+
         return Response.ok(Map.of(
                 "success", true,
                 "message", result.message()
@@ -269,6 +275,12 @@ public class TaskAgentResource {
                     .header("Content-Type", MediaType.APPLICATION_JSON)
                     .build();
         }
+
+        // Report the result to the scheduler server
+        var report = new top.ilovemyhome.dagtask.si.agent.TaskExecuteResult(
+            agent.getConfig().getAgentId(), request.taskId(), false, "{\"forced\":false}", java.time.Instant.now()
+        );
+        executionEngine.reportResult(report);
 
         return Response.ok(Map.of(
                 "success", true,

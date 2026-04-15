@@ -511,7 +511,6 @@ public class TaskExecutionEngine {
 
     /**
      * Forces a task to complete successfully (can be in pending or running).
-     * Reports success to dag-server immediately.
      *
      * @param taskId the task ID
      * @return force-ok result
@@ -524,10 +523,6 @@ public class TaskExecutionEngine {
                 pendingTaskIds.remove(taskId);
                 logger.info("Task {} force-ok from pending queue", taskId);
                 finishInterrupted(taskId, true);
-                var report = new TaskExecuteResult(
-                    config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
-                );
-                agentSchedulerClient.reportTaskResult(List.of(report));
                 return ForceOkResult.successFromPending(taskId);
             }
             pendingTaskIds.remove(taskId); // clean up stale entry
@@ -539,10 +534,6 @@ public class TaskExecutionEngine {
             runningTask.future().cancel(true);
             logger.info("Task {} force-ok from running", taskId);
             finishInterrupted(taskId, true);
-            var report = new TaskExecuteResult(
-                config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
-            );
-            agentSchedulerClient.reportTaskResult(List.of(report));
             return ForceOkResult.successFromRunning(taskId);
         }
 
@@ -551,7 +542,6 @@ public class TaskExecutionEngine {
 
     /**
      * Forces a task to complete as failed (can be in pending or running).
-     * Reports failure to dag-server immediately.
      *
      * @param taskId the task ID
      * @return force-nok result
@@ -564,10 +554,6 @@ public class TaskExecutionEngine {
                 pendingTaskIds.remove(taskId);
                 logger.info("Task {} force-nok from pending queue", taskId);
                 finishInterrupted(taskId, false);
-                var report = new TaskExecuteResult(
-                    config.getAgentId(), taskId, false, "{\"forced\":false}", Instant.now()
-                );
-                agentSchedulerClient.reportTaskResult(List.of(report));
                 return ForceNokResult.successFromPending(taskId);
             }
             pendingTaskIds.remove(taskId); // clean up stale entry
@@ -579,10 +565,6 @@ public class TaskExecutionEngine {
             runningTask.future().cancel(true);
             logger.info("Task {} force-nok from running", taskId);
             finishInterrupted(taskId, false);
-            var report = new TaskExecuteResult(
-                config.getAgentId(), taskId, false, "{\"forced\":false}", Instant.now()
-            );
-            agentSchedulerClient.reportTaskResult(List.of(report));
             return ForceNokResult.successFromRunning(taskId);
         }
 
@@ -646,6 +628,19 @@ public class TaskExecutionEngine {
      */
     private void finishInterrupted(Long taskId, boolean success) {
         // Task already removed from running or pending, nothing more to do
+    }
+
+    /**
+     * Reports a task execution result to the scheduler server.
+     * Results are queued for asynchronous reporting same as normally executed tasks.
+     *
+     * @param result the task execute result to report
+     */
+    public void reportResult(top.ilovemyhome.dagtask.si.agent.TaskExecuteResult result) {
+        if (!resultReportQueue.offer(result)) {
+            logger.warn("Result report queue full, persisting report for task {} directly to dead letter", result.taskId());
+            persistToDeadLetterFile(List.of(result));
+        }
     }
 
     /**
