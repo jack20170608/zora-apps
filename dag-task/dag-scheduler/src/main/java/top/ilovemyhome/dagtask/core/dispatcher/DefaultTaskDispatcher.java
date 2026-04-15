@@ -57,8 +57,9 @@ import static top.ilovemyhome.dagtask.si.Constants.*;
  * <p>
  * Usage:
  * <pre>{@code
- * TaskDispatcher dispatcher = new TaskDispatcher(
+ * TaskDispatcher dispatcher = new DefaultTaskDispatcher(
  *     agentRegistryDao,
+ *     taskDispatchDao,
  *     new LeastLoadLoadBalance(),
  *     objectMapper
  * );
@@ -71,7 +72,7 @@ import static top.ilovemyhome.dagtask.si.Constants.*;
  * }</pre>
  * </p>
  */
-public class TaskDispatcher {
+public class DefaultTaskDispatcher implements TaskDispatcher {
 
     private final AgentRegistryDao agentRegistryDao;
     private final TaskDispatchDao taskDispatchDao;
@@ -79,17 +80,17 @@ public class TaskDispatcher {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
 
-    private static final Logger logger = LoggerFactory.getLogger(TaskDispatcher.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultTaskDispatcher.class);
 
     /**
-     * Creates a new TaskDispatcher with default HTTP client.
+     * Creates a new DefaultTaskDispatcher with default HTTP client.
      *
      * @param agentRegistryDao DAO for accessing agent registry
      * @param taskDispatchDao DAO for tracking dispatch information
      * @param loadBalanceStrategy strategy for selecting among candidate agents
      * @param objectMapper Jackson object mapper for JSON serialization
      */
-    public TaskDispatcher(AgentRegistryDao agentRegistryDao,
+    public DefaultTaskDispatcher(AgentRegistryDao agentRegistryDao,
                           TaskDispatchDao taskDispatchDao,
                           LoadBalanceStrategy loadBalanceStrategy,
                           ObjectMapper objectMapper) {
@@ -98,7 +99,7 @@ public class TaskDispatcher {
     }
 
     /**
-     * Creates a new TaskDispatcher with a provided HTTP client.
+     * Creates a new DefaultTaskDispatcher with a provided HTTP client.
      *
      * @param agentRegistryDao DAO for accessing agent registry
      * @param taskDispatchDao DAO for tracking dispatch information
@@ -106,7 +107,7 @@ public class TaskDispatcher {
      * @param objectMapper Jackson object mapper for JSON serialization
      * @param httpClient HTTP client to use for sending requests to agents
      */
-    public TaskDispatcher(AgentRegistryDao agentRegistryDao,
+    public DefaultTaskDispatcher(AgentRegistryDao agentRegistryDao,
                           TaskDispatchDao taskDispatchDao,
                           LoadBalanceStrategy loadBalanceStrategy,
                           ObjectMapper objectMapper,
