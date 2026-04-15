@@ -9,6 +9,7 @@ public class Constants {
     public static final String API_SUBMIT = API_VERSION + "/submit";
 
     public static final String API_FORCE_OK = API_VERSION + "/force-ok";
+    public static final String API_FORCE_NOK = API_VERSION + "/force-nok";
 
     public static final String API_KILL = API_VERSION + "/kill";
 

@@ -550,7 +550,47 @@ public class TaskExecutionEngine {
     }
 
     /**
-     * Finishes a task that was interrupted (kill/cancel/force-ok).
+     * Forces a task to complete as failed (can be in pending or running).
+     * Reports failure to dag-server immediately.
+     *
+     * @param taskId the task ID
+     * @return force-nok result
+     */
+    public ForceNokResult forceNok(Long taskId) {
+        // Remove from pending
+        if (pendingTaskIds.contains(taskId)) {
+            boolean removed = pendingQueue.removeIf(p -> p.taskId().equals(taskId));
+            if (removed) {
+                pendingTaskIds.remove(taskId);
+                logger.info("Task {} force-nok from pending queue", taskId);
+                finishInterrupted(taskId, false);
+                var report = new TaskExecuteResult(
+                    config.getAgentId(), taskId, false, "{\"forced\":false}", Instant.now()
+                );
+                agentSchedulerClient.reportTaskResult(List.of(report));
+                return ForceNokResult.successFromPending(taskId);
+            }
+            pendingTaskIds.remove(taskId); // clean up stale entry
+        }
+
+        // Remove from running
+        RunningTask runningTask = runningTasks.remove(taskId);
+        if (runningTask != null) {
+            runningTask.future().cancel(true);
+            logger.info("Task {} force-nok from running", taskId);
+            finishInterrupted(taskId, false);
+            var report = new TaskExecuteResult(
+                config.getAgentId(), taskId, false, "{\"forced\":false}", Instant.now()
+            );
+            agentSchedulerClient.reportTaskResult(List.of(report));
+            return ForceNokResult.successFromRunning(taskId);
+        }
+
+        return ForceNokResult.notFound(taskId);
+    }
+
+    /**
+     * Finishes a task that was interrupted (kill/force-ok/force-nok).
      */
     private void finishInterrupted(Long taskId, boolean success) {
         // Task already removed from running or pending, nothing more to do

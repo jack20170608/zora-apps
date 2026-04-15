@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.core.DagTaskAgent;
+import top.ilovemyhome.dagtask.agent.core.ForceNokResult;
 import top.ilovemyhome.dagtask.agent.core.ForceOkResult;
 import top.ilovemyhome.dagtask.agent.core.KillResult;
 import top.ilovemyhome.dagtask.agent.core.SubmissionResult;
@@ -213,6 +214,49 @@ public class TaskAgentResource {
         if (!Objects.equals(request.opsType() , OpsType.FORCE_OK)){
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(Map.of("error", "Operation type " + request.opsType() + " is not forceOk."))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
+        }
+
+        if (!result.success()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", result.message()))
+                    .header("Content-Type", MediaType.APPLICATION_JSON)
+                    .build();
+        }
+
+        return Response.ok(Map.of(
+                "success", true,
+                "message", result.message()
+        ))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
+    }
+
+    // ========== Force Nok endpoint ==========
+
+    @POST
+    @Path(Constants.API_FORCE_NOK)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Force a task to complete as failed",
+               description = "Forces a task that is either waiting in the pending queue or currently running " +
+                             "to complete immediately with a failed result. " +
+                             "Reports the failed result back to the DAG server immediately.")
+    @RequestBody(description = "Force-nok operation request containing task ID",
+                  required = true,
+                  content = @Content(schema = @Schema(implementation = OperationRequest.class)))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Force-nok operation completed successfully",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
+            @ApiResponse(responseCode = "404", description = "Task not found in pending or running queues",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    })
+    public Response forceNok(OperationRequest request) {
+        ForceNokResult result = executionEngine.forceNok(request.taskId());
+        if (!Objects.equals(request.opsType() , OpsType.FORCE_NOK)){
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of("error", "Operation type " + request.opsType() + " is not forceNok."))
                 .header("Content-Type", MediaType.APPLICATION_JSON)
                 .build();
         }

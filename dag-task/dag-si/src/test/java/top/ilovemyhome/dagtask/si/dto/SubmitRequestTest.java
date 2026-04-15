@@ -67,14 +67,14 @@ class SubmitRequestTest {
         TaskType taskType = TaskType.PYTHON_SCRIPTS;
 
         // When passing different ops types
-        SubmitRequest request1 = new SubmitRequest(taskId, taskType, OpsType.CANCEL, null, "print('hello')", null, "tester", null);
         SubmitRequest request2 = new SubmitRequest(taskId, taskType, OpsType.KILL, null, "print('hello')", null, "tester", null);
         SubmitRequest request3 = new SubmitRequest(taskId, taskType, OpsType.FORCE_OK, null, "print('hello')", null, "tester", null);
+        SubmitRequest request4 = new SubmitRequest(taskId, taskType, OpsType.FORCE_NOK, null, "print('hello')", null, "tester", null);
 
         // Then all should be forced to SUBMIT
-        assertThat(request1.opsType()).isEqualTo(OpsType.SUBMIT);
         assertThat(request2.opsType()).isEqualTo(OpsType.SUBMIT);
         assertThat(request3.opsType()).isEqualTo(OpsType.SUBMIT);
+        assertThat(request4.opsType()).isEqualTo(OpsType.SUBMIT);
     }
 
     @Test
