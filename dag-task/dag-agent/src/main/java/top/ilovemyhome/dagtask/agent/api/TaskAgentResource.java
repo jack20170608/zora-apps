@@ -149,7 +149,7 @@ public class TaskAgentResource {
     @Operation(summary = "Kill a running or pending task",
                description = "Attempts to interrupt and kill a task that is either waiting in the pending queue or currently running. " +
                              "Once killed, the task is marked as failed and moved to the finished queue.")
-    @RequestBody(description = "Cancel operation request containing task ID",
+    @RequestBody(description = "Kill operation request containing task ID",
                   required = true,
                   content = @Content(schema = @Schema(implementation = OperationRequest.class)))
     @ApiResponses({
@@ -159,7 +159,7 @@ public class TaskAgentResource {
                          content = @Content(mediaType = MediaType.APPLICATION_JSON)),
             @ApiResponse(responseCode = "404", description = "Task not found in pending or running queues",
                          content = @Content(mediaType = MediaType.APPLICATION_JSON)),
-            @ApiResponse(responseCode = "500", description = "Failed to cancel the running task",
+            @ApiResponse(responseCode = "500", description = "Failed to kill the running task",
                          content = @Content(mediaType = MediaType.APPLICATION_JSON))
     })
     public Response kill(OperationRequest request) {
@@ -170,59 +170,6 @@ public class TaskAgentResource {
                 .build();
         }
         KillResult result = executionEngine.kill(request.taskId());
-
-        if (!result.success()) {
-            if (!result.found()) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(Map.of("error", result.message()))
-                        .header("Content-Type", MediaType.APPLICATION_JSON)
-                        .build();
-            }
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Map.of("error", result.message()))
-                    .header("Content-Type", MediaType.APPLICATION_JSON)
-                    .build();
-        }
-
-        return Response.ok(Map.of(
-                "success", true,
-                "message", result.message()
-        ))
-                .header("Content-Type", MediaType.APPLICATION_JSON)
-                .build();
-    }
-
-    // ========== Cancel endpoint ==========
-
-    @POST
-    @Path(Constants.API_CANCEL)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Cancel a running or pending task",
-               description = "Attempts to cancel a task that is either waiting in the pending queue or currently running. " +
-                             "Once cancelled, the task is marked as failed and moved to the finished queue. " +
-                             "This is equivalent to the kill operation with a different endpoint path.")
-    @RequestBody(description = "Cancel operation request containing task ID",
-                  required = true,
-                  content = @Content(schema = @Schema(implementation = OperationRequest.class)))
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Cancel operation completed successfully",
-                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
-            @ApiResponse(responseCode = "400", description = "Invalid operation type",
-                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
-            @ApiResponse(responseCode = "404", description = "Task not found in pending or running queues",
-                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
-            @ApiResponse(responseCode = "500", description = "Failed to cancel the running task",
-                         content = @Content(mediaType = MediaType.APPLICATION_JSON))
-    })
-    public Response cancel(OperationRequest request) {
-        if (!Objects.equals(request.opsType(), OpsType.CANCEL)) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(Map.of("error", "Operation type " + request.opsType() + " is not cancel."))
-                .header("Content-Type", MediaType.APPLICATION_JSON)
-                .build();
-        }
-        KillResult result = executionEngine.cancel(request.taskId());
 
         if (!result.success()) {
             if (!result.found()) {

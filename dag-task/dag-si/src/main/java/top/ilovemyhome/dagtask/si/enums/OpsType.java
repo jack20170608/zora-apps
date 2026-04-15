@@ -3,8 +3,7 @@ package top.ilovemyhome.dagtask.si.enums;
 public enum OpsType {
 
     SUBMIT("Submit new task to execution queue"),
-    CANCEL("Cancel new task to execution queue"),
-    KILL("Kill running task "),
+    KILL("Kill running/pending task"),
     HOLD("Suspend waiting task"),
     FREE("Release suspended task back to queue"),
     FORCE_OK("Force mark task as successful"),

@@ -14,9 +14,7 @@ import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.time.Instant;
@@ -68,7 +66,7 @@ public class TaskExecutionEngine {
     // Dead letter persistence - directory mode, each failed batch is a separate file
     private File deadLetterPersistenceDir;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskExecutionEngine.class);
+    private static final Logger logger = LoggerFactory.getLogger(TaskExecutionEngine.class);
     private static final int DEFAULT_REPORT_QUEUE_CAPACITY = 100;
     // Retry interval for dead letter - 30 seconds
     private static final long DEFAULT_DEAD_LETTER_RETRY_INTERVAL_MS = 30000L;
@@ -140,13 +138,13 @@ public class TaskExecutionEngine {
             if (!deadLetterPersistenceDir.exists()) {
                 deadLetterPersistenceDir.mkdirs();
             }
-            LOGGER.info("Dead letter persistence configured in directory: {}", deadLetterPersistenceDir.getAbsolutePath());
+            logger.info("Dead letter persistence configured in directory: {}", deadLetterPersistenceDir.getAbsolutePath());
             return;
         }
 
         // No persistence configured
         this.deadLetterPersistenceDir = null;
-        LOGGER.info("No dead letter persistence configured, failed reports will be dropped");
+        logger.info("No dead letter persistence configured, failed reports will be dropped");
     }
 
     /**
@@ -155,7 +153,7 @@ public class TaskExecutionEngine {
      */
     public void start() {
         queueProcessor = new Thread(() -> {
-            LOGGER.info("Task execution manager queue processor started");
+            logger.info("Task execution manager queue processor started");
             while (running.get()) {
                 try {
                     singleProcess(pendingQueue, pendingTask -> {
@@ -163,11 +161,11 @@ public class TaskExecutionEngine {
                         try {
                             Future<?> future = executorService.submit(() -> executeTask(pendingTask));
                             runningTasks.put(pendingTask.taskId(), new RunningTask(pendingTask, future));
-                            LOGGER.debug("Moved task {} from pending to running", pendingTask.taskId());
+                            logger.debug("Moved task {} from pending to running", pendingTask.taskId());
                         } catch (RejectedExecutionException e) {
                             // Thread pool is full, all concurrent slots are busy
                             // pendingQueue.put() blocks until there is space - this naturally handles the race
-                            LOGGER.warn("Task executor rejected task {}, all concurrent threads are busy, putting back to pending queue", pendingTask.taskId());
+                            logger.warn("Task executor rejected task {}, all concurrent threads are busy, putting back to pending queue", pendingTask.taskId());
                             try {
                                 // put() blocks until there is space - exactly what we need
                                 pendingQueue.put(pendingTask);
@@ -178,7 +176,7 @@ public class TaskExecutionEngine {
                             } catch (InterruptedException ie) {
                                 Thread.currentThread().interrupt();
                                 // If interrupted, drop the task
-                                LOGGER.error("Interrupted while waiting to reinsert task {}, dropping", pendingTask.taskId());
+                                logger.error("Interrupted while waiting to reinsert task {}, dropping", pendingTask.taskId());
                             }
                         }
                     });
@@ -186,10 +184,10 @@ public class TaskExecutionEngine {
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
-                    LOGGER.error("Unexpected error in queue processor, continuing processing", e);
+                    logger.error("Unexpected error in queue processor, continuing processing", e);
                 }
             }
-            LOGGER.info("Task execution manager queue processor stopped");
+            logger.info("Task execution manager queue processor stopped");
         });
         queueProcessor.setName("task-execution-queue-processor");
         queueProcessor.setDaemon(true);
@@ -197,7 +195,7 @@ public class TaskExecutionEngine {
 
         // Start result reporter thread
         resultReporterThread = new Thread(() -> {
-            LOGGER.info("Task result reporter thread started");
+            logger.info("Task result reporter thread started");
             while (reporterRunning.get()) {
                 try {
                     batchProcess(resultReportQueue, this::reportResults);
@@ -205,10 +203,10 @@ public class TaskExecutionEngine {
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
-                    LOGGER.error("Unexpected fatal error in result reporter, continuing", e);
+                    logger.error("Unexpected fatal error in result reporter, continuing", e);
                 }
             }
-            LOGGER.info("Task result reporter thread stopped");
+            logger.info("Task result reporter thread stopped");
         });
         resultReporterThread.setName("task-result-reporter");
         resultReporterThread.setDaemon(true);
@@ -217,13 +215,13 @@ public class TaskExecutionEngine {
         // Start dead letter retry thread if persistence is configured
         if (deadLetterPersistenceDir != null) {
             deadLetterRetryThread = new Thread(() -> {
-                LOGGER.info("Dead letter retry thread started");
+                logger.info("Dead letter retry thread started");
                 while (deadLetterRetryRunning.get()) {
                     try {
                         // Load and retry all persisted failed reports
                         int retried = retryPersistedDeadLetterOnce();
                         if (retried > 0) {
-                            LOGGER.info("Retried {} persisted dead letter reports", retried);
+                            logger.info("Retried {} persisted dead letter reports", retried);
                         }
                         // Sleep before next retry cycle
                         Thread.sleep(DEFAULT_DEAD_LETTER_RETRY_INTERVAL_MS);
@@ -231,7 +229,7 @@ public class TaskExecutionEngine {
                         Thread.currentThread().interrupt();
                         break;
                     } catch (Exception e) {
-                        LOGGER.error("Unexpected error in dead letter retry thread, continuing", e);
+                        logger.error("Unexpected error in dead letter retry thread, continuing", e);
                         try {
                             Thread.sleep(DEFAULT_DEAD_LETTER_RETRY_INTERVAL_MS);
                         } catch (InterruptedException ie) {
@@ -240,7 +238,7 @@ public class TaskExecutionEngine {
                         }
                     }
                 }
-                LOGGER.info("Dead letter retry thread stopped");
+                logger.info("Dead letter retry thread stopped");
             });
             deadLetterRetryThread.setName("dead-letter-retry");
             deadLetterRetryThread.setDaemon(true);
@@ -257,7 +255,7 @@ public class TaskExecutionEngine {
             return results.size();
         } catch (Exception e) {
             List<Long> taskIds = results.stream().map(TaskExecuteResult::taskId).toList();
-            LOGGER.error("Failed to report task result {} to scheduler server, persisting to dead letter file", taskIds, e);
+            logger.error("Failed to report task result {} to scheduler server, persisting to dead letter file", taskIds, e);
             persistToDeadLetterFile(results);
         }
         return 0;
@@ -282,7 +280,7 @@ public class TaskExecutionEngine {
      *                  If 0, waits indefinitely.
      */
     public void stop(long timeoutMs) {
-        LOGGER.info("Initiating graceful shutdown of TaskExecutionEngine");
+        logger.info("Initiating graceful shutdown of TaskExecutionEngine");
 
         // Step 1: Signal background threads to stop
         running.set(false);
@@ -299,7 +297,7 @@ public class TaskExecutionEngine {
         // Step 2: Report all pending tasks as failed to scheduler
         int pendingCount = pendingQueue.size();
         if (pendingCount > 0) {
-            LOGGER.info("Reporting {} pending tasks as failed since agent is shutting down", pendingCount);
+            logger.info("Reporting {} pending tasks as failed since agent is shutting down", pendingCount);
             List<PendingTask> remainingPending = new ArrayList<>();
             pendingQueue.drainTo(remainingPending);
 
@@ -310,17 +308,17 @@ public class TaskExecutionEngine {
                 agentSchedulerClient.reportTaskResult(results);
                 pendingTaskIds.clear();
             } catch (Exception e) {
-                LOGGER.error("Failed to report pending task {} as failed during shutdown", results, e);
+                logger.error("Failed to report pending task {} as failed during shutdown", results, e);
                 // Persist directly to dead letter file
                 persistToDeadLetterFile(results);
             }
-            LOGGER.info("Finished reporting {} pending tasks", pendingCount);
+            logger.info("Finished reporting {} pending tasks", pendingCount);
         }
 
         // Step 3: Wait for all running tasks to complete
         int runningCount = runningTasks.size();
         if (runningCount > 0) {
-            LOGGER.info("Waiting for {} running tasks to complete", runningCount);
+            logger.info("Waiting for {} running tasks to complete", runningCount);
             long startTime = System.currentTimeMillis();
             for (RunningTask runningTask : runningTasks.values()) {
                 try {
@@ -334,15 +332,15 @@ public class TaskExecutionEngine {
                         runningTask.future().get();
                     }
                 } catch (InterruptedException e) {
-                    LOGGER.warn("Interrupted while waiting for running task {}", runningTask.pendingTask().taskId());
+                    logger.warn("Interrupted while waiting for running task {}", runningTask.pendingTask().taskId());
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
                     // Execution failed, already handled, just log
-                    LOGGER.debug("Task completed with exception during shutdown", e);
+                    logger.debug("Task completed with exception during shutdown", e);
                 }
             }
-            LOGGER.info("All running tasks completed after {}ms", System.currentTimeMillis() - startTime);
+            logger.info("All running tasks completed after {}ms", System.currentTimeMillis() - startTime);
         }
 
         // Step 4: Stop the dead letter retry thread
@@ -351,7 +349,7 @@ public class TaskExecutionEngine {
             deadLetterRetryThread.interrupt();
         }
 
-        LOGGER.info("TaskExecutionEngine shutdown complete");
+        logger.info("TaskExecutionEngine shutdown complete");
     }
 
     /**
@@ -376,15 +374,15 @@ public class TaskExecutionEngine {
                 String json = objectMapper.writeValueAsString(results);
                 writer.write(json);
                 writer.close();
-                LOGGER.debug("Persisted failed results for task {} to dead letter file {}", taskIds, filename);
+                logger.debug("Persisted failed results for task {} to dead letter file {}", taskIds, filename);
             } catch (Exception e) {
-                LOGGER.error("Failed to persist failed results for task {} to dead letter directory", taskIds, e);
+                logger.error("Failed to persist failed results for task {} to dead letter directory", taskIds, e);
             }
             return;
         }
 
         // No persistence configured
-        LOGGER.debug("No dead letter persistence configured, dropping failed results for tasks {}", taskIds);
+        logger.debug("No dead letter persistence configured, dropping failed results for tasks {}", taskIds);
     }
 
     /**
@@ -429,7 +427,7 @@ public class TaskExecutionEngine {
                 // Always delete the file after processing - failures get re-persisted as new files
                 Files.deleteIfExists(file.toPath());
             } catch (Exception e) {
-                LOGGER.error("Error processing dead letter file {}, will skip for now", file.getName(), e);
+                logger.error("Error processing dead letter file {}, will skip for now", file.getName(), e);
             }
         }
         return successTotal;
@@ -471,7 +469,7 @@ public class TaskExecutionEngine {
         }
 
         pendingTaskIds.add(taskId);
-        LOGGER.info("Task {} added to pending queue. Pending size: {}", taskId, pendingQueue.size());
+        logger.info("Task {} added to pending queue. Pending size: {}", taskId, pendingQueue.size());
         return SubmissionResult.accepted(taskId, pendingQueue.size());
     }
 
@@ -482,30 +480,12 @@ public class TaskExecutionEngine {
      * @return kill result
      */
     public KillResult kill(Long taskId) {
-        return cancelOrKill(taskId);
-    }
-
-    /**
-     * Cancels a task (can be in pending or running).
-     * Identical to kill operation provided for semantic consistency.
-     *
-     * @param taskId the task ID to cancel
-     * @return cancel result
-     */
-    public KillResult cancel(Long taskId) {
-        return cancelOrKill(taskId);
-    }
-
-    /**
-     * Common implementation for both kill and cancel operations.
-     */
-    private KillResult cancelOrKill(Long taskId) {
         // Check pending queue first using our index for fast check then remove
         if (pendingTaskIds.contains(taskId)) {
             boolean removed = pendingQueue.removeIf(p -> p.taskId().equals(taskId));
             if (removed) {
                 pendingTaskIds.remove(taskId);
-                LOGGER.info("Task {} removed from pending queue before execution", taskId);
+                logger.info("Task {} removed from pending queue before execution", taskId);
                 finishInterrupted(taskId, false);
                 return KillResult.successFromPending(taskId);
             }
@@ -520,11 +500,11 @@ public class TaskExecutionEngine {
 
         boolean cancelled = runningTask.future().cancel(true);
         if (cancelled) {
-            LOGGER.info("Task {} cancelled successfully from running", taskId);
+            logger.info("Task {} killed successfully from running", taskId);
             finishInterrupted(taskId, false);
             return KillResult.successFromRunning(taskId);
         } else {
-            LOGGER.warn("Failed to cancel task {}", taskId);
+            logger.warn("Failed to kill task {}", taskId);
             return KillResult.failedToCancel(taskId);
         }
     }
@@ -542,7 +522,7 @@ public class TaskExecutionEngine {
             boolean removed = pendingQueue.removeIf(p -> p.taskId().equals(taskId));
             if (removed) {
                 pendingTaskIds.remove(taskId);
-                LOGGER.info("Task {} force-ok from pending queue", taskId);
+                logger.info("Task {} force-ok from pending queue", taskId);
                 finishInterrupted(taskId, true);
                 var report = new TaskExecuteResult(
                     config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
@@ -557,7 +537,7 @@ public class TaskExecutionEngine {
         RunningTask runningTask = runningTasks.remove(taskId);
         if (runningTask != null) {
             runningTask.future().cancel(true);
-            LOGGER.info("Task {} force-ok from running", taskId);
+            logger.info("Task {} force-ok from running", taskId);
             finishInterrupted(taskId, true);
             var report = new TaskExecuteResult(
                 config.getAgentId(), taskId, true, "{\"forced\":true}", Instant.now()
@@ -599,26 +579,26 @@ public class TaskExecutionEngine {
         long startTime = System.currentTimeMillis();
 
         try {
-            LOGGER.info("Starting execution of task {}", taskId);
+            logger.info("Starting execution of task {}", taskId);
             TaskOutput output = execution.execute(input);
             long duration = System.currentTimeMillis() - startTime;
-            LOGGER.info("Completed execution of task {} in {}ms", taskId, duration);
+            logger.info("Completed execution of task {} in {}ms", taskId, duration);
             var report = new TaskExecuteResult(
                 config.getAgentId(), taskId, output.isSuccess(), serializeOutput(output), null
             );
             // Offer to report queue, if queue full persist directly to dead letter (don't drop)
             if (!resultReportQueue.offer(report)) {
-                LOGGER.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
+                logger.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
                 persistToDeadLetterFile(List.of(report));
             }
             finishTask(taskId, true, output.isSuccess(), duration);
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
-            LOGGER.error("Task {} execution failed after {}ms", taskId, duration, e);
+            logger.error("Task {} execution failed after {}ms", taskId, duration, e);
             var report = new TaskExecuteResult(config.getAgentId(), taskId, false, e.getMessage());
             // Offer to report queue, if queue full persist directly to dead letter (don't drop)
             if (!resultReportQueue.offer(report)) {
-                LOGGER.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
+                logger.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
                 persistToDeadLetterFile(List.of(report));
             }
             finishTask(taskId, false, false, duration);
@@ -630,29 +610,7 @@ public class TaskExecutionEngine {
      */
     private void finishTask(Long taskId, boolean completedNormally, boolean success, long durationMs) {
         runningTasks.remove(taskId);
-        LOGGER.debug("Moved task {} from running to finished", taskId);
-    }
-
-    /**
-     * Returns the number of failed reports in the dead letter.
-     * For directory mode: counts all non-empty files (each file is at least one report batch).
-     */
-    public int getDeadLetterQueueSize() {
-        // Directory mode
-        if (deadLetterPersistenceDir != null && deadLetterPersistenceDir.exists()) {
-            File[] files = deadLetterPersistenceDir.listFiles();
-            if (files == null) {
-                return 0;
-            }
-            int count = 0;
-            for (File file : files) {
-                if (file.isFile() && file.length() > 0 && !file.getName().startsWith(".")) {
-                    count++;
-                }
-            }
-            return count;
-        }
-        return 0;
+        logger.debug("Moved task {} from running to finished", taskId);
     }
 
     /**
@@ -677,7 +635,7 @@ public class TaskExecutionEngine {
         try {
             return objectMapper.writeValueAsString(output);
         } catch (Exception e) {
-            LOGGER.warn("Failed to serialize output for task", e);
+            logger.warn("Failed to serialize output for task", e);
             return output.toString();
         }
     }
@@ -700,7 +658,7 @@ public class TaskExecutionEngine {
             processor.accept(item);
         }
         if (drained > 0) {
-            LOGGER.debug("Batch drained {} additional items from queue", drained);
+            logger.debug("Batch drained {} additional items from queue", drained);
         }
     }
 
@@ -711,7 +669,7 @@ public class TaskExecutionEngine {
         List<T> batch = new ArrayList<>();
         batch.add(first);
         int drained = queue.drainTo(batch);
-        LOGGER.debug("Batch drained {} additional items from queue", drained);
+        logger.debug("Batch drained {} additional items from queue", drained);
         if (!batch.isEmpty()) {
             processor.accept(batch);
         }
