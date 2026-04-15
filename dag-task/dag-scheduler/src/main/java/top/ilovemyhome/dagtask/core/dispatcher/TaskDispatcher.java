@@ -178,7 +178,7 @@ public class TaskDispatcher {
      * @param taskId the task ID to kill
      * @return true if the kill request was accepted by the agent
      */
-    public boolean killTask(Long taskId) {
+    public boolean killTask(Long taskId, String dealer, String reason) {
         Objects.requireNonNull(taskId, "taskId must not be null");
 
         return taskDispatchDao.findByTaskId(taskId)
@@ -188,7 +188,7 @@ public class TaskDispatcher {
                 // Find the agent info
                 String agentId = dispatch.getAgentId();
                 return findAgentByAgentId(agentId)
-                    .map(agent -> killTask(taskId, agent))
+                    .map(agent -> killTask(dispatch, dealer, reason))
                     .orElse(false);
             })
             .orElse(false);
@@ -229,18 +229,21 @@ public class TaskDispatcher {
      * This overload automatically looks up the agent from the dispatch tracking table.
      *
      * @param taskId the task ID to force ok
+     * @param dealer the user who performed the operation
+     * @param reason the reason for forcefully marking the task as ok
      * @return true if the force-ok request was accepted by the agent
      */
-    public boolean forceOkTask(Long taskId) {
+    public boolean forceOkTask(Long taskId, String dealer, String reason) {
         Objects.requireNonNull(taskId, "taskId must not be null");
+
         return taskDispatchDao.findByTaskId(taskId)
-            .stream()
-            .filter(d -> d.getStatus() == DispatchStatus.DISPATCHED)
+            .stream().filter(d -> d.getStatus() == DispatchStatus.DISPATCHED)
             .findFirst()
             .map(dispatch -> {
+                // Find the agent info
                 String agentId = dispatch.getAgentId();
                 return findAgentByAgentId(agentId)
-                    .map(agent -> forceOkTask(taskId, agent))
+                    .map(agent -> forceOkTask(dispatch, dealer, reason))
                     .orElse(false);
             })
             .orElse(false);
@@ -249,37 +252,35 @@ public class TaskDispatcher {
     /**
      * Requests a task to be forcefully marked as successful on its executing agent.
      *
-     * @param taskId the task ID to force ok
-     * @param agent the agent that is executing the task
+     * @param dispatchItem the dispatch record containing task and agent information
+     * @param dealer the user who performed the operation
+     * @param reason the reason for forcefully marking the task as ok
      * @return true if the force-ok request was accepted by the agent
      */
-    public boolean forceOkTask(Long taskId, AgentRegistryItem agent) {
-        Objects.requireNonNull(taskId, "taskId must not be null");
-        Objects.requireNonNull(agent, "agent must not be null");
-
-        String url = buildAgentUrl(agent.getAgentUrl()) + API_FORCE_OK + taskId;
+    public boolean forceOkTask(TaskDispatchRecord dispatchItem, String dealer, String reason) {
+        Objects.requireNonNull(dispatchItem, "dispatchItem must not be null");
+        var taskId = dispatchItem.getTaskId();
+        var agentId = dispatchItem.getAgentId();
+        String url = buildAgentUrl(dispatchItem.getAgentUrl()) + API_VERSION + API_FORCE_OK;
+        OperationRequest operationRequest = new OperationRequest(dispatchItem.getTaskId(), OpsType.FORCE_OK, true, reason, dealer, Instant.now());
+        String body = JacksonUtil.toJson(operationRequest);
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .POST(HttpRequest.BodyPublishers.noBody())
-                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
                 .build();
-
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             int statusCode = response.statusCode();
-
             if (statusCode >= 200 && statusCode < 300) {
-                logger.info("Force-ok request accepted for task {} on agent {}", taskId, agent.getAgentId());
+                logger.info("Force-ok request accepted for task {} on agent {}", taskId, agentId);
                 return true;
             }
-
-            logger.warn("Force-ok request failed for task {} on agent {}, status code: {}",
-                taskId, agent.getAgentId(), statusCode);
+            logger.warn("Force-ok request failed for task {} on agent {}, status code: {}", taskId, agentId, statusCode);
             return false;
         } catch (IOException | InterruptedException e) {
-            logger.error("IOException sending force-ok request to agent {} for task {}",
-                agent.getAgentId(), taskId, e);
+            logger.error("IOException sending force-ok request to agent {} for task {}", agentId, taskId, e);
             Thread.currentThread().interrupt();
             return false;
         }
