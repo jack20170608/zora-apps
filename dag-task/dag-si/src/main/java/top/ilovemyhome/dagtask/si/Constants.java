@@ -10,6 +10,8 @@ public class Constants {
 
     public static final String API_FORCE_OK = API_VERSION + "/force-ok";
     public static final String API_FORCE_NOK = API_VERSION + "/force-nok";
+    public static final String API_HOLD = API_VERSION + "/hold";
+    public static final String API_FREE = API_VERSION + "/free";
 
     public static final String API_KILL = API_VERSION + "/kill";
 

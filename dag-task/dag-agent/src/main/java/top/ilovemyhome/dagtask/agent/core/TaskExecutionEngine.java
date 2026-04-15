@@ -590,6 +590,58 @@ public class TaskExecutionEngine {
     }
 
     /**
+     * Holds a task (can be in pending or running).
+     * Removes from pending/running so it won't be executed.
+     *
+     * @param taskId the task ID to hold
+     * @return hold result
+     */
+    public HoldResult hold(Long taskId) {
+        // Remove from pending
+        if (pendingTaskIds.contains(taskId)) {
+            boolean removed = pendingQueue.removeIf(p -> p.taskId().equals(taskId));
+            if (removed) {
+                pendingTaskIds.remove(taskId);
+                logger.info("Task {} removed from pending queue and held", taskId);
+                return HoldResult.successFromPending(taskId);
+            }
+            pendingTaskIds.remove(taskId); // clean up stale entry
+        }
+
+        // Remove from running - cancel the running task
+        RunningTask runningTask = runningTasks.remove(taskId);
+        if (runningTask != null) {
+            runningTask.future().cancel(true);
+            logger.info("Task {} cancelled from running and held", taskId);
+            return HoldResult.successFromRunning(taskId);
+        }
+
+        return HoldResult.notFound(taskId);
+    }
+
+    /**
+     * Releases a held task.
+     * Note: The agent doesn't keep held tasks, so releasing just means
+     * the scheduler will re-dispatch it if needed. This method only checks
+     * if the task wasn't found on this agent.
+     *
+     * @param taskId the task ID to free
+     * @return free result
+     */
+    public FreeResult free(Long taskId) {
+        // Check if task is still on this agent
+        if (pendingTaskIds.contains(taskId) || runningTasks.containsKey(taskId)) {
+            // Task is still here, it's already available for execution
+            logger.info("Task {} is already on this agent, released", taskId);
+            return FreeResult.successResult();
+        }
+
+        // Task not found on this agent - it was already removed when held
+        logger.debug("Task {} not found on this agent for free operation", taskId);
+        return FreeResult.notFound(taskId);
+    }
+
+    /**
      * Finishes a task that was interrupted (kill/force-ok/force-nok).
      */
     private void finishInterrupted(Long taskId, boolean success) {

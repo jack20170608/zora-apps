@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.core.DagTaskAgent;
 import top.ilovemyhome.dagtask.agent.core.ForceNokResult;
 import top.ilovemyhome.dagtask.agent.core.ForceOkResult;
+import top.ilovemyhome.dagtask.agent.core.FreeResult;
+import top.ilovemyhome.dagtask.agent.core.HoldResult;
 import top.ilovemyhome.dagtask.agent.core.KillResult;
 import top.ilovemyhome.dagtask.agent.core.SubmissionResult;
 import top.ilovemyhome.dagtask.agent.core.TaskExecutionEngine;
@@ -257,6 +259,102 @@ public class TaskAgentResource {
         if (!Objects.equals(request.opsType() , OpsType.FORCE_NOK)){
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(Map.of("error", "Operation type " + request.opsType() + " is not forceNok."))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
+        }
+
+        if (!result.success()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", result.message()))
+                    .header("Content-Type", MediaType.APPLICATION_JSON)
+                    .build();
+        }
+
+        return Response.ok(Map.of(
+                "success", true,
+                "message", result.message()
+        ))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
+    }
+
+    // ========== Hold endpoint ==========
+
+    @POST
+    @Path(Constants.API_HOLD)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Hold a pending or running task",
+               description = "Holds a task so it won't be executed. If pending, removes from pending queue. " +
+                             "If running, cancels the running task. After holding, the task is not tracked on the agent " +
+                             "and will need to be re-dispatched when freed.")
+    @RequestBody(description = "Hold operation request containing task ID",
+                  required = true,
+                  content = @Content(schema = @Schema(implementation = OperationRequest.class)))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Hold operation completed successfully",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
+            @ApiResponse(responseCode = "400", description = "Invalid operation type",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
+            @ApiResponse(responseCode = "404", description = "Task not found in pending or running queues",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    })
+    public Response hold(OperationRequest request) {
+        HoldResult result = executionEngine.hold(request.taskId());
+        if (!Objects.equals(request.opsType() , OpsType.HOLD)){
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of("error", "Operation type " + request.opsType() + " is not hold."))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
+        }
+
+        if (!result.success()) {
+            if (!result.found()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(Map.of("error", result.message()))
+                        .header("Content-Type", MediaType.APPLICATION_JSON)
+                        .build();
+            }
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", result.message()))
+                    .header("Content-Type", MediaType.APPLICATION_JSON)
+                    .build();
+        }
+
+        return Response.ok(Map.of(
+                "success", true,
+                "message", result.message()
+        ))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
+    }
+
+    // ========== Free endpoint ==========
+
+    @POST
+    @Path(Constants.API_FREE)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Release a previously held task",
+               description = "Releases a held task so it can be re-dispatched by the scheduler. " +
+                             "Since the agent doesn't track held tasks, this mainly confirms the task " +
+                             "is not currently executing on this agent.")
+    @RequestBody(description = "Free operation request containing task ID",
+                  required = true,
+                  content = @Content(schema = @Schema(implementation = OperationRequest.class)))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Free operation completed successfully",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
+            @ApiResponse(responseCode = "400", description = "Invalid operation type",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON)),
+            @ApiResponse(responseCode = "404", description = "Task not found held on this agent",
+                         content = @Content(mediaType = MediaType.APPLICATION_JSON))
+    })
+    public Response free(OperationRequest request) {
+        FreeResult result = executionEngine.free(request.taskId());
+        if (!Objects.equals(request.opsType() , OpsType.FREE)){
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of("error", "Operation type " + request.opsType() + " is not free."))
                 .header("Content-Type", MediaType.APPLICATION_JSON)
                 .build();
         }
