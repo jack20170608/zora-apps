@@ -6,6 +6,7 @@ import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
+import top.ilovemyhome.dagtask.core.dispatcher.TaskDispatcher;
 import top.ilovemyhome.dagtask.core.server.DagServerConfig;
 import top.ilovemyhome.dagtask.si.persistence.*;
 import top.ilovemyhome.dagtask.si.service.DagManageService;
@@ -71,6 +72,7 @@ public class DagSchedulerServer {
 //    private final TaskDagService taskDagService;
 
     private final DagManageService dagManageService;
+    private final TaskDispatcher taskDispatcher;
     // Components that need lifecycle management
     private final List<Startable> startableComponents = new ArrayList<>();
 
@@ -89,7 +91,8 @@ public class DagSchedulerServer {
         TaskTemplateService taskTemplateService,
 //        TaskOrderService taskOrderService,
 //        TaskDagService taskDagService,
-        DagManageService dagManageService) {
+        DagManageService dagManageService,
+        TaskDispatcher taskDispatcher) {
         this.config = config;
         this.jdbi = Objects.requireNonNull(jdbi, "jdbi must not be null");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
@@ -103,6 +106,7 @@ public class DagSchedulerServer {
 //        this.taskOrderService = Objects.requireNonNull(taskOrderService, "taskOrderService must not be null");
 //        this.taskDagService = Objects.requireNonNull(taskDagService, "taskDagService must not be null");
         this.dagManageService = Objects.requireNonNull(dagManageService, "dagManageService must not be null");
+        this.taskDispatcher = Objects.requireNonNull(taskDispatcher, "taskDispatcher must not be null");
         int totalProcessorSize = Runtime.getRuntime().availableProcessors();
         int nThreads = Math.min(totalProcessorSize, 16);
         ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().setNameFormat("TaskDagService-%d").build();
