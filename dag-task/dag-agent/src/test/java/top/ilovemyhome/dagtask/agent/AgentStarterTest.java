@@ -1,22 +1,14 @@
 package top.ilovemyhome.dagtask.agent;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
-import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 
-@ExtendWith(MockitoExtension.class)
+/**
+ * Unit tests for {@link AgentStarter} new API that accepts {@link AgentConfiguration} directly.
+ */
 class AgentStarterTest {
-
-    @Mock
-    private AgentSchedulerClient client;
 
     @Test
     void testStartWithAgentConfiguration() {
