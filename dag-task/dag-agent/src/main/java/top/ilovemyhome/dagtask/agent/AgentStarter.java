@@ -1,8 +1,6 @@
 package top.ilovemyhome.dagtask.agent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import top.ilovemyhome.dagtask.agent.client.DefaultAgentSchedulerClient;
 import top.ilovemyhome.dagtask.agent.core.DagTaskAgent;
 import top.ilovemyhome.dagtask.agent.core.DagTaskAgentBuilder;
@@ -18,16 +16,8 @@ public class AgentStarter {
         // Utility class
     }
 
-    public static void start(){
-        Config config = ConfigFactory.load("config/agent.conf");
-        start(config);
-    }
-
-    public static void start(Config config) {
-        Objects.requireNonNull(config, "config is required");
-
-        // Load configuration using Typesafe Config
-        AgentConfiguration agentConfig = AgentConfiguration.load(config);
+    public static void start(AgentConfiguration agentConfig) {
+        Objects.requireNonNull(agentConfig, "agentConfig is required");
 
         // Create default dependencies
         ObjectMapper objectMapper = new ObjectMapper();
@@ -48,5 +38,4 @@ public class AgentStarter {
             agent.stop();
         }));
     }
-
 }
