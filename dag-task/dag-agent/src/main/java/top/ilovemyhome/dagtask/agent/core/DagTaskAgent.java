@@ -99,10 +99,24 @@ public class DagTaskAgent {
                     config.getSupportedExecutionKeys()
             );
             var response = agentSchedulerClient.register(registration);
-            boolean registered = response.getStatus() >= 200 && response.getStatus() < 300;
-            if (!registered) {
-                LOGGER.warn("Auto-registration failed. Agent will not be known to the DAG scheduler.");
+            boolean registeredSuccess = response.getStatus() >= 200 && response.getStatus() < 300;
+            if (registeredSuccess) {
+                registered = true;
+                int taskCount = registration.supportedExecutionKeys().size();
+                LOGGER.info("Agent {} successfully registered with DAG server at {}, supported {} execution keys",
+                        registration.agentId(), config.getDagServerUrl(), taskCount);
+            } else {
+                LOGGER.warn("Initial auto-registration failed with status {}, starting background retry thread",
+                        response.getStatus());
+                registered = false;
+                RegistrationRetryTask retryTask = new RegistrationRetryTask(registration);
+                registrationRetryThread = new Thread(retryTask);
+                registrationRetryThread.setDaemon(true);
+                registrationRetryThread.setName("dag-agent-registration-retry");
+                registrationRetryThread.start();
             }
+        } else {
+            registered = false;
         }
     }
 
