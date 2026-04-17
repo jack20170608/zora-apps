@@ -157,5 +157,14 @@ public class DagTaskAgent {
         return resource;
     }
 
+    // Auto-registration retry constants (simulated annealing / exponential backoff)
+    static final long INITIAL_DELAY_MS = 10L;
+    static final long MAX_DELAY_MS = 5 * 60 * 1000L; // 5 minutes
+    private static final double JITTER_FACTOR = 0.1;
+
+    // Fields for registration retry tracking
+    private volatile boolean registered;
+    private volatile Thread registrationRetryThread;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DagTaskAgent.class);
 }
