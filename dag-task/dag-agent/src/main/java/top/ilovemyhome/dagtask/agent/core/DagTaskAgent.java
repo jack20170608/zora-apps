@@ -135,6 +135,10 @@ public class DagTaskAgent {
     public void stop(boolean unregister) {
         running = false;
         executionEngine.stop();
+        // Interrupt registration retry thread if it's still running
+        if (registrationRetryThread != null && registrationRetryThread.isAlive()) {
+            registrationRetryThread.interrupt();
+        }
         if (unregister) {
             var unregistration = new AgentUnregistration(config.getAgentId());
             var response = agentSchedulerClient.unregister(unregistration);
