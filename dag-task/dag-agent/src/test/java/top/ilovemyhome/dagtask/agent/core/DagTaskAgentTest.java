@@ -73,10 +73,10 @@ class DagTaskAgentTest {
 
         // Cleanup - interrupt the thread
         agent.stop(false);
-        // Give the thread a chance to process the interrupt
+        // Give the thread a chance to exit
         agent.getRegistrationRetryThread().join(100);
-        // The thread should have been interrupted
-        assertThat(agent.getRegistrationRetryThread().isInterrupted()).isTrue();
+        // After stop, the thread should no longer be alive
+        assertThat(agent.getRegistrationRetryThread().isAlive()).isFalse();
     }
 
     @Test

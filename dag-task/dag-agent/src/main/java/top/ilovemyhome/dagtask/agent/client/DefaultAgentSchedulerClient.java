@@ -80,8 +80,13 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
             return Response.status(response.statusCode())
                     .entity(response.body())
                     .build();
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             LOGGER.error("Failed to register agent with DAG server", e);
+            return Response.serverError()
+                    .entity(e.getMessage())
+                    .build();
+        } catch (InterruptedException e) {
+            LOGGER.error("Registration request was interrupted", e);
             Thread.currentThread().interrupt();
             return Response.serverError()
                     .entity(e.getMessage())
