@@ -222,5 +222,6 @@ class AgentConfigurationLoadTest {
                         "top.ilovemyhome.dagtask.core.ShellTaskExecution",
                         "top.ilovemyhome.dagtask.core.PythonTaskExecution"
                 );
+        assertThat(agentConfig.getDeadLetterPersistencePath()).isEqualTo("/tmp/dag-agent-dead-letter");
     }
 }
