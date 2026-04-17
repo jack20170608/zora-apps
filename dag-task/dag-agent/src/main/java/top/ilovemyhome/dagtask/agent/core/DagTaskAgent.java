@@ -180,5 +180,66 @@ public class DagTaskAgent {
     private volatile boolean registered;
     private volatile Thread registrationRetryThread;
 
+    /**
+     * Background task that retries registration with exponential backoff (simulated annealing).
+     * Retries until successful or until the agent is stopped.
+     */
+    private class RegistrationRetryTask implements Runnable {
+        private final AgentRegisterRequest registration;
+        private long currentDelayMs;
+
+        /**
+         * Creates a new retry task for the given registration.
+         * @param registration the registration request to retry
+         */
+        public RegistrationRetryTask(AgentRegisterRequest registration) {
+            this.registration = registration;
+            this.currentDelayMs = INITIAL_DELAY_MS;
+        }
+
+        @Override
+        public void run() {
+            while (!registered && isRunning()) {
+                try {
+                    long jitteredDelay = applyJitter(currentDelayMs);
+                    Thread.sleep(jitteredDelay);
+
+                    var response = agentSchedulerClient.register(registration);
+                    boolean success = response.getStatus() >= 200 && response.getStatus() < 300;
+
+                    if (success) {
+                        int taskCount = registration.supportedExecutionKeys().size();
+                        LOGGER.info("Agent {} registered successfully after retry, supported {} execution keys",
+                                registration.agentId(), taskCount);
+                        registered = true;
+                        return;
+                    }
+
+                    LOGGER.warn("Registration retry failed with status {}, will retry in {}ms",
+                            response.getStatus(), currentDelayMs);
+
+                    // Exponential backoff, capped at MAX_DELAY_MS
+                    currentDelayMs = Math.min(currentDelayMs * 2, MAX_DELAY_MS);
+                } catch (InterruptedException e) {
+                    LOGGER.info("Registration retry thread interrupted, stopping retry");
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * Applies random jitter to the delay to avoid thundering herd problem.
+     * Adds ±JITTER_FACTOR random variation.
+     * @param delay the base delay in milliseconds
+     * @return jittered delay
+     */
+    long applyJitter(long delay) { // package-private for testing
+        double random = (Math.random() * 2 - 1) * JITTER_FACTOR; // -0.1 to +0.1
+        double jittered = delay * (1 + random);
+        return Math.round(jittered);
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DagTaskAgent.class);
 }
