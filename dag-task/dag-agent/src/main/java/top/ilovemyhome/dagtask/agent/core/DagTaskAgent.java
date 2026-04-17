@@ -175,6 +175,22 @@ public class DagTaskAgent {
         return resource;
     }
 
+    /**
+     * Check if the agent is successfully registered.
+     * Package-private for testing.
+     */
+    boolean isRegistered() {
+        return registered;
+    }
+
+    /**
+     * Get the registration retry thread.
+     * Package-private for testing.
+     */
+    Thread getRegistrationRetryThread() {
+        return registrationRetryThread;
+    }
+
     // Auto-registration retry constants (simulated annealing / exponential backoff)
     static final long INITIAL_DELAY_MS = 10L;
     static final long MAX_DELAY_MS = 5 * 60 * 1000L; // 5 minutes
