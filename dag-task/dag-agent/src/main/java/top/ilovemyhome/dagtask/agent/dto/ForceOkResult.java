@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.agent.core;
+package top.ilovemyhome.dagtask.agent.dto;
 
 /**
  * Result of force-ok operation on a task.

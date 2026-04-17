@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.agent.core;
+package top.ilovemyhome.dagtask.agent.dto;
 
 /**
  * Result of free operation on a task.

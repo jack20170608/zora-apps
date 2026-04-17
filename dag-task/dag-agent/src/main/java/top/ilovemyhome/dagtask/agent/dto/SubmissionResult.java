@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.agent.core;
+package top.ilovemyhome.dagtask.agent.dto;
 
 /**
  * Result of submitting a new task to the execution engine.

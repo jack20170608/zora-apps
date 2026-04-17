@@ -9,6 +9,7 @@ import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -119,7 +120,7 @@ public class DagTaskAgent {
         running = false;
         executionEngine.stop();
         if (unregister) {
-            var unregistration = new top.ilovemyhome.dagtask.si.agent.AgentUnregistration(config.getAgentId());
+            var unregistration = new AgentUnregistration(config.getAgentId());
             var response = agentSchedulerClient.unregister(unregistration);
             boolean success = response.getStatus() >= 200 && response.getStatus() < 300;
             if (!success) {

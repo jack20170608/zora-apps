@@ -18,7 +18,7 @@
         <!-- DAG Core -->
         <dependency>
             <groupId>top.ilovemyhome.dagtask</groupId>
-            <artifactId>dag-scheduler</artifactId>
+            <artifactId>dag-si</artifactId>
         </dependency>
         <!-- zora common -->
         <dependency>
@@ -87,12 +87,6 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- Jakarta RS API for testing -->
-        <dependency>
-            <groupId>jakarta.ws.rs</groupId>
-            <artifactId>jakarta.ws.rs-api</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- Jakarta RS Runtime Delegate for testing -->
