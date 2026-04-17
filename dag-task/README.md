@@ -183,7 +183,7 @@ mvn clean package
 
 # 运行（端口8080）
 java -Denv=local -cp "target/classes:target/lib/*" \
-  top.ilovemyhome.dagtask.agent.muserver.starter.AgentMain
+  top.ilovemyhome.dagtask.agent.muserver.starter.AppMain
 ```
 
 ### 4. 启动Web前端

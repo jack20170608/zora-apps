@@ -12,7 +12,7 @@ import top.ilovemyhome.zora.config.ConfigLoader;
  * Main entry point for the MuServer-hosted DAG Task Agent.
  * Starts the agent core and the MuServer HTTP server.
  */
-public class AgentMain {
+public class AppMain {
 
     public static void main(String[] args) {
         LOGGER.info("Starting DAG Task Agent with MuServer...");
@@ -30,7 +30,7 @@ public class AgentMain {
     }
 
     private static AppContext createAppContext(String env) {
-        String rootConfig = "config/agent-muserver.conf";
+        String rootConfig = "config/application.conf";
         String envConfig = "config/agent-muserver-" + env + ".conf";
         Config config = ConfigLoader.loadConfig(rootConfig, envConfig);
         return new AppContext(env, config);
@@ -51,9 +51,9 @@ public class AgentMain {
         WebServerBootstrap.start(appContext);
     }
 
-    private AgentMain() {
+    private AppMain() {
         // Private constructor for utility class
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AgentMain.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AppMain.class);
 }

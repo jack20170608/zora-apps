@@ -58,7 +58,7 @@ mvn clean package
 
 ### Run
 ```bash
-java -Denv=local -cp "target/classes:target/lib/*" top.ilovemyhome.dagtask.agent.muserver.starter.AgentMain
+java -Denv=local -cp "target/classes:target/lib/*" top.ilovemyhome.dagtask.agent.muserver.starter.AppMain
 ```
 
 ## Configuration

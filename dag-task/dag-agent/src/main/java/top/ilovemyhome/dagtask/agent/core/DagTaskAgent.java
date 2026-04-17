@@ -64,8 +64,10 @@ public class DagTaskAgent {
      * Creates a DagTaskAgent with all dependencies provided explicitly.
      * All parameters are required.
      */
-    public DagTaskAgent(AgentConfiguration config, AgentSchedulerClient agentSchedulerClient,
-                        ExecutorService taskExecutor, ObjectMapper objectMapper) {
+    public DagTaskAgent(AgentConfiguration config
+        , AgentSchedulerClient agentSchedulerClient
+        , ExecutorService taskExecutor
+        , ObjectMapper objectMapper) {
         this.config = Objects.requireNonNull(config, "config is required");
         this.agentSchedulerClient = Objects.requireNonNull(agentSchedulerClient, "AgentSchedulerClient is required");
         this.taskExecutor = Objects.requireNonNull(taskExecutor, "taskExecutor is required");

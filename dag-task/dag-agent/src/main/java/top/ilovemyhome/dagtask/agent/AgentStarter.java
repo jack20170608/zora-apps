@@ -16,26 +16,25 @@ public class AgentStarter {
         // Utility class
     }
 
-    public static void start(AgentConfiguration agentConfig) {
-        Objects.requireNonNull(agentConfig, "agentConfig is required");
+    public static void start(AgentConfiguration config) {
+        start(config, null);
+    }
 
-        // Create default dependencies
-        ObjectMapper objectMapper = new ObjectMapper();
+    public static void start(AgentConfiguration agentConfig, ObjectMapper objectMapper) {
+        Objects.requireNonNull(agentConfig, "agentConfig is required");
         AgentSchedulerClient agentSchedulerClient = new DefaultAgentSchedulerClient(agentConfig);
         var executor = Executors.newFixedThreadPool(agentConfig.getMaxConcurrentTasks());
 
         // Create and start agent
         DagTaskAgent agent = new DagTaskAgentBuilder()
                 .config(agentConfig)
-                .objectMapper(objectMapper)
+                .objectMapper(Objects.nonNull(objectMapper) ? objectMapper : new ObjectMapper())
                 .agentSchedulerClient(agentSchedulerClient)
                 .taskExecutor(executor)
                 .build();
         agent.start();
 
         // Add shutdown hook
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            agent.stop();
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(agent::stop));
     }
 }
