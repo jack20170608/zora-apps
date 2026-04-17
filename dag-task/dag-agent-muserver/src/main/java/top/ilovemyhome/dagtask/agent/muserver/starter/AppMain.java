@@ -15,7 +15,7 @@ import top.ilovemyhome.zora.config.ConfigLoader;
 public class AppMain {
 
     public static void main(String[] args) {
-        LOGGER.info("Starting DAG Task Agent with MuServer...");
+        logger.info("Starting DAG Task Agent with MuServer...");
 
         String env = System.getProperty("env");
         if (StringUtils.isBlank(env)) {
@@ -23,27 +23,24 @@ public class AppMain {
         }
 
         AppContext appContext = createAppContext(env);
-        startAgent(appContext);
         startWebServer(appContext);
+        startAgent(appContext);
 
-        LOGGER.info("DAG Task Agent fully started");
+        logger.info("DAG Task Agent fully started");
     }
 
     private static AppContext createAppContext(String env) {
-        String rootConfig = "config/application.conf";
-        String envConfig = "config/agent-muserver-" + env + ".conf";
-        Config config = ConfigLoader.loadConfig(rootConfig, envConfig);
+        Config config = ConfigLoader.loadConfigByEnv(env);
         return new AppContext(env, config);
     }
 
     private static void startAgent(AppContext appContext) {
         appContext.getDagTaskAgent().start();
-
         // Add shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LOGGER.info("Received shutdown signal, stopping DAG Task Agent...");
+            logger.info("Received shutdown signal, stopping DAG Task Agent...");
             appContext.getDagTaskAgent().stop();
-            LOGGER.info("DAG Task Agent stopped");
+            logger.info("DAG Task Agent stopped");
         }));
     }
 
@@ -55,5 +52,5 @@ public class AppMain {
         // Private constructor for utility class
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AppMain.class);
+    private static final Logger logger = LoggerFactory.getLogger(AppMain.class);
 }
