@@ -31,6 +31,10 @@
         </dependency>
         <dependency>
             <groupId>top.ilovemyhome.zora</groupId>
+            <artifactId>zora-httpclient</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.zora</groupId>
             <artifactId>zora-static</artifactId>
         </dependency>
         <!-- zora json -->

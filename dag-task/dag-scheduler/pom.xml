@@ -27,6 +27,10 @@
             <groupId>top.ilovemyhome.zora</groupId>
             <artifactId>zora-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.zora</groupId>
+            <artifactId>zora-httpclient</artifactId>
+        </dependency>
         <!-- zora jdbi -->
         <dependency>
             <groupId>top.ilovemyhome.zora</groupId>
