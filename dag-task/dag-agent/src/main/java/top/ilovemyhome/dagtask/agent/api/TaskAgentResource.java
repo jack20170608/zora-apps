@@ -50,7 +50,7 @@ import java.util.concurrent.ExecutorService;
  * - GET /api/health - Get agent health status with queue statistics
  * - GET /api/ping - Heartbeat check
  */
-@Path(Constants.API_VERSION)
+@Path(Constants.API_AGENT)
 @OpenAPIDefinition(
         info = @Info(
                 title = "DAG Task Agent API",

@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
+import top.ilovemyhome.dagtask.si.Constants;
 import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
@@ -37,7 +38,7 @@ import java.util.List;
  * @see top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient AgentSchedulerClient interface (client side)
  * @see AgentRegistryService AgentRegistryService (business logic layer)
  */
-@Path("/api/v1/agent")
+@Path(Constants.API_SCHEDULER)
 @Produces(MediaType.APPLICATION_JSON)
 public class AgentRegistryApi {
 
@@ -67,7 +68,7 @@ public class AgentRegistryApi {
      * @return HTTP 200 OK if registration succeeded, HTTP 400 Bad Request if failed
      */
     @POST
-    @Path("/register")
+    @Path(Constants.API_REGISTER)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response register(AgentRegisterRequest registration) {
         LOGGER.debug("Received registration request from agent: {}", registration.agentId());
@@ -92,7 +93,7 @@ public class AgentRegistryApi {
      * @return HTTP 200 OK if unregistration succeeded, HTTP 400 Bad Request if failed
      */
     @POST
-    @Path("/unregister")
+    @Path(Constants.API_UNREGISTER)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response unregister(AgentUnregistration unregistration) {
         LOGGER.debug("Received unregistration request from agent: {}", unregistration.agentId());
@@ -118,9 +119,9 @@ public class AgentRegistryApi {
      * @return HTTP 200 OK if result processed successfully, HTTP 400 Bad Request if failed
      */
     @POST
-    @Path("/task/result")
+    @Path(Constants.API_REPORT_RESULT)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response reportTaskResult(List<TaskExecuteResult> taskExecuteResult) {
+    public Response reportResult(List<TaskExecuteResult> taskExecuteResult) {
         LOGGER.debug("Received task result for tasks [{}]", taskExecuteResult);
         boolean success = agentRegistryService.reportTaskResult(taskExecuteResult);
         if (success) {
@@ -144,7 +145,7 @@ public class AgentRegistryApi {
      * @return HTTP 200 OK if status updated successfully, HTTP 400 Bad Request if failed
      */
     @POST
-    @Path("/status")
+    @Path(Constants.API_REPORT_STATUS)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response reportStatus(AgentStatusReport statusReport) {
         LOGGER.trace("Received status report from agent: {}", statusReport.agentId());
