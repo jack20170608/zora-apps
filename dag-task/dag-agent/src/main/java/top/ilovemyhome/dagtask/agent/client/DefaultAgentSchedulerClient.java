@@ -39,8 +39,8 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
 
     public DefaultAgentSchedulerClient(AgentConfiguration config, ObjectMapper objectMapper) {
         this.config = config;
-        this.restClient = RestClient.restClient(false, config.getBaseUrl(), null
-            , (code) -> code < 300, 0, Duration.ofSeconds(5));
+        this.restClient = RestClient.restClient(false, config.getDagServerUrl(), null
+            , (code) -> code < 300, 1, Duration.ofSeconds(5));
         this.objectMapper = objectMapper;
     }
 
