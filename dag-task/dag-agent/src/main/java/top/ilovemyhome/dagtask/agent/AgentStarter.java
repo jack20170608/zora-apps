@@ -22,7 +22,7 @@ public class AgentStarter {
 
     public static void start(AgentConfiguration agentConfig, ObjectMapper objectMapper) {
         Objects.requireNonNull(agentConfig, "agentConfig is required");
-        AgentSchedulerClient agentSchedulerClient = new DefaultAgentSchedulerClient(agentConfig);
+        AgentSchedulerClient agentSchedulerClient = new DefaultAgentSchedulerClient(agentConfig, objectMapper);
         var executor = Executors.newFixedThreadPool(agentConfig.getMaxConcurrentTasks());
 
         // Create and start agent

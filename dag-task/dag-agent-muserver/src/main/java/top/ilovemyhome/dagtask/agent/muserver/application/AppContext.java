@@ -29,7 +29,7 @@ public class AppContext {
         var agentConfiguration = AgentConfiguration.load("dag-agent", config);
         logger.info("Loading agent: {}", agentConfiguration);
         // Create DAG task agent
-        AgentSchedulerClient agentSchedulerClient = new DefaultAgentSchedulerClient(agentConfiguration);
+        AgentSchedulerClient agentSchedulerClient = new DefaultAgentSchedulerClient(agentConfiguration, JacksonUtil.MAPPER);
         var executor = Executors.newFixedThreadPool(agentConfiguration.getMaxConcurrentTasks());
         this.dagTaskAgent = new DagTaskAgentBuilder()
                 .config(agentConfiguration)

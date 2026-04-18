@@ -30,20 +30,6 @@ public class DagTaskAgent {
     private boolean running = false;
 
     /**
-     * Creates a DagTaskAgent with default dependencies.
-     * Uses default AgentSchedulerClient and creates a new fixed thread pool.
-     * Creates a new ObjectMapper internally.
-     */
-    public DagTaskAgent(AgentConfiguration config) {
-        this.config = config;
-        this.agentSchedulerClient = new DefaultAgentSchedulerClient(config);
-        this.taskExecutor = Executors.newFixedThreadPool(config.getMaxConcurrentTasks());
-        ObjectMapper objectMapper = new ObjectMapper();
-        this.executionEngine = new TaskExecutionEngine(config, agentSchedulerClient, taskExecutor, objectMapper);
-        this.resource = new TaskAgentResource(this, executionEngine);
-    }
-
-    /**
      * Creates a DagTaskAgent with provided AgentSchedulerClient and ExecutorService.
      * Creates a new ObjectMapper internally.
      */

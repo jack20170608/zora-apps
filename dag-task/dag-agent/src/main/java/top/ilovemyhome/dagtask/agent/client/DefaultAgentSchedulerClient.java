@@ -36,22 +36,11 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
 
-    /**
-     * Creates a DefaultAgentSchedulerClient with default HttpClient and ObjectMapper.
-     *
-     * @param config the agent configuration
-     */
-    public DefaultAgentSchedulerClient(AgentConfiguration config) {
-        this.config = config;
-        this.restClient = RestClient.restClient(false, config.getBaseUrl(), null
-            , (code) -> code < 300, 3, Duration.ofSeconds(5));
-        this.objectMapper = new ObjectMapper();
-    }
 
     public DefaultAgentSchedulerClient(AgentConfiguration config, ObjectMapper objectMapper) {
         this.config = config;
         this.restClient = RestClient.restClient(false, config.getBaseUrl(), null
-            , (code) -> code < 300, 3, Duration.ofSeconds(5));
+            , (code) -> code < 300, 0, Duration.ofSeconds(5));
         this.objectMapper = objectMapper;
     }
 
