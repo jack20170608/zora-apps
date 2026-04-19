@@ -80,6 +80,7 @@ config-local/
 
 # Claude
 .claude/
+.remember/
 
 # JIRA
 .atlassian/
