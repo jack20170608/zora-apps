@@ -18,6 +18,14 @@ import top.ilovemyhome.dagtask.core.DagSchedulerServer;
 import top.ilovemyhome.dagtask.core.interfaces.AgentRegistryApi;
 import top.ilovemyhome.dagtask.core.interfaces.TaskOrderApi;
 import top.ilovemyhome.dagtask.core.interfaces.TaskTemplateApi;
+import top.ilovemyhome.dagtask.scheduler.auth.AgentTokenAuthFilter;
+import top.ilovemyhome.dagtask.scheduler.auth.DefaultTokenPusher;
+import top.ilovemyhome.dagtask.scheduler.auth.PublicRegistrationApi;
+import top.ilovemyhome.dagtask.scheduler.auth.TokenPusher;
+import top.ilovemyhome.dagtask.scheduler.config.AutoApproveConfig;
+import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
+import top.ilovemyhome.dagtask.scheduler.token.TokenManagementApi;
+import top.ilovemyhome.dagtask.scheduler.token.TokenService;
 import top.ilovemyhome.dagtask.server.interfaces.api.FooUserHandler;
 import top.ilovemyhome.dagtask.server.web.LoginHandler;
 import top.ilovemyhome.dagtask.server.web.security.SecurityHandler;
@@ -25,6 +33,14 @@ import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
 
 import java.net.URI;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -50,14 +66,13 @@ public class WebServerBootstrap {
                 .addResponseCompleteListener(info -> {
                     MuRequest req = info.request();
                     MuResponse resp = info.response();
-                    logger.info("Response completed: success={}, remoteAddr={}, clientAddress={}, req={}, status={}, duration={}."
-                            , info.completedSuccessfully(), req.remoteAddress(), req.clientIP(), req, resp.status(), info.duration());
+                    logger.info("Response completed: success={}, remoteAddr={}, clientAddress={}, req={}, status={}, duration={}.",
+                            info.completedSuccessfully(), req.remoteAddress(), req.clientIP(), req, resp.status(), info.duration());
                 })
                 .withIdleTimeout(30, TimeUnit.MINUTES)
                 .withMaxRequestSize(300_000_000) //300MB
                 .addHandler(Method.GET, "/", (req, res, map) -> res.redirect("/" + contextPath + "/index.html"))
-                .addHandler(Method.GET, "/index.html", (req, res, map) -> res.redirect("/" + contextPath + "/index.html"))
-                .addHandler(Method.POST, "/login", new LoginHandler(appContext))
+                .addHandler(Method.GET, "/index.html", (req, res, map) -> res.redirect("/" + contextPath + "/swagger-ui/index.html?url=/" + contextPath + "/openapi.json"))
                 .addHandler(context(contextPath)
                         .addHandler(ResourceHandlerBuilder.classpathHandler("/swagger-ui"))
                         .addHandler(Method.GET, "/", (req, res, map) -> res.redirect("/" + contextPath + "/swagger-ui/index.html?url=/" + contextPath + "/openapi.json"))
@@ -83,15 +98,29 @@ public class WebServerBootstrap {
     private static RestHandlerBuilder createRestHandler(AppContext appContext) {
 
         DagSchedulerServer schedulerServer = appContext.getBean("dagSchedulerServer", DagSchedulerServer.class);
+        Config config = appContext.getConfig();
+
         TaskOrderApi taskOrderApi = new TaskOrderApi(schedulerServer.getTaskOrderDao());
         TaskTemplateApi taskTemplateApi = new TaskTemplateApi(schedulerServer.getTaskTemplateService());
         AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
+
+        // Create authentication components
+        JwtConfig jwtConfig = readJwtConfig(config);
+        AutoApproveConfig autoApproveConfig = readAutoApproveConfig(config);
+        TokenService tokenService = new TokenService(schedulerServer.getAgentRegistryDao(), jwtConfig);
+        TokenPusher tokenPusher = new DefaultTokenPusher();
+        PublicRegistrationApi publicRegistrationApi = new PublicRegistrationApi(tokenService, tokenPusher, autoApproveConfig);
+        TokenManagementApi tokenManagementApi = new TokenManagementApi(tokenService);
+        AgentTokenAuthFilter agentTokenAuthFilter = new AgentTokenAuthFilter(tokenService);
 
         return RestHandlerBuilder
                 .restHandler(new FooUserHandler(appContext),
                     agentRegistryApi,
                     taskOrderApi,
-                    taskTemplateApi)
+                    taskTemplateApi,
+                    publicRegistrationApi,
+                    tokenManagementApi)
+                .addRequestFilter(agentTokenAuthFilter)
                 .addCustomReader(createJacksonJsonProvider())
                 .addCustomWriter(createJacksonJsonProvider())
                 .withCollectionParameterStrategy(CollectionParameterStrategy.NO_TRANSFORM)
@@ -121,9 +150,62 @@ public class WebServerBootstrap {
                                         externalDocumentationObject()
                                                 .withDescription("Documentation docs")
                                                 .withUrl(URI.create("https//muserver.io/jaxrs"))
-                                                .build()
-                                )
+                                                .build())
                 );
+    }
+
+    private static JwtConfig readJwtConfig(Config config) {
+        Config jwt = config.getConfig("jwt");
+        String issuer = jwt.getString("issuer");
+        String publicKeyPath = jwt.getString("publicKeyLocation");
+        String privateKeyPath = jwt.getString("privateKeyLocation");
+        try {
+            PublicKey publicKey = readPublicKey(publicKeyPath);
+            PrivateKey privateKey = readPrivateKey(privateKeyPath);
+            return new JwtConfig(issuer, publicKey, privateKey);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load JWT keys", e);
+        }
+    }
+
+    private static AutoApproveConfig readAutoApproveConfig(Config config) {
+        if (!config.hasPath("dag-task.auth.auto-approve")) {
+            return new AutoApproveConfig(false, java.util.List.of());
+        }
+        Config autoApprove = config.getConfig("dag-task.auth.auto-approve");
+        boolean enabled = autoApprove.getBoolean("enabled");
+        var patterns = autoApprove.getStringList("patterns");
+        return new AutoApproveConfig(enabled, patterns);
+    }
+
+    private static PublicKey readPublicKey(String path) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        String content = readKeyContent(path);
+        byte[] decoded = Base64.getDecoder().decode(content);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(decoded);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return kf.generatePublic(spec);
+    }
+
+    private static PrivateKey readPrivateKey(String path) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        String content = readKeyContent(path);
+        byte[] decoded = Base64.getDecoder().decode(content);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return kf.generatePrivate(spec);
+    }
+
+    private static String readKeyContent(String path) {
+        java.io.File file = new java.io.File(path);
+        try {
+            return java.nio.file.Files.readString(file.toPath())
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to read key file: " + path, e);
+        }
     }
 
     private static final Logger logger = LoggerFactory.getLogger(WebServerBootstrap.class);

@@ -36,6 +36,16 @@ CREATE TABLE IF NOT EXISTS t_agent_registry (
     running_tasks INTEGER NOT NULL DEFAULT 0,
     -- Total number of tasks finished since agent registration
     finished_tasks INTEGER NOT NULL DEFAULT 0,
+    -- Token authentication metadata (merged from agent_tokens table)
+    token_id VARCHAR(64) NOT NULL UNIQUE,
+    token_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    revoked BOOLEAN NOT NULL DEFAULT FALSE,
+    revoked_at TIMESTAMP WITH TIME ZONE,
+    revoked_by VARCHAR(100)
 
     -- Primary key
     CONSTRAINT pk_t_agent_registry PRIMARY KEY (id),
@@ -51,8 +61,14 @@ CREATE INDEX IF NOT EXISTS idx_t_agent_registry_running
 CREATE INDEX IF NOT EXISTS idx_t_agent_registry_agent_id
     ON t_agent_registry(agent_id);
 
+-- Index for faster token lookup and revocation checking
+CREATE INDEX IF NOT EXISTS idx_t_agent_registry_token_id
+    ON t_agent_registry(token_id);
+CREATE INDEX IF NOT EXISTS idx_t_agent_registry_revoked
+    ON t_agent_registry(revoked);
+
 -- Comment on table
-COMMENT ON TABLE t_agent_registry IS 'Registry of all agent instances that have registered with the DAG scheduling center';
+COMMENT ON TABLE t_agent_registry IS 'Registry of all agent instances that have registered with the DAG scheduling center. Includes authentication token metadata.';
 
 -- Column comments
 COMMENT ON COLUMN t_agent_registry.id IS 'Auto-incrementing surrogate primary key';
@@ -67,3 +83,12 @@ COMMENT ON COLUMN t_agent_registry.running IS 'Whether the agent is currently ac
 COMMENT ON COLUMN t_agent_registry.pending_tasks IS 'Current number of pending tasks in queue';
 COMMENT ON COLUMN t_agent_registry.running_tasks IS 'Current number of actively running tasks';
 COMMENT ON COLUMN t_agent_registry.finished_tasks IS 'Total number of tasks finished since registration';
+COMMENT ON COLUMN t_agent_registry.token_id IS 'Unique token identifier for authentication';
+COMMENT ON COLUMN t_agent_registry.token_name IS 'Human-readable name of the token';
+COMMENT ON COLUMN t_agent_registry.description IS 'Optional description of this agent';
+COMMENT ON COLUMN t_agent_registry.created_by IS 'Administrator or system that created this token';
+COMMENT ON COLUMN t_agent_registry.created_at IS 'Timestamp when the token was created';
+COMMENT ON COLUMN t_agent_registry.expires_at IS 'Timestamp when the token expires';
+COMMENT ON COLUMN t_agent_registry.revoked IS 'Whether this token has been revoked';
+COMMENT ON COLUMN t_agent_registry.revoked_at IS 'Timestamp when the token was revoked';
+COMMENT ON COLUMN t_agent_registry.revoked_by IS 'Administrator that revoked this token';
