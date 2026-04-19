@@ -41,6 +41,11 @@
             <groupId>top.ilovemyhome.zora</groupId>
             <artifactId>zora-json</artifactId>
         </dependency>
+        <!-- zora muserver security provides jwt -->
+        <dependency>
+            <groupId>top.ilovemyhome.zora</groupId>
+            <artifactId>zora-muserver</artifactId>
+        </dependency>
 
         <!-- SnakeYAML for YAML configuration parsing -->
         <dependency>
