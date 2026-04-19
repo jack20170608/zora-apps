@@ -19,6 +19,8 @@ public class AgentConfiguration {
     private int maxConcurrentTasks = 4;
     private int maxPendingTasks = 100;
     private String deadLetterPersistencePath;
+    private String tokenFilePath = null;
+    private String token = null;
     private List<String> supportedExecutionKeys = new ArrayList<>();
 
     // Required for Typesafe Config bean reflection
@@ -33,6 +35,8 @@ public class AgentConfiguration {
         this.maxConcurrentTasks = builder.maxConcurrentTasks;
         this.maxPendingTasks = builder.maxPendingTasks;
         this.deadLetterPersistencePath = builder.deadLetterPersistencePath;
+        this.tokenFilePath = builder.tokenFilePath;
+        this.token = builder.token;
         if (builder.supportedExecutionKeys != null) {
             this.supportedExecutionKeys = new ArrayList<>(builder.supportedExecutionKeys);
         }
@@ -103,6 +107,22 @@ public class AgentConfiguration {
         this.deadLetterPersistencePath = deadLetterPersistencePath;
     }
 
+    public String getTokenFilePath() {
+        return tokenFilePath;
+    }
+
+    public void setTokenFilePath(String tokenFilePath) {
+        this.tokenFilePath = tokenFilePath;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
     public String getBaseUrl() {
         return agentUrl;
     }
@@ -144,6 +164,8 @@ public class AgentConfiguration {
                 ", maxConcurrentTasks=" + maxConcurrentTasks +
                 ", maxPendingTasks=" + maxPendingTasks +
                 ", deadLetterPersistencePath='" + deadLetterPersistencePath + '\'' +
+                ", tokenFilePath='" + tokenFilePath + '\'' +
+                ", hasToken=" + (token != null && !token.isEmpty()) +
                 ", supportedExecutionKeysCount=" + supportedExecutionKeys.size() +
                 '}';
     }
@@ -157,6 +179,8 @@ public class AgentConfiguration {
         private int maxConcurrentTasks = 4;
         private int maxPendingTasks = 100;
         private String deadLetterPersistencePath;
+        private String tokenFilePath;
+        private String token;
         private List<String> supportedExecutionKeys;
 
         public Builder agentUrl(String agentUrl) {
@@ -191,6 +215,16 @@ public class AgentConfiguration {
 
         public Builder deadLetterPersistencePath(String deadLetterPersistencePath) {
             this.deadLetterPersistencePath = deadLetterPersistencePath;
+            return this;
+        }
+
+        public Builder tokenFilePath(String tokenFilePath) {
+            this.tokenFilePath = tokenFilePath;
+            return this;
+        }
+
+        public Builder token(String token) {
+            this.token = token;
             return this;
         }
 

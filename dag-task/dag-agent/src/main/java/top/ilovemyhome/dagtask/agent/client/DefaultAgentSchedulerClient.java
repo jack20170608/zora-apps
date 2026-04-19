@@ -54,8 +54,9 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
     public Response register(AgentRegisterRequest registration) {
         try {
             String json = objectMapper.writeValueAsString(registration);
+            Map<String, String> headers = withAuthHeader(Map.of("Content-Type", MediaType.APPLICATION_JSON));
             HttpResponse<String> response = restClient.post(Constants.API_SCHEDULER + Constants.API_REGISTER, null
-                , Map.of("Content-Type", MediaType.APPLICATION_JSON), json).get(60, TimeUnit.SECONDS);
+                , headers, json).get(60, TimeUnit.SECONDS);
             boolean success = response.statusCode() >= 200 && response.statusCode() < 300;
             if (success) {
                 int taskCount = registration.supportedExecutionKeys().size();
@@ -91,8 +92,9 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
     public Response unregister(AgentUnregistration unregistration) {
         try {
             String json = objectMapper.writeValueAsString(unregistration);
+            Map<String, String> headers = withAuthHeader(Map.of("Content-Type", MediaType.APPLICATION_JSON));
             HttpResponse<String> response = restClient.post(Constants.API_SCHEDULER + Constants.API_UNREGISTER, null
-                , Map.of("Content-Type", MediaType.APPLICATION_JSON), json).get(60, TimeUnit.SECONDS);
+                , headers, json).get(60, TimeUnit.SECONDS);
             boolean success = response.statusCode() >= 200 && response.statusCode() < 300;
             if (success) {
                 LOGGER.info("Agent {} successfully unregistered from DAG server at {}",
@@ -127,8 +129,9 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
     public Response reportTaskResult(List<TaskExecuteResult> results) {
         try {
             String json = objectMapper.writeValueAsString(results);
+            Map<String, String> headers = withAuthHeader(Map.of("Content-Type", MediaType.APPLICATION_JSON));
             HttpResponse<String> response = restClient.post(Constants.API_SCHEDULER + Constants.API_REPORT_RESULT, null
-                , Map.of("Content-Type", MediaType.APPLICATION_JSON), json).get(60, TimeUnit.SECONDS);
+                , headers, json).get(60, TimeUnit.SECONDS);
             boolean success = response.statusCode() >= 200 && response.statusCode() < 300;
             if (success) {
                 LOGGER.debug("Result {} reported successfully", json);
@@ -150,6 +153,22 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
                 .entity(e.getMessage())
                 .build();
         }
+    }
+
+    /**
+     * Create a headers map with the Authorization header if token is available.
+     *
+     * @param existingHeaders the existing headers to include
+     * @return merged headers map with Authorization header if token exists
+     */
+    private Map<String, String> withAuthHeader(Map<String, String> existingHeaders) {
+        String token = config.getToken();
+        if (token == null || token.isBlank()) {
+            return existingHeaders;
+        }
+        Map<String, String> headers = new java.util.HashMap<>(existingHeaders);
+        headers.put("Authorization", "Bearer " + token);
+        return headers;
     }
 
 
