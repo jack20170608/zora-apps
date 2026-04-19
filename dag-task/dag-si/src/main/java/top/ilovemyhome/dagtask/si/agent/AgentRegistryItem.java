@@ -29,6 +29,16 @@ public class AgentRegistryItem {
     private int pendingTasks;
     private int runningTasks;
     private int finishedTasks;
+    // Token authentication metadata (merged from AgentToken)
+    private String tokenId;
+    private String tokenName;
+    private String description;
+    private String createdBy;
+    private Instant createdAt;
+    private Instant expiresAt;
+    private boolean revoked;
+    private Instant revokedAt;
+    private String revokedBy;
 
     /**
      * Field definitions for database column mapping.
@@ -45,7 +55,16 @@ public class AgentRegistryItem {
         running("running"),
         pendingTasks("pending_tasks"),
         runningTasks("running_tasks"),
-        finishedTasks("finished_tasks");
+        finishedTasks("finished_tasks"),
+        tokenId("token_id"),
+        tokenName("token_name"),
+        description("description"),
+        createdBy("created_by"),
+        createdAt("created_at"),
+        expiresAt("expires_at"),
+        revoked("revoked"),
+        revokedAt("revoked_at"),
+        revokedBy("revoked_by");
 
         private final String dbColumn;
         private final boolean isId;
@@ -75,7 +94,10 @@ public class AgentRegistryItem {
 
     public static final String ID_FIELD = Field.id.name();
 
-    private AgentRegistryItem(Long id, String agentId, String agentUrl, int maxConcurrentTasks, int maxPendingTasks, List<String> supportedExecutionKeys, Instant registeredAt, Instant lastHeartbeatAt, boolean running, int pendingTasks, int runningTasks, int finishedTasks) {
+    private AgentRegistryItem(Long id, String agentId, String agentUrl, int maxConcurrentTasks, int maxPendingTasks, List<String> supportedExecutionKeys,
+                              Instant registeredAt, Instant lastHeartbeatAt, boolean running, int pendingTasks, int runningTasks, int finishedTasks,
+                              String tokenId, String tokenName, String description, String createdBy, Instant createdAt, Instant expiresAt,
+                              boolean revoked, Instant revokedAt, String revokedBy) {
         this.id = id;
         this.agentId = agentId;
         this.agentUrl = agentUrl;
@@ -88,8 +110,50 @@ public class AgentRegistryItem {
         this.pendingTasks = pendingTasks;
         this.runningTasks = runningTasks;
         this.finishedTasks = finishedTasks;
+        this.tokenId = tokenId;
+        this.tokenName = tokenName;
+        this.description = description;
+        this.createdBy = createdBy;
+        this.createdAt = createdAt;
+        this.expiresAt = expiresAt;
+        this.revoked = revoked;
+        this.revokedAt = revokedAt;
+        this.revokedBy = revokedBy;
     }
 
+    public static AgentRegistryItem fromRegistration(AgentRegisterRequest registration,
+                                                      String tokenId, String tokenName, String description,
+                                                      String createdBy, Instant createdAt, Instant expiresAt) {
+        Instant now = Instant.now();
+        return builder()
+            .withId(null)
+            .withAgentId(registration.agentId())
+            .withAgentUrl(registration.agentUrl())
+            .withMaxConcurrentTasks(registration.maxConcurrentTasks())
+            .withMaxPendingTasks(registration.maxPendingTasks())
+            .withSupportedExecutionKeys(registration.supportedExecutionKeys())
+            .withRegisteredAt(now)
+            .withLastHeartbeatAt(now)
+            .withRunning(true)
+            .withPendingTasks(0)
+            .withRunningTasks(0)
+            .withFinishedTasks(0)
+            .withTokenId(tokenId)
+            .withTokenName(tokenName)
+            .withDescription(description)
+            .withCreatedBy(createdBy)
+            .withCreatedAt(createdAt)
+            .withExpiresAt(expiresAt)
+            .withRevoked(false)
+            .withRevokedAt(null)
+            .withRevokedBy(null)
+            .build();
+    }
+
+    /**
+     * @deprecated Use the version with token parameters for new code
+     */
+    @Deprecated
     public static AgentRegistryItem fromRegistration(AgentRegisterRequest registration) {
         Instant now = Instant.now();
         return builder()
@@ -105,6 +169,16 @@ public class AgentRegistryItem {
             .withPendingTasks(0)
             .withRunningTasks(0)
             .withFinishedTasks(0)
+            // Token fields must be set explicitly by caller
+            .withTokenId("")
+            .withTokenName("")
+            .withDescription(null)
+            .withCreatedBy("")
+            .withCreatedAt(now)
+            .withExpiresAt(now.plus(365, java.time.temporal.ChronoUnit.DAYS))
+            .withRevoked(false)
+            .withRevokedAt(null)
+            .withRevokedBy(null)
             .build();
     }
 
@@ -164,7 +238,16 @@ public class AgentRegistryItem {
             .withRunning(info.isRunning())
             .withPendingTasks(info.getPendingTasks())
             .withRunningTasks(info.getRunningTasks())
-            .withFinishedTasks(info.getFinishedTasks());
+            .withFinishedTasks(info.getFinishedTasks())
+            .withTokenId(info.getTokenId())
+            .withTokenName(info.getTokenName())
+            .withDescription(info.getDescription())
+            .withCreatedBy(info.getCreatedBy())
+            .withCreatedAt(info.getCreatedAt())
+            .withExpiresAt(info.getExpiresAt())
+            .withRevoked(info.isRevoked())
+            .withRevokedAt(info.getRevokedAt())
+            .withRevokedBy(info.getRevokedBy());
     }
 
     // Getters and Setters
@@ -265,6 +348,78 @@ public class AgentRegistryItem {
         this.finishedTasks = finishedTasks;
     }
 
+    public String getTokenId() {
+        return tokenId;
+    }
+
+    public void setTokenId(String tokenId) {
+        this.tokenId = tokenId;
+    }
+
+    public String getTokenName() {
+        return tokenName;
+    }
+
+    public void setTokenName(String tokenName) {
+        this.tokenName = tokenName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(Instant expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
+    public boolean isRevoked() {
+        return revoked;
+    }
+
+    public void setRevoked(boolean revoked) {
+        this.revoked = revoked;
+    }
+
+    public Instant getRevokedAt() {
+        return revokedAt;
+    }
+
+    public void setRevokedAt(Instant revokedAt) {
+        this.revokedAt = revokedAt;
+    }
+
+    public String getRevokedBy() {
+        return revokedBy;
+    }
+
+    public void setRevokedBy(String revokedBy) {
+        this.revokedBy = revokedBy;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -276,19 +431,30 @@ public class AgentRegistryItem {
             && pendingTasks == agentInfo.pendingTasks
             && runningTasks == agentInfo.runningTasks
             && finishedTasks == agentInfo.finishedTasks
+            && revoked == agentInfo.revoked
             && Objects.equals(id, agentInfo.id)
             && Objects.equals(agentId, agentInfo.agentId)
             && Objects.equals(agentUrl, agentInfo.agentUrl)
             && Objects.equals(supportedExecutionKeys, agentInfo.supportedExecutionKeys)
             && Objects.equals(registeredAt, agentInfo.registeredAt)
-            && Objects.equals(lastHeartbeatAt, agentInfo.lastHeartbeatAt);
+            && Objects.equals(lastHeartbeatAt, agentInfo.lastHeartbeatAt)
+            && Objects.equals(tokenId, agentInfo.tokenId)
+            && Objects.equals(tokenName, agentInfo.tokenName)
+            && Objects.equals(description, agentInfo.description)
+            && Objects.equals(createdBy, agentInfo.createdBy)
+            && Objects.equals(createdAt, agentInfo.createdAt)
+            && Objects.equals(expiresAt, agentInfo.expiresAt)
+            && Objects.equals(revokedAt, agentInfo.revokedAt)
+            && Objects.equals(revokedBy, agentInfo.revokedBy);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id, agentId, agentUrl, maxConcurrentTasks, maxPendingTasks,
             supportedExecutionKeys, registeredAt, lastHeartbeatAt, running,
-            pendingTasks, runningTasks, finishedTasks);
+            pendingTasks, runningTasks, finishedTasks,
+            tokenId, tokenName, description, createdBy, createdAt, expiresAt,
+            revoked, revokedAt, revokedBy);
     }
 
     @Override
@@ -306,6 +472,15 @@ public class AgentRegistryItem {
             ", pendingTasks=" + pendingTasks +
             ", runningTasks=" + runningTasks +
             ", finishedTasks=" + finishedTasks +
+            ", tokenId='" + tokenId + '\'' +
+            ", tokenName='" + tokenName + '\'' +
+            ", description='" + description + '\'' +
+            ", createdBy='" + createdBy + '\'' +
+            ", createdAt=" + createdAt +
+            ", expiresAt=" + expiresAt +
+            ", revoked=" + revoked +
+            ", revokedAt=" + revokedAt +
+            ", revokedBy='" + revokedBy + '\'' +
             '}';
     }
 
@@ -325,6 +500,15 @@ public class AgentRegistryItem {
         private int pendingTasks;
         private int runningTasks;
         private int finishedTasks;
+        private String tokenId;
+        private String tokenName;
+        private String description;
+        private String createdBy;
+        private Instant createdAt;
+        private Instant expiresAt;
+        private boolean revoked;
+        private Instant revokedAt;
+        private String revokedBy;
 
         private Builder() {
         }
@@ -389,6 +573,51 @@ public class AgentRegistryItem {
             return this;
         }
 
+        public Builder withTokenId(String tokenId) {
+            this.tokenId = tokenId;
+            return this;
+        }
+
+        public Builder withTokenName(String tokenName) {
+            this.tokenName = tokenName;
+            return this;
+        }
+
+        public Builder withDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder withCreatedBy(String createdBy) {
+            this.createdBy = createdBy;
+            return this;
+        }
+
+        public Builder withCreatedAt(Instant createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder withExpiresAt(Instant expiresAt) {
+            this.expiresAt = expiresAt;
+            return this;
+        }
+
+        public Builder withRevoked(boolean revoked) {
+            this.revoked = revoked;
+            return this;
+        }
+
+        public Builder withRevokedAt(Instant revokedAt) {
+            this.revokedAt = revokedAt;
+            return this;
+        }
+
+        public Builder withRevokedBy(String revokedBy) {
+            this.revokedBy = revokedBy;
+            return this;
+        }
+
         /**
          * Builds a new AgentRegistryItem with the current builder values.
          *
@@ -397,7 +626,8 @@ public class AgentRegistryItem {
         public AgentRegistryItem build() {
             return new AgentRegistryItem(id, agentId, agentUrl, maxConcurrentTasks, maxPendingTasks
                 , supportedExecutionKeys, registeredAt, lastHeartbeatAt, running, pendingTasks
-                , runningTasks, finishedTasks);
+                , runningTasks, finishedTasks, tokenId, tokenName, description, createdBy
+                , createdAt, expiresAt, revoked, revokedAt, revokedBy);
         }
     }
 }

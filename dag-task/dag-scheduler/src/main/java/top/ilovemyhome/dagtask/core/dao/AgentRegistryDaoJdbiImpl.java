@@ -103,6 +103,23 @@ public class AgentRegistryDaoJdbiImpl extends BaseDaoJdbiImpl<AgentRegistryItem>
         return count(sql, Map.of("agentId", agentId), null) > 0;
     }
 
+    @Override
+    public java.util.Optional<AgentRegistryItem> findByTokenId(String tokenId) {
+        Objects.requireNonNull(tokenId, "tokenId must not be null");
+        String sql = String.format("select * from %s where token_id = :tokenId", table.getName());
+        return find(sql, Map.of("tokenId", tokenId), null).stream().findAny();
+    }
+
+    @Override
+    public void revokeToken(String tokenId, String revokedBy) {
+        Objects.requireNonNull(tokenId, "tokenId must not be null");
+        String sql = String.format(
+            "update %s set revoked = true, revoked_at = NOW(), revoked_by = :revokedBy where token_id = :tokenId",
+            table.getName()
+        );
+        update(sql, Map.of("tokenId", tokenId, "revokedBy", revokedBy), null);
+    }
+
     /**
      * RowMapper for mapping database rows to {@link AgentRegistryItem} objects.
      */
@@ -122,6 +139,17 @@ public class AgentRegistryDaoJdbiImpl extends BaseDaoJdbiImpl<AgentRegistryItem>
                 .withPendingTasks(rs.getInt(AgentRegistryItem.Field.pendingTasks.getDbColumn()))
                 .withRunningTasks(rs.getInt(AgentRegistryItem.Field.runningTasks.getDbColumn()))
                 .withFinishedTasks(rs.getInt(AgentRegistryItem.Field.finishedTasks.getDbColumn()))
+                .withTokenId(rs.getString(AgentRegistryItem.Field.tokenId.getDbColumn()))
+                .withTokenName(rs.getString(AgentRegistryItem.Field.tokenName.getDbColumn()))
+                .withDescription(rs.getString(AgentRegistryItem.Field.description.getDbColumn()))
+                .withCreatedBy(rs.getString(AgentRegistryItem.Field.createdBy.getDbColumn()))
+                .withCreatedAt(rs.getTimestamp(AgentRegistryItem.Field.createdAt.getDbColumn()) != null
+                    ? rs.getTimestamp(AgentRegistryItem.Field.createdAt.getDbColumn()).toInstant() : null)
+                .withExpiresAt(rs.getTimestamp(AgentRegistryItem.Field.expiresAt.getDbColumn()).toInstant())
+                .withRevoked(rs.getBoolean(AgentRegistryItem.Field.revoked.getDbColumn()))
+                .withRevokedAt(rs.getTimestamp(AgentRegistryItem.Field.revokedAt.getDbColumn()) != null
+                    ? rs.getTimestamp(AgentRegistryItem.Field.revokedAt.getDbColumn()).toInstant() : null)
+                .withRevokedBy(rs.getString(AgentRegistryItem.Field.revokedBy.getDbColumn()))
                 .build();
         }
 

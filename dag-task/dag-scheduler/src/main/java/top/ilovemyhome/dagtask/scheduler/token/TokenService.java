@@ -4,6 +4,8 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
 import top.ilovemyhome.dagtask.si.auth.TokenInfo;
+import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
+import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
 
 import java.security.PrivateKey;
 import java.time.Instant;
@@ -17,11 +19,11 @@ import java.util.Optional;
 
 public class TokenService {
 
-    private final AgentTokenDao agentTokenDao;
+    private final AgentRegistryDao agentRegistryDao;
     private final JwtConfig jwtConfig;
 
-    public TokenService(AgentTokenDao agentTokenDao, JwtConfig jwtConfig) {
-        this.agentTokenDao = agentTokenDao;
+    public TokenService(AgentRegistryDao agentRegistryDao, JwtConfig jwtConfig) {
+        this.agentRegistryDao = agentRegistryDao;
         this.jwtConfig = jwtConfig;
     }
 
@@ -38,20 +40,6 @@ public class TokenService {
         String tokenId = generateId();
         Instant issuedAt = Instant.now();
         Instant expiresAt = issuedAt.plus(expiresInDays, ChronoUnit.DAYS);
-
-        AgentToken token = new AgentToken(
-            null,
-            tokenId,
-            name,
-            description,
-            createdBy,
-            issuedAt,
-            expiresAt,
-            false,
-            null,
-            null
-        );
-        agentTokenDao.insert(token);
 
         return new GenerateTokenResult(tokenId, name, description, issuedAt, expiresAt, createdBy);
     }
@@ -77,38 +65,34 @@ public class TokenService {
                 .parseClaimsJws(jwt);
 
             String tokenId = claims.getBody().getId();
-            Optional<AgentToken> tokenOpt = agentTokenDao.findByTokenId(tokenId);
+            Optional<AgentRegistryItem> agentOpt = agentRegistryDao.findByTokenId(tokenId);
 
             // Token must exist and not be revoked
-            return tokenOpt.isPresent() && !tokenOpt.get().revoked();
+            return agentOpt.isPresent() && !agentOpt.get().isRevoked();
         } catch (Exception e) {
             return false;
         }
     }
 
     public void revokeToken(String tokenId, String revokedBy) {
-        agentTokenDao.revoke(tokenId, revokedBy);
+        agentRegistryDao.revokeToken(tokenId, revokedBy);
     }
 
     public List<TokenInfo> listTokens() {
-        List<AgentToken> tokens = agentTokenDao.findAll();
+        List<AgentRegistryItem> agents = agentRegistryDao.findAll();
         List<TokenInfo> result = new ArrayList<>();
-        for (AgentToken token : tokens) {
+        for (AgentRegistryItem agent : agents) {
             result.add(new TokenInfo(
-                token.tokenId(),
-                token.name(),
-                token.description(),
-                token.createdBy(),
-                token.createdAt(),
-                token.expiresAt(),
-                token.revoked()
+                agent.getTokenId(),
+                agent.getTokenName(),
+                agent.getDescription(),
+                agent.getCreatedBy(),
+                agent.getCreatedAt(),
+                agent.getExpiresAt(),
+                agent.isRevoked()
             ));
         }
         return result;
-    }
-
-    public void saveToken(AgentToken token) {
-        agentTokenDao.insert(token);
     }
 
     private String generateId() {

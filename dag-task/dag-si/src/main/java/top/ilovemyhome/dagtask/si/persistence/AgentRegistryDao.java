@@ -53,4 +53,20 @@ public interface AgentRegistryDao extends BaseDao<AgentRegistryItem> {
      * @return true if the agent exists, false otherwise
      */
     boolean exists(String agentId);
+
+    /**
+     * Find an agent by token ID.
+     *
+     * @param tokenId the unique token identifier
+     * @return the agent registry item if found, empty otherwise
+     */
+    java.util.Optional<AgentRegistryItem> findByTokenId(String tokenId);
+
+    /**
+     * Revoke a token by token ID.
+     *
+     * @param tokenId the unique token identifier
+     * @param revokedBy the administrator who revoked this token
+     */
+    void revokeToken(String tokenId, String revokedBy);
 }
