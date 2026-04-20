@@ -102,6 +102,7 @@ mvn clean install
 
 - `docs/ARCHITECTURE-*.md` - 架构设计文档
 - `docs/FEATURE-*.md` - 功能特性文档
+- `docs/Test-*.md` - 测试方案和用例文档
 
 ## 版本管理
 
