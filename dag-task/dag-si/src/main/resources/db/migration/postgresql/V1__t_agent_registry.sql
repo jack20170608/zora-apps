@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS t_agent_registry (
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     revoked BOOLEAN NOT NULL DEFAULT FALSE,
     revoked_at TIMESTAMP WITH TIME ZONE,
-    revoked_by VARCHAR(100)
+    revoked_by VARCHAR(100),
 
     -- Primary key
     CONSTRAINT pk_t_agent_registry PRIMARY KEY (id),
