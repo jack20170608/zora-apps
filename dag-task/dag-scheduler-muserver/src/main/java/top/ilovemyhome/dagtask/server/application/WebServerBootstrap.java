@@ -195,16 +195,28 @@ public class WebServerBootstrap {
     }
 
     private static String readKeyContent(String path) {
-        java.io.File file = new java.io.File(path);
+        String content;
         try {
-            return java.nio.file.Files.readString(file.toPath())
+            if (path.startsWith("classpath:")) {
+                String resourcePath = path.substring("classpath:".length());
+                try (java.io.InputStream is = WebServerBootstrap.class.getClassLoader().getResourceAsStream(resourcePath)) {
+                    if (is == null) {
+                        throw new RuntimeException("Resource not found in classpath: " + resourcePath);
+                    }
+                    content = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                }
+            } else {
+                java.io.File file = new java.io.File(path);
+                content = java.nio.file.Files.readString(file.toPath());
+            }
+            return content
                 .replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")
                 .replace("-----BEGIN PRIVATE KEY-----", "")
                 .replace("-----END PRIVATE KEY-----", "")
                 .replaceAll("\\s", "");
         } catch (java.io.IOException e) {
-            throw new RuntimeException("Failed to read key file: " + path, e);
+            throw new RuntimeException("Failed to read key: " + path, e);
         }
     }
 
