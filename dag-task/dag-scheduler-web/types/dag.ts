@@ -19,7 +19,7 @@ export interface DagValidationResult {
   errors: string[];
 }
 
-// Standard node types available in the palette
+/** Standard node types available in the palette */
 export interface NodeTypeInfo {
   type: string;
   label: string;

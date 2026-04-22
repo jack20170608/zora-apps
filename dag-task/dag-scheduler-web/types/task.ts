@@ -1,10 +1,15 @@
+import type { LucideIcon } from 'lucide-react';
+
+/** Task execution status - aligned with backend TaskStatus enum */
+export type TaskStatus = 'INIT' | 'DISPATCHED' | 'RUNNING' | 'SUCCESS' | 'ERROR' | 'TIMEOUT' | 'SKIPPED' | 'HOLD' | 'CANCELLED';
+
 export interface TaskExecution {
   id: number;
   orderKey: string;
   orderName: string;
   templateKey: string;
   templateVersion: string;
-  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  status: TaskStatus;
   startTime: string;
   endTime?: string;
   durationMs?: number;
@@ -32,4 +37,11 @@ export interface DashboardStats {
   successRate: number;
   onlineAgents: number;
   totalAgents: number;
+}
+
+export interface StatCardItem {
+  title: string;
+  value: string | number;
+  icon: LucideIcon;
+  description?: string;
 }

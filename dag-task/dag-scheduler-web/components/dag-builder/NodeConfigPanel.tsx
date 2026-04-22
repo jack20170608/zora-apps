@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { DagNode } from "@/types/dag";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,9 +21,33 @@ export function NodeConfigPanel({ node, onChange, onDelete }: NodeConfigPanelPro
   useEffect(() => {
     if (node) {
       setLabel(node.data.label);
-      setConfig(node.data.config);
+      setConfig({ ...node.data.config });
     }
-  }, [node]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node?.id]);
+
+  const handleConfigChange = useCallback((key: string, value: string) => {
+    setConfig((prev) => {
+      const newConfig = { ...prev, [key]: value };
+      if (node) {
+        onChange(node.id, { config: newConfig });
+      }
+      return newConfig;
+    });
+  }, [node, onChange]);
+
+  const handleLabelChange = useCallback((value: string) => {
+    setLabel(value);
+    if (node) {
+      onChange(node.id, { label: value });
+    }
+  }, [node, onChange]);
+
+  const handleDelete = useCallback(() => {
+    if (node && window.confirm(`Delete node "${node.data.label}"?`)) {
+      onDelete(node.id);
+    }
+  }, [node, onDelete]);
 
   if (!node) {
     return (
@@ -40,20 +64,7 @@ export function NodeConfigPanel({ node, onChange, onDelete }: NodeConfigPanelPro
     );
   }
 
-  const handleConfigChange = (key: string, value: string) => {
-    const newConfig = { ...config, [key]: value };
-    setConfig(newConfig);
-    onChange(node.id, { config: newConfig });
-  };
-
-  const handleLabelChange = (value: string) => {
-    setLabel(value);
-    onChange(node.id, { label: value });
-  };
-
-  const handleDelete = () => {
-    onDelete(node.id);
-  };
+  const configEntries = Object.entries(config);
 
   return (
     <Card className="w-72 h-full overflow-y-auto">
@@ -74,19 +85,19 @@ export function NodeConfigPanel({ node, onChange, onDelete }: NodeConfigPanelPro
           />
         </div>
 
-        {Object.entries(config).map(([key, value]) => (
-          <div key={key} className="space-y-2">
-            <Label htmlFor={`config-${key}`}>{key}</Label>
-            <Input
-              id={`config-${key}`}
-              value={value}
-              onChange={(e) => handleConfigChange(key, e.target.value)}
-              placeholder={`Enter ${key}`}
-            />
-          </div>
-        ))}
-
-        {Object.keys(config).length === 0 && (
+        {configEntries.length > 0 ? (
+          configEntries.map(([key, value]) => (
+            <div key={key} className="space-y-2">
+              <Label htmlFor={`config-${key}`}>{key}</Label>
+              <Input
+                id={`config-${key}`}
+                value={value}
+                onChange={(e) => handleConfigChange(key, e.target.value)}
+                placeholder={`Enter ${key}`}
+              />
+            </div>
+          ))
+        ) : (
           <p className="text-xs text-muted-foreground italic">
             No configuration properties defined.
           </p>

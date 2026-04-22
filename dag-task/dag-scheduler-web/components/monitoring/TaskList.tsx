@@ -12,8 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { taskApi } from "@/lib/api-client";
-import type { TaskExecution } from "@/types/task";
-import { cn } from "@/lib/utils";
+import type { TaskExecution, TaskStatus } from "@/types/task";
+import { AlertTriangle } from "lucide-react";
 
 // Mock data for when backend API doesn't exist yet
 const MOCK_TASKS: TaskExecution[] = [
@@ -23,7 +23,7 @@ const MOCK_TASKS: TaskExecution[] = [
     orderName: "Production ETL Daily Run",
     templateKey: "etl-data-processing",
     templateVersion: "1.1.0",
-    status: "COMPLETED",
+    status: "SUCCESS",
     startTime: new Date(Date.now() - 3600000).toISOString(),
     durationMs: 12450,
     agentId: "default-agent-001",
@@ -34,7 +34,7 @@ const MOCK_TASKS: TaskExecution[] = [
     orderName: "Daily Backup - Users Database",
     templateKey: "daily-database-backup",
     templateVersion: "1.0.0",
-    status: "COMPLETED",
+    status: "SUCCESS",
     startTime: new Date(Date.now() - 7200000).toISOString(),
     durationMs: 8320,
     agentId: "python-worker-002",
@@ -55,7 +55,7 @@ const MOCK_TASKS: TaskExecution[] = [
     orderName: "Cleanup Old Backup Files",
     templateKey: "daily-database-backup",
     templateVersion: "1.0.0",
-    status: "FAILED",
+    status: "ERROR",
     startTime: new Date(Date.now() - 10800000).toISOString(),
     endTime: new Date(Date.now() - 10740000).toISOString(),
     durationMs: 60000,
@@ -63,13 +63,32 @@ const MOCK_TASKS: TaskExecution[] = [
   },
 ];
 
-const statusVariants: Record<TaskExecution["status"], any> = {
-  PENDING: { label: "Pending", variant: "outline" },
+const statusConfig: Record<TaskStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'danger' }> = {
+  INIT: { label: "Init", variant: "outline" },
+  DISPATCHED: { label: "Dispatched", variant: "secondary" },
   RUNNING: { label: "Running", variant: "warning" },
-  COMPLETED: { label: "Completed", variant: "success" },
-  FAILED: { label: "Failed", variant: "danger" },
+  SUCCESS: { label: "Success", variant: "success" },
+  ERROR: { label: "Error", variant: "danger" },
+  TIMEOUT: { label: "Timeout", variant: "danger" },
+  SKIPPED: { label: "Skipped", variant: "outline" },
+  HOLD: { label: "Hold", variant: "secondary" },
   CANCELLED: { label: "Cancelled", variant: "outline" },
 };
+
+function formatDuration(ms: number | undefined): string {
+  if (ms === undefined || ms === null) return "-";
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+function formatDateTime(isoString: string | undefined): string {
+  if (!isoString) return "-";
+  try {
+    return new Date(isoString).toLocaleString();
+  } catch {
+    return isoString;
+  }
+}
 
 export function TaskList() {
   const { data, isLoading, error } = useQuery({
@@ -78,66 +97,74 @@ export function TaskList() {
     retry: false,
   });
 
-  if (isLoading) {
-    return <div className="p-4 text-muted-foreground">Loading tasks...</div>;
-  }
-
-  // Use mock data if API request fails (backend doesn't have endpoint yet)
-  const tasks: TaskExecution[] = error ? MOCK_TASKS : (data?.data ?? []);
+  const isUsingMock = !!error;
+  const tasks: TaskExecution[] = isUsingMock ? MOCK_TASKS : (data?.data ?? []);
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Recent Executions</CardTitle>
+        {isUsingMock && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-600">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>Mock data</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Template</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Started</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead>Agent</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tasks.length === 0 ? (
+        {isLoading ? (
+          <div className="p-4 text-muted-foreground text-center">Loading tasks...</div>
+        ) : (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  No task executions found.
-                </TableCell>
+                <TableHead>ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Template</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Started</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Agent</TableHead>
               </TableRow>
-            ) : (
-              tasks.map((task) => {
-                const statusInfo = statusVariants[task.status];
-                return (
-                  <TableRow key={task.id}>
-                    <TableCell>{task.id}</TableCell>
-                    <TableCell className="font-medium">{task.orderName}</TableCell>
-                    <TableCell>
-                      {task.templateKey} v{task.templateVersion}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusInfo.variant}>
-                        {statusInfo.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(task.startTime).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      {task.durationMs ? `${(task.durationMs / 1000).toFixed(1)}s` : "-"}
-                    </TableCell>
-                    <TableCell>{task.agentId ?? "-"}</TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {tasks.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    No task executions found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                tasks.map((task) => {
+                  const statusInfo = statusConfig[task.status] ?? { label: task.status, variant: "outline" as const };
+                  return (
+                    <TableRow key={task.id}>
+                      <TableCell className="font-mono text-xs">{task.id}</TableCell>
+                      <TableCell className="font-medium">{task.orderName}</TableCell>
+                      <TableCell>
+                        <span className="text-xs text-muted-foreground">
+                          {task.templateKey} v{task.templateVersion}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusInfo.variant}>
+                          {statusInfo.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {formatDateTime(task.startTime)}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {formatDuration(task.durationMs)}
+                      </TableCell>
+                      <TableCell className="text-xs">{task.agentId ?? "-"}</TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   );

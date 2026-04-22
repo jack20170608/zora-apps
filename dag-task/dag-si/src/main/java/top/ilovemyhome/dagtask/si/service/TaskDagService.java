@@ -8,30 +8,28 @@ import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 
 import java.util.List;
 
+/**
+ * DAG task management service - responsible for DAG task record lifecycle management.
+ * <p>
+ * This interface focuses on task record CRUD and query operations.
+ * Runtime scheduling operations (start, runNow, forceOk, kill, hold) are handled by
+ * {@link DagScheduleService}.
+ * </p>
+ */
 public interface TaskDagService {
-    //1.0 query related
+
+    // 1.0 query related
     List<TaskRecord> findByOrderKey(String orderKey);
+
     List<TaskRecord> findByStatus(TaskStatus status);
 
-
-    //2.0 task record management
+    // 2.0 task record management
     boolean isSuccess(String orderKey);
+
     List<TaskRecord> findTaskByOrderKey(String orderKey);
+
     List<Long> getNextTaskIds(int count);
+
     List<Long> createTasks(List<TaskRecord> records);
-
-    //3.0 runtime related
-    void start(String orderKey);
-
-    TaskOutput runNow(Long taskId, TaskInput input);
-
-    //Force terminite the task and mark the task success
-    void forceOk(Long taskId, TaskOutput output);
-
-    //Force terminate the task and mark the task failure
-    void kill(Long taskId);
-
-    //Hold the task and don't trigger even condition is ready
-    void hold(Long taskId);
 
 }

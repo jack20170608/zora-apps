@@ -33,10 +33,10 @@ const TableBody = React.forwardRef<
     {...props}
   />
 ));
-TableBody.displayName = "Table";
+TableBody.displayName = "TableBody";
 
 const TableRow = React.forwardRef<
-  HTMLTableRow,
+  HTMLTableRowElement,
   React.HTMLAttributes<HTMLTableRowElement>
 >(({ className, ...props }, ref) => (
   <tr
@@ -66,8 +66,8 @@ const TableHead = React.forwardRef<
 TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<
-  HTMLTableCell,
-  React.TdHTMLAttributes<HTMLTableCell>
+  HTMLTableCellElement,
+  React.TdHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
