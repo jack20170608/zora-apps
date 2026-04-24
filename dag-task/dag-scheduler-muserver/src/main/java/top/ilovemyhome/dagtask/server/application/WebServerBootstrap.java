@@ -18,7 +18,6 @@ import top.ilovemyhome.dagtask.core.DagSchedulerServer;
 import top.ilovemyhome.dagtask.core.interfaces.AgentRegistryApi;
 import top.ilovemyhome.dagtask.core.interfaces.TaskOrderApi;
 import top.ilovemyhome.dagtask.core.interfaces.TaskTemplateApi;
-import top.ilovemyhome.dagtask.scheduler.auth.AgentTokenAuthFilter;
 import top.ilovemyhome.dagtask.scheduler.auth.DefaultTokenPusher;
 import top.ilovemyhome.dagtask.scheduler.auth.PublicRegistrationApi;
 import top.ilovemyhome.dagtask.scheduler.auth.TokenPusher;
@@ -27,7 +26,6 @@ import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
 import top.ilovemyhome.dagtask.scheduler.token.TokenManagementApi;
 import top.ilovemyhome.dagtask.scheduler.token.TokenService;
 import top.ilovemyhome.dagtask.server.interfaces.api.FooUserHandler;
-import top.ilovemyhome.dagtask.server.web.LoginHandler;
 import top.ilovemyhome.dagtask.server.web.security.SecurityHandler;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
@@ -79,8 +77,7 @@ public class WebServerBootstrap {
                         .addHandler(Method.GET, "/index.html", (req, res, map) -> res.redirect("/" + contextPath + "/swagger-ui/index.html?url=/" + contextPath + "/openapi.json"))
                         .addHandler(new SecurityHandler(appContext))
                         .addHandler(ResourceHandlerBuilder.classpathHandler("/static"))
-                        .addHandler(createRestHandler(appContext)
-                                .addRequestFilter(appSecurityContext.getFacetFilter()))
+                        .addHandler(createRestHandler(appContext))
                 );
 
         MuServer muServer = muServerBuilder.start();
@@ -99,6 +96,7 @@ public class WebServerBootstrap {
 
         DagSchedulerServer schedulerServer = appContext.getBean("dagSchedulerServer", DagSchedulerServer.class);
         Config config = appContext.getConfig();
+        AppSecurityContext appSecurityContext = appContext.getBean("appSecurityContext", AppSecurityContext.class);
 
         TaskOrderApi taskOrderApi = new TaskOrderApi(schedulerServer.getTaskOrderDao());
         TaskTemplateApi taskTemplateApi = new TaskTemplateApi(schedulerServer.getTaskTemplateService());
@@ -111,7 +109,6 @@ public class WebServerBootstrap {
         TokenPusher tokenPusher = new DefaultTokenPusher();
         PublicRegistrationApi publicRegistrationApi = new PublicRegistrationApi(tokenService, tokenPusher, autoApproveConfig);
         TokenManagementApi tokenManagementApi = new TokenManagementApi(tokenService);
-        AgentTokenAuthFilter agentTokenAuthFilter = new AgentTokenAuthFilter(tokenService);
 
         return RestHandlerBuilder
                 .restHandler(new FooUserHandler(appContext),
@@ -120,7 +117,7 @@ public class WebServerBootstrap {
                     taskTemplateApi,
                     publicRegistrationApi,
                     tokenManagementApi)
-                .addRequestFilter(agentTokenAuthFilter)
+                .addRequestFilter(appSecurityContext.getFacetFilter())
                 .addCustomReader(createJacksonJsonProvider())
                 .addCustomWriter(createJacksonJsonProvider())
                 .withCollectionParameterStrategy(CollectionParameterStrategy.NO_TRANSFORM)

@@ -15,6 +15,7 @@ import top.ilovemyhome.zora.rdb.flyway.FlywayMigrationRunner;
 import top.ilovemyhome.zora.rdb.pool.DataSourcePoolBuilder;
 
 import javax.sql.DataSource;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,9 @@ public final class AppContext {
                 .toList();
 
         String applicationName = config.getString("name");
+        List<String> whiteList = config.hasPath("security.whiteList")
+                ? config.getStringList("security.whiteList")
+                : new ArrayList<>();
         var appSecurityContext = AppSecurityContext.builder()
                 .inMemoryUser(users)
                 .jwtIssuer(applicationName)
@@ -74,6 +78,7 @@ public final class AppContext {
                 .jwtPrivateKeyPath(config.getString("jwt.privateKeyLocation"))
                 .cookieName(config.getString("cookie.name"))
                 .cookieValueType(config.getEnum(CookieValueType.class, "cookie.valueType"))
+                .whiteList(whiteList)
                 .build();
 
         BEAN_NAME_FACTORY.put("appSecurityContext", appSecurityContext);
