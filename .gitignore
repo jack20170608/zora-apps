@@ -86,3 +86,4 @@ config-local/
 .atlassian/
 
 .worktrees/
+.worktree/
