@@ -1,8 +1,11 @@
 package top.ilovemyhome.dagtask.agent.config;
 
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import top.ilovemyhome.zora.config.ConfigLoader;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -11,6 +14,23 @@ import java.util.Objects;
  * Configuration holder for the DAG task agent.
  */
 public class AgentConfiguration {
+
+    private static final String DEFAULT_BASE_DIR = Path.of(
+        System.getProperty("user.home"), ".dag-agent").toString();
+    private static final String DEFAULT_DEAD_LETTER_DIR = Path.of(
+        DEFAULT_BASE_DIR, "dead-letter").toString();
+    private static final String DEFAULT_TOKEN_DIR = Path.of(
+        DEFAULT_BASE_DIR, "token").toString();
+
+    private static final Config DEFAULTS = ConfigFactory.parseString("""
+        deadLetterPersistencePath = ""
+        tokenFilePath = ""
+        token = ""
+        supportedExecutionKeys = []
+        autoRegister = true
+        maxConcurrentTasks = 4
+        maxPendingTasks = 100
+        """);
 
     private String agentUrl;
     private String dagServerUrl;
@@ -25,6 +45,25 @@ public class AgentConfiguration {
 
     // Required for Typesafe Config bean reflection
     public AgentConfiguration() {
+    }
+
+    private static void resolveAndCreatePaths(AgentConfiguration config) {
+        if (config.deadLetterPersistencePath == null || config.deadLetterPersistencePath.isBlank()) {
+            config.deadLetterPersistencePath = DEFAULT_DEAD_LETTER_DIR;
+        }
+        if (config.tokenFilePath == null || config.tokenFilePath.isBlank()) {
+            config.tokenFilePath = DEFAULT_TOKEN_DIR;
+        }
+        createDirectory(config.deadLetterPersistencePath);
+        createDirectory(config.tokenFilePath);
+    }
+
+    private static void createDirectory(String path) {
+        try {
+            Files.createDirectories(Path.of(path));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create directory: " + path, e);
+        }
     }
 
     private AgentConfiguration(Builder builder) {
@@ -138,7 +177,14 @@ public class AgentConfiguration {
     public static AgentConfiguration load(String pathPrefix, Config config){
         Objects.requireNonNull(config, "Config cannot be null");
         Objects.requireNonNull(pathPrefix, "PathPrefix cannot be null");
-        return ConfigLoader.loadConfigAsBean(config, pathPrefix, AgentConfiguration.class);
+        Config prefixConfig = config.hasPath(pathPrefix)
+            ? config.getConfig(pathPrefix)
+            : ConfigFactory.empty();
+        Config merged = prefixConfig.withFallback(DEFAULTS);
+        Config wrapped = merged.atPath(pathPrefix);
+        AgentConfiguration result = ConfigLoader.loadConfigAsBean(wrapped, pathPrefix, AgentConfiguration.class);
+        resolveAndCreatePaths(result);
+        return result;
     }
 
     @Override
@@ -243,7 +289,9 @@ public class AgentConfiguration {
             if (maxPendingTasks <= 0) {
                 throw new IllegalArgumentException("maxPendingTasks must be > 0");
             }
-            return new AgentConfiguration(this);
+            AgentConfiguration result = new AgentConfiguration(this);
+            resolveAndCreatePaths(result);
+            return result;
         }
     }
 }
