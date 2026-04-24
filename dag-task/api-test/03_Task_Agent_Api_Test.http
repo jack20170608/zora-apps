@@ -1,0 +1,351 @@
+# ============================================
+# Test API for DAG Task Agent - Task Execution API
+# ============================================
+# These endpoints are exposed by the task execution agent (dag-agent-muserver)
+# Base URL: {{agentBaseUrl}}
+# ============================================
+
+### Ping - heartbeat check
+GET {{agentBaseUrl}}/api/v1/agent/ping
+
+### Health check - get agent status and queue statistics
+GET {{agentBaseUrl}}/api/v1/agent/health
+
+###
+# -----------------------------------------------------------------------------
+# 1. Submit tasks for execution
+# -----------------------------------------------------------------------------
+### Submit a Java class task
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 1001,
+  "taskType": "JAVA_CLASS_NAME",
+  "opsType": "SUBMIT",
+  "priorityType": "NORMAL",
+  "executionClass": "top.ilovemyhome.dagtask.agent.execution.EchoExecution",
+  "input": "{\"message\": \"Hello from Java task\"}",
+  "dealer": "scheduler-001"
+}
+
+### Submit a Python script task
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 1002,
+  "taskType": "PYTHON_SCRIPTS",
+  "opsType": "SUBMIT",
+  "priorityType": "HIGH",
+  "executionClass": "python_script_runner",
+  "input": "{\"script\": \"print('Hello from Python')\", \"timeout\": 30}",
+  "dealer": "scheduler-001"
+}
+
+### Submit a Bash script task
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 1003,
+  "taskType": "BASH_SCRIPTS",
+  "opsType": "SUBMIT",
+  "priorityType": "LOW",
+  "executionClass": "bash_script_runner",
+  "input": "{\"command\": \"echo 'Hello from Bash' && sleep 5\", \"timeout\": 10}",
+  "dealer": "scheduler-001"
+}
+
+### Submit a Groovy script task
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 1004,
+  "taskType": "GROOVY_SOURCE_CODE",
+  "opsType": "SUBMIT",
+  "priorityType": "NORMAL",
+  "executionClass": "groovy_script_runner",
+  "input": "{\"script\": \"println 'Hello from Groovy'\"}",
+  "dealer": "scheduler-001"
+}
+
+### Submit a long-running task (for testing kill/force operations)
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 1005,
+  "taskType": "JAVA_CLASS_NAME",
+  "opsType": "SUBMIT",
+  "priorityType": "NORMAL",
+  "executionClass": "top.ilovemyhome.dagtask.agent.execution.LongRunningExecution",
+  "input": "{\"durationSeconds\": 60, \"description\": \"Long running test task\"}",
+  "dealer": "scheduler-001"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 2. Check health after submissions
+# -----------------------------------------------------------------------------
+### Check agent health and queue status
+GET {{agentBaseUrl}}/api/v1/agent/health
+
+###
+# -----------------------------------------------------------------------------
+# 3. Kill tasks
+# -----------------------------------------------------------------------------
+### Kill a pending or running task
+POST {{agentBaseUrl}}/api/v1/agent/kill
+Content-Type: application/json
+
+{
+  "taskId": 1005,
+  "opsType": "KILL",
+  "force": true,
+  "reason": "Task taking too long, killing per user request",
+  "dealer": "admin"
+}
+
+### Kill a non-existent task (should return 404)
+POST {{agentBaseUrl}}/api/v1/agent/kill
+Content-Type: application/json
+
+{
+  "taskId": 99999,
+  "opsType": "KILL",
+  "force": true,
+  "reason": "Test kill non-existent task",
+  "dealer": "admin"
+}
+
+### Invalid kill request with wrong opsType (should return 400)
+POST {{agentBaseUrl}}/api/v1/agent/kill
+Content-Type: application/json
+
+{
+  "taskId": 1001,
+  "opsType": "SUBMIT",
+  "force": false,
+  "reason": "Wrong operation type",
+  "dealer": "admin"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 4. Force-ok tasks
+# -----------------------------------------------------------------------------
+### Force a task to complete successfully
+POST {{agentBaseUrl}}/api/v1/agent/force-ok
+Content-Type: application/json
+
+{
+  "taskId": 1002,
+  "opsType": "FORCE_OK",
+  "force": true,
+  "reason": "Force complete for testing",
+  "dealer": "admin"
+}
+
+### Force-ok a non-existent task (should return 404)
+POST {{agentBaseUrl}}/api/v1/agent/force-ok
+Content-Type: application/json
+
+{
+  "taskId": 99999,
+  "opsType": "FORCE_OK",
+  "force": true,
+  "reason": "Test force-ok non-existent task",
+  "dealer": "admin"
+}
+
+### Invalid force-ok request with wrong opsType (should return 400)
+POST {{agentBaseUrl}}/api/v1/agent/force-ok
+Content-Type: application/json
+
+{
+  "taskId": 1003,
+  "opsType": "KILL",
+  "force": false,
+  "reason": "Wrong operation type",
+  "dealer": "admin"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 5. Force-nok tasks
+# -----------------------------------------------------------------------------
+### Force a task to complete as failed
+POST {{agentBaseUrl}}/api/v1/agent/force-nok
+Content-Type: application/json
+
+{
+  "taskId": 1003,
+  "opsType": "FORCE_NOK",
+  "force": true,
+  "reason": "Force fail for testing",
+  "dealer": "admin"
+}
+
+### Force-nok a non-existent task (should return 404)
+POST {{agentBaseUrl}}/api/v1/agent/force-nok
+Content-Type: application/json
+
+{
+  "taskId": 99999,
+  "opsType": "FORCE_NOK",
+  "force": true,
+  "reason": "Test force-nok non-existent task",
+  "dealer": "admin"
+}
+
+### Invalid force-nok request with wrong opsType (should return 400)
+POST {{agentBaseUrl}}/api/v1/agent/force-nok
+Content-Type: application/json
+
+{
+  "taskId": 1004,
+  "opsType": "HOLD",
+  "force": false,
+  "reason": "Wrong operation type",
+  "dealer": "admin"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 6. Hold tasks
+# -----------------------------------------------------------------------------
+### Hold a pending or running task
+POST {{agentBaseUrl}}/api/v1/agent/hold
+Content-Type: application/json
+
+{
+  "taskId": 1004,
+  "opsType": "HOLD",
+  "force": false,
+  "reason": "Hold task for maintenance window",
+  "dealer": "admin"
+}
+
+### Hold a non-existent task (should return 404)
+POST {{agentBaseUrl}}/api/v1/agent/hold
+Content-Type: application/json
+
+{
+  "taskId": 99999,
+  "opsType": "HOLD",
+  "force": false,
+  "reason": "Test hold non-existent task",
+  "dealer": "admin"
+}
+
+### Invalid hold request with wrong opsType (should return 400)
+POST {{agentBaseUrl}}/api/v1/agent/hold
+Content-Type: application/json
+
+{
+  "taskId": 1001,
+  "opsType": "FREE",
+  "force": false,
+  "reason": "Wrong operation type",
+  "dealer": "admin"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 7. Free tasks
+# -----------------------------------------------------------------------------
+### Free a previously held task
+POST {{agentBaseUrl}}/api/v1/agent/free
+Content-Type: application/json
+
+{
+  "taskId": 1004,
+  "opsType": "FREE",
+  "force": false,
+  "reason": "Release task after maintenance",
+  "dealer": "admin"
+}
+
+### Free a non-existent task (should return 404)
+POST {{agentBaseUrl}}/api/v1/agent/free
+Content-Type: application/json
+
+{
+  "taskId": 99999,
+  "opsType": "FREE",
+  "force": false,
+  "reason": "Test free non-existent task",
+  "dealer": "admin"
+}
+
+### Invalid free request with wrong opsType (should return 400)
+POST {{agentBaseUrl}}/api/v1/agent/free
+Content-Type: application/json
+
+{
+  "taskId": 1001,
+  "opsType": "KILL",
+  "force": false,
+  "reason": "Wrong operation type",
+  "dealer": "admin"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 8. Backpressure test - submit many tasks to trigger queue full
+# -----------------------------------------------------------------------------
+### Submit batch tasks quickly to test queue capacity
+### (adjust maxPendingTasks in agent config to test this)
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 2001,
+  "taskType": "JAVA_CLASS_NAME",
+  "opsType": "SUBMIT",
+  "priorityType": "NORMAL",
+  "executionClass": "top.ilovemyhome.dagtask.agent.execution.EchoExecution",
+  "input": "{\"message\": \"Batch task 1\"}",
+  "dealer": "scheduler-001"
+}
+
+###
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 2002,
+  "taskType": "JAVA_CLASS_NAME",
+  "opsType": "SUBMIT",
+  "priorityType": "NORMAL",
+  "executionClass": "top.ilovemyhome.dagtask.agent.execution.EchoExecution",
+  "input": "{\"message\": \"Batch task 2\"}",
+  "dealer": "scheduler-001"
+}
+
+###
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 2003,
+  "taskType": "JAVA_CLASS_NAME",
+  "opsType": "SUBMIT",
+  "priorityType": "NORMAL",
+  "executionClass": "top.ilovemyhome.dagtask.agent.execution.EchoExecution",
+  "input": "{\"message\": \"Batch task 3\"}",
+  "dealer": "scheduler-001"
+}
+
+###
+# -----------------------------------------------------------------------------
+# 9. Final health check after all operations
+# -----------------------------------------------------------------------------
+### Check final agent health status
+GET {{agentBaseUrl}}/api/v1/agent/health
+
+### Ping again to verify agent is still alive
+GET {{agentBaseUrl}}/api/v1/agent/ping
+
