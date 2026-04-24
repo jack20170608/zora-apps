@@ -31,7 +31,7 @@ import java.util.List;
  * </ul>
  * </p>
  */
-@Path(Constants.API_SCHEDULER)
+@Path(Constants.API_ADMIN)
 @Produces(MediaType.APPLICATION_JSON)
 public class TokenManagementApi {
 
@@ -50,7 +50,7 @@ public class TokenManagementApi {
      * @return list of all tokens with their metadata
      */
     @GET
-    @Path("/admin/tokens")
+    @Path("/tokens")
     public Response listTokens() {
         List<TokenInfo> tokens = tokenService.listTokens();
         return Response.ok()
@@ -66,7 +66,7 @@ public class TokenManagementApi {
      * @return response with the generated JWT token
      */
     @POST
-    @Path("/admin/tokens/generate")
+    @Path("/tokens/generate")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response generateToken(GenerateTokenRequest request,
                                   @QueryParam("createdBy") String createdBy) {
@@ -104,7 +104,7 @@ public class TokenManagementApi {
      * @return success response
      */
     @POST
-    @Path("/admin/tokens/{tokenId}/revoke")
+    @Path("/tokens/{tokenId}/revoke")
     public Response revokeToken(@PathParam("tokenId") String tokenId,
                                 @QueryParam("revokedBy") String revokedBy) {
         LOGGER.info("Token revocation requested: tokenId={}, revokedBy={}", tokenId, revokedBy);

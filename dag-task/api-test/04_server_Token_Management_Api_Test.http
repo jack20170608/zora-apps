@@ -1,0 +1,163 @@
+# ============================================
+# Test API for DAG Scheduler Server - Token Management API
+# ============================================
+# Admin endpoints for managing agent authentication tokens
+# Base URL: {{baseUrl}}
+# ============================================
+
+###
+# -----------------------------------------------------------------------------
+# 1. List all existing tokens
+# -----------------------------------------------------------------------------
+### Get all tokens (initial state, may be empty)
+GET {{baseUrl}}/api/v1/admin/tokens
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 2. Generate new tokens
+# -----------------------------------------------------------------------------
+### Generate a token with default expiration (30 days)
+POST {{baseUrl}}/api/v1/admin/tokens/generate?createdBy={{username}}
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "name": "agent-default-token",
+  "description": "Default token for agent authentication",
+  "expiresInDays": 30
+}
+
+### Generate a long-lived token (90 days)
+POST {{baseUrl}}/api/v1/admin/tokens/generate?createdBy={{username}}
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "name": "agent-long-lived-token",
+  "description": "Long-lived token for production agents",
+  "expiresInDays": 90
+}
+
+### Generate a short-lived token (1 day) for testing
+POST {{baseUrl}}/api/v1/admin/tokens/generate?createdBy={{username}}
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "name": "agent-test-token",
+  "description": "Short-lived token for testing purposes",
+  "expiresInDays": 1
+}
+
+### Generate a token without description (description is optional)
+POST {{baseUrl}}/api/v1/admin/tokens/generate?createdBy={{username}}
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "name": "agent-minimal-token",
+  "expiresInDays": 7
+}
+
+### Generate a token with special characters in name
+POST {{baseUrl}}/api/v1/admin/tokens/generate?createdBy={{username}}
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "name": "agent-prod-2024-v1.0",
+  "description": "Production agent token with version info",
+  "expiresInDays": 60
+}
+
+###
+# -----------------------------------------------------------------------------
+# 3. List tokens after generation
+# -----------------------------------------------------------------------------
+### Get all tokens (should show generated tokens)
+GET {{baseUrl}}/api/v1/scheduler/admin/tokens
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 4. Revoke tokens
+# -----------------------------------------------------------------------------
+### Revoke the test token (replace {tokenId} with actual tokenId from list response)
+POST {{baseUrl}}/api/v1/scheduler/admin/tokens/{{testTokenId}}/revoke?revokedBy={{username}}
+Authorization: Basic {{username}} {{password}}
+
+### Revoke a non-existent token (should return error)
+POST {{baseUrl}}/api/v1/scheduler/admin/tokens/non-existent-token-id/revoke?revokedBy={{username}}
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 5. List tokens after revocation
+# -----------------------------------------------------------------------------
+### Get all tokens (revoked token should show revoked=true)
+GET {{baseUrl}}/api/v1/scheduler/admin/tokens
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 6. Edge cases for token generation
+# -----------------------------------------------------------------------------
+### Generate token with 0 days expiration (immediate expiry)
+POST {{baseUrl}}/api/v1/scheduler/admin/tokens/generate?createdBy={{username}}
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "name": "agent-immediate-expiry",
+  "description": "Token that expires immediately",
+  "expiresInDays": 0
+}
+
+### Generate token with very long expiration (365 days)
+POST {{baseUrl}}/api/v1/scheduler/admin/tokens/generate?createdBy={{username}}
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "name": "agent-annual-token",
+  "description": "Annual token for long-running agents",
+  "expiresInDays": 365
+}
+
+###
+# -----------------------------------------------------------------------------
+# 7. Revoke remaining tokens (cleanup)
+# -----------------------------------------------------------------------------
+### Revoke default token (replace {tokenId})
+POST {{baseUrl}}/api/v1/scheduler/admin/tokens/{{defaultTokenId}}/revoke?revokedBy={{username}}
+Authorization: Basic {{username}} {{password}}
+
+### Revoke long-lived token (replace {tokenId})
+POST {{baseUrl}}/api/v1/scheduler/admin/tokens/{{longLivedTokenId}}/revoke?revokedBy={{username}}
+Authorization: Basic {{username}} {{password}}
+
+### Revoke minimal token (replace {tokenId})
+POST {{baseUrl}}/api/v1/scheduler/admin/tokens/{{minimalTokenId}}/revoke?revokedBy={{username}}
+Authorization: Basic {{username}} {{password}}
+
+### Revoke special chars token (replace {tokenId})
+POST {{baseUrl}}/api/v1/scheduler/admin/tokens/{{specialTokenId}}/revoke?revokedBy={{username}}
+Authorization: Basic {{username}} {{password}}
+
+### Revoke immediate expiry token (replace {tokenId})
+POST {{baseUrl}}/api/v1/scheduler/admin/tokens/{{immediateTokenId}}/revoke?revokedBy={{username}}
+Authorization: Basic {{username}} {{password}}
+
+### Revoke annual token (replace {tokenId})
+POST {{baseUrl}}/api/v1/scheduler/admin/tokens/{{annualTokenId}}/revoke?revokedBy={{username}}
+Authorization: Basic {{username}} {{password}}
+
+###
+# -----------------------------------------------------------------------------
+# 8. Final list to verify all revoked
+# -----------------------------------------------------------------------------
+### Get all tokens (all should show revoked=true)
+GET {{baseUrl}}/api/v1/scheduler/admin/tokens
+Authorization: Basic {{username}} {{password}}
+

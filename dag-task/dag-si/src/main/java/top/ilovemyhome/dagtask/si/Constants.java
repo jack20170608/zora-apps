@@ -13,6 +13,9 @@ public class Constants {
     public static final String API_REPORT_RESULT= "/report_result";
     public static final String API_REPORT_STATUS= "/report_status";
 
+
+    public static final String API_ADMIN= API_VERSION + "/admin";
+
     public static final String API_AGENT = API_VERSION + "/agent";
     public static final String API_SUBMIT = "/submit";
     public static final String API_FORCE_OK = "/force-ok";

@@ -456,7 +456,7 @@ public class TaskExecutionEngine {
         // Parse input
         TaskInput input;
         try {
-            input = parseInput(inputJson);
+            input = TaskInput.of(taskId, parseInput(inputJson), null);
         } catch (Exception e) {
             return SubmissionResult.inputParseFailed(e.getMessage());
         }

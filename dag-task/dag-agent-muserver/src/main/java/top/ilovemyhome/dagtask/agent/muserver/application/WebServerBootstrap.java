@@ -44,13 +44,13 @@ public class WebServerBootstrap {
         String host = muserverConfig.getString("host");
         int idleTimeout = muserverConfig.getInt("idleTimeout");
 
-        LOGGER.info("Starting MuServer for DAG Task Agent on {}:{}", host, port);
+        logger.info("Starting MuServer for DAG Task Agent on {}:{}", host, port);
         long start = System.currentTimeMillis();
         MuServerBuilder muServerBuilder = MuServerBuilder.httpServer()
                 .withHttpPort(port)
                 .withInterface(host)
                 .addResponseCompleteListener(info -> {
-                    LOGGER.info("Response completed: success={}, remoteAddr={}, clientAddress={}, req={}, status={}, duration={}",
+                    logger.info("Response completed: success={}, remoteAddr={}, clientAddress={}, req={}, status={}, duration={}",
                             info.completedSuccessfully(), info.request().remoteAddress(), info.request().clientIP(),
                             info.request(), info.response().status(), info.duration());
                 })
@@ -61,12 +61,12 @@ public class WebServerBootstrap {
                 );
 
         MuServer muServer = muServerBuilder.start();
-        LOGGER.info("MuServer started in {} ms", System.currentTimeMillis() - start);
-        LOGGER.info("DAG Task Agent server running at {}", muServer.uri().resolve(contextPath));
+        logger.info("MuServer started in {} ms", System.currentTimeMillis() - start);
+        logger.info("DAG Task Agent server running at {}", muServer.uri().resolve(contextPath));
         if (contextPath.length() > 1) {
-            LOGGER.info("OpenAPI at {}{}/openapi.json", muServer.uri(), contextPath);
+            logger.info("OpenAPI at {}{}/openapi.json", muServer.uri(), contextPath);
         } else {
-            LOGGER.info("OpenAPI at {}openapi.json", muServer.uri());
+            logger.info("OpenAPI at {}openapi.json", muServer.uri());
         }
         return muServer;
     }
@@ -106,5 +106,5 @@ public class WebServerBootstrap {
                 );
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(WebServerBootstrap.class);
+    private static final Logger logger = LoggerFactory.getLogger(WebServerBootstrap.class);
 }
