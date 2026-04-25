@@ -41,7 +41,34 @@ public class TokenService {
         Instant issuedAt = Instant.now();
         Instant expiresAt = issuedAt.plus(expiresInDays, ChronoUnit.DAYS);
 
-        return new GenerateTokenResult(tokenId, name, description, issuedAt, expiresAt, createdBy);
+        GenerateTokenResult result = new GenerateTokenResult(tokenId, name, description, issuedAt, expiresAt, createdBy);
+
+        // Persist token metadata to the database
+        AgentRegistryItem tokenRecord = AgentRegistryItem.builder()
+            .withAgentId("__token__" + tokenId)
+            .withAgentUrl("")
+            .withMaxConcurrentTasks(0)
+            .withMaxPendingTasks(0)
+            .withSupportedExecutionKeys(List.of())
+            .withRegisteredAt(issuedAt)
+            .withLastHeartbeatAt(issuedAt)
+            .withRunning(false)
+            .withPendingTasks(0)
+            .withRunningTasks(0)
+            .withFinishedTasks(0)
+            .withTokenId(tokenId)
+            .withTokenName(name)
+            .withDescription(description)
+            .withCreatedBy(createdBy)
+            .withCreatedAt(issuedAt)
+            .withExpiresAt(expiresAt)
+            .withRevoked(false)
+            .withRevokedAt(null)
+            .withRevokedBy(null)
+            .build();
+
+        agentRegistryDao.create(tokenRecord);
+        return result;
     }
 
     public String generateJwt(GenerateTokenResult result) {
