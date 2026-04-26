@@ -33,6 +33,7 @@ public class AgentConfiguration {
         """);
 
     private String agentUrl;
+    private String agentName;
     private String dagServerUrl;
     private String agentId;
     private boolean autoRegister = true;
@@ -70,6 +71,7 @@ public class AgentConfiguration {
         this.agentUrl = builder.agentUrl;
         this.dagServerUrl = builder.dagServerUrl;
         this.agentId = builder.agentId;
+        this.agentName = builder.agentName;
         this.autoRegister = builder.autoRegister;
         this.maxConcurrentTasks = builder.maxConcurrentTasks;
         this.maxPendingTasks = builder.maxPendingTasks;
@@ -94,6 +96,10 @@ public class AgentConfiguration {
         return agentId;
     }
 
+    public String getAgentName() {
+        return agentName;
+    }
+
     public boolean isAutoRegister() {
         return autoRegister;
     }
@@ -110,48 +116,8 @@ public class AgentConfiguration {
         return new ArrayList<>(supportedExecutionKeys);
     }
 
-    public void setAgentUrl(String agentUrl) {
-        this.agentUrl = agentUrl;
-    }
-
-    public void setDagServerUrl(String dagServerUrl) {
-        this.dagServerUrl = dagServerUrl;
-    }
-
-    public void setAgentId(String agentId) {
-        this.agentId = agentId;
-    }
-
-    public void setAutoRegister(boolean autoRegister) {
-        this.autoRegister = autoRegister;
-    }
-
-    public void setMaxConcurrentTasks(int maxConcurrentTasks) {
-        this.maxConcurrentTasks = maxConcurrentTasks;
-    }
-
-    public void setMaxPendingTasks(int maxPendingTasks) {
-        this.maxPendingTasks = maxPendingTasks;
-    }
-
-    public void setSupportedExecutionKeys(List<String> supportedExecutionKeys) {
-        this.supportedExecutionKeys = new ArrayList<>(supportedExecutionKeys);
-    }
-
     public String getDeadLetterPersistencePath() {
         return deadLetterPersistencePath;
-    }
-
-    public void setDeadLetterPersistencePath(String deadLetterPersistencePath) {
-        this.deadLetterPersistencePath = deadLetterPersistencePath;
-    }
-
-    public String getTokenFilePath() {
-        return tokenFilePath;
-    }
-
-    public void setTokenFilePath(String tokenFilePath) {
-        this.tokenFilePath = tokenFilePath;
     }
 
     public String getToken() {
@@ -206,6 +172,7 @@ public class AgentConfiguration {
                 "agentUrl='" + agentUrl + '\'' +
                 ", dagServerUrl='" + dagServerUrl + '\'' +
                 ", agentId='" + agentId + '\'' +
+                ", agentName='" + agentName + '\'' +
                 ", autoRegister=" + autoRegister +
                 ", maxConcurrentTasks=" + maxConcurrentTasks +
                 ", maxPendingTasks=" + maxPendingTasks +
@@ -221,6 +188,7 @@ public class AgentConfiguration {
         private String agentUrl;
         private String dagServerUrl;
         private String agentId;
+        private String agentName;
         private boolean autoRegister = true;
         private int maxConcurrentTasks = 4;
         private int maxPendingTasks = 100;
@@ -241,6 +209,11 @@ public class AgentConfiguration {
 
         public Builder agentId(String agentId) {
             this.agentId = agentId;
+            return this;
+        }
+
+        public Builder agentName(String agentName) {
+            this.agentName = agentName;
             return this;
         }
 

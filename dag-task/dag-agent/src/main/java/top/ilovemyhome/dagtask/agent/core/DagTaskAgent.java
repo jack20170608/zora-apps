@@ -80,6 +80,7 @@ public class DagTaskAgent {
             var registration = new AgentRegisterRequest(
                     config.getAgentId(),
                     config.getBaseUrl(),
+                    config.getAgentName(),
                     config.getMaxConcurrentTasks(),
                     config.getMaxPendingTasks(),
                     config.getSupportedExecutionKeys()

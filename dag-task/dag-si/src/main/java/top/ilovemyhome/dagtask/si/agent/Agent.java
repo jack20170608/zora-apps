@@ -28,6 +28,7 @@ public class Agent {
         PENDING, ACTIVE, INACTIVE
     }
 
+
     public enum Field {
         id("id", true),
         agentId("agent_id"),
