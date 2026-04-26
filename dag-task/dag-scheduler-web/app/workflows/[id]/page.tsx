@@ -2,7 +2,16 @@
 
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import ReactFlow, {
+  Background,
+  Controls,
+  Handle,
+  Position,
+  type Node,
+  type Edge,
+} from "reactflow"
+import "reactflow/dist/style.css"
 import {
   ArrowLeft,
   GitBranch,
@@ -25,8 +34,20 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { Workflow, WorkflowVersion, ExecutionStatus } from "@/types"
+import type { Workflow, WorkflowVersion, ExecutionStatus, DagNodeData } from "@/types"
 import { formatDate, formatRelativeTime } from "@/lib/utils"
+
+const nodeTypeColors: Record<string, string> = {
+  task: "#3B82F6",
+  shell: "#06B6D4",
+  python: "#FBBF24",
+  java: "#F97316",
+  docker: "#0EA5E9",
+  database: "#10B981",
+  decision: "#EC4899",
+  fork: "#8B5CF6",
+  join: "#6366F1",
+}
 
 const mockWorkflow: Workflow = {
   id: "wf-001",
@@ -108,7 +129,7 @@ export default function WorkflowDetailPage() {
             <Play className="mr-2 h-4 w-4" />
             Execute
           </Button>
-          <Link href="/studio">
+          <Link href={`/studio?workflow=${workflow.key}`}>
             <Button variant="outline">
               <Pencil className="mr-2 h-4 w-4" />
               Edit
@@ -158,13 +179,8 @@ export default function WorkflowDetailPage() {
 
         <TabsContent value="dag">
           <Card>
-            <CardContent className="p-8">
-              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                <div className="text-center">
-                  <GitBranch className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>DAG visualization will be rendered here</p>
-                </div>
-              </div>
+            <CardContent className="p-0">
+              <DagPreview dagDefinition={workflow.dagDefinition} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -308,6 +324,63 @@ export default function WorkflowDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+    </div>
+  )
+}
+
+function DagPreview({ dagDefinition }: { dagDefinition: { nodes: any[]; edges: any[] } }) {
+  const nodes = useMemo(() => {
+    return dagDefinition.nodes.map((n: any) => ({
+      id: n.id,
+      type: "preview",
+      position: n.position,
+      data: n.data,
+    })) as Node[]
+  }, [dagDefinition])
+
+  const edges = useMemo(() => {
+    return dagDefinition.edges.map((e: any) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      animated: true,
+    })) as Edge[]
+  }, [dagDefinition])
+
+  const nodeTypes = useMemo(() => ({
+    preview: ({ data }: { data: DagNodeData }) => {
+      const color = nodeTypeColors[data.type] || "#6B7280"
+      return (
+        <div className="shadow-md rounded-lg px-3 py-2 border border-border bg-card min-w-[100px]">
+          <Handle type="target" position={Position.Left} className="!bg-border !w-2.5 !h-2.5" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+            <div>
+              <div className="text-xs font-medium">{data.label}</div>
+            </div>
+          </div>
+          <Handle type="source" position={Position.Right} className="!bg-border !w-2.5 !h-2.5" />
+        </div>
+      )
+    },
+  }), [])
+
+  return (
+    <div className="h-[400px]">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        fitView
+        minZoom={0.2}
+        maxZoom={1.5}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
+      >
+        <Background />
+        <Controls />
+      </ReactFlow>
     </div>
   )
 }

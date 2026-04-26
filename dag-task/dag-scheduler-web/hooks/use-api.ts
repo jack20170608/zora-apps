@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { workflowApi, executionApi, agentApi, statsApi } from "@/lib/api/client"
 import type { Workflow, Execution, Agent, DashboardStats, TrendData } from "@/types"
+import {
+  mockWorkflows,
+  mockExecutions,
+  mockAgents,
+  mockDashboardStats,
+  mockTrends,
+} from "@/lib/api/mock-data"
 
 // ==================== Workflow Hooks ====================
 
@@ -8,8 +15,18 @@ export function useWorkflows(params?: { page?: number; pageSize?: number; search
   return useQuery({
     queryKey: ["workflows", params],
     queryFn: async () => {
-      const res = await workflowApi.list(params)
-      return res.data.data
+      try {
+        const res = await workflowApi.list(params)
+        return res.data.data
+      } catch {
+        return {
+          items: mockWorkflows,
+          total: mockWorkflows.length,
+          page: params?.page || 1,
+          pageSize: params?.pageSize || 50,
+          totalPages: 1,
+        }
+      }
     },
   })
 }
@@ -130,8 +147,12 @@ export function useAgents() {
   return useQuery({
     queryKey: ["agents"],
     queryFn: async () => {
-      const res = await agentApi.list()
-      return res.data.data
+      try {
+        const res = await agentApi.list()
+        return res.data.data
+      } catch {
+        return mockAgents
+      }
     },
   })
 }
@@ -164,8 +185,12 @@ export function useDashboardStats() {
   return useQuery({
     queryKey: ["stats", "overview"],
     queryFn: async () => {
-      const res = await statsApi.getOverview()
-      return res.data.data
+      try {
+        const res = await statsApi.getOverview()
+        return res.data.data
+      } catch {
+        return mockDashboardStats
+      }
     },
   })
 }
@@ -174,8 +199,12 @@ export function useTrends(days?: number) {
   return useQuery({
     queryKey: ["stats", "trends", days],
     queryFn: async () => {
-      const res = await statsApi.getTrends({ days })
-      return res.data.data
+      try {
+        const res = await statsApi.getTrends({ days })
+        return res.data.data
+      } catch {
+        return mockTrends
+      }
     },
   })
 }

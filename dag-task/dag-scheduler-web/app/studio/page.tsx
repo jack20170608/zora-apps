@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useCallback, useRef, useMemo } from "react"
+import { useState, useCallback, useRef, useMemo, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import ReactFlow, {
   ReactFlowProvider,
   addEdge,
@@ -30,7 +31,9 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { DagNode, NodeType, DagNodeData } from "@/types"
+import type { DagNode, NodeType, DagNodeData, Workflow } from "@/types"
+import { useWorkflow } from "@/hooks/use-api"
+import { mockWorkflows } from "@/lib/api/mock-data"
 
 const nodeTypesList = [
   { type: "task" as NodeType, label: "Task", color: "#3B82F6", description: "General purpose task" },
@@ -75,6 +78,12 @@ function validateDag(nodes: Node[], edges: Edge[]) {
 }
 
 function StudioContent() {
+  const searchParams = useSearchParams()
+  const workflowKey = searchParams.get("workflow")
+  
+  const { data: workflowData } = useWorkflow(workflowKey || "")
+  const workflow = workflowData || mockWorkflows.find(w => w.key === workflowKey) || null
+
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [rfi, setRfi] = useState<ReactFlowInstance | null>(null)
@@ -84,6 +93,50 @@ function StudioContent() {
   const [hIndex, setHIndex] = useState(0)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const counterRef = useRef(0)
+  const [loaded, setLoaded] = useState(false)
+  const [workflowInfo, setWorkflowInfo] = useState({
+    key: '',
+    name: '',
+    version: '1.0.0',
+    description: '',
+    tags: [] as string[]
+  })
+
+  // Load workflow DAG data
+  useEffect(() => {
+    if (workflow && !loaded) {
+      const dagNodes = workflow.dagDefinition.nodes.map((n: any) => ({
+        id: n.id,
+        type: "default",
+        position: n.position,
+        data: n.data,
+      })) as Node[]
+      
+      const dagEdges = workflow.dagDefinition.edges.map((e: any) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        animated: true,
+      })) as Edge[]
+      
+      setNodes(dagNodes)
+      setEdges(dagEdges)
+      setHistory([{ nodes: dagNodes, edges: dagEdges }])
+      setHIndex(0)
+      setLoaded(true)
+      
+      // Set workflow info
+      if (workflow.key) {
+        setWorkflowInfo({
+          key: workflow.key,
+          name: workflow.name,
+          version: workflow.version,
+          description: workflow.description,
+          tags: workflow.tags || [],
+        })
+      }
+    }
+  }, [workflow, loaded])
 
   const getId = () => `node_${Date.now()}_${++counterRef.current}`
 
@@ -201,13 +254,6 @@ function StudioContent() {
 
   const [paletteSearch, setPaletteSearch] = useState("")
   const [rightPanel, setRightPanel] = useState<'info' | 'properties'>('info')
-  const [workflowInfo, setWorkflowInfo] = useState({
-    key: '',
-    name: '',
-    version: '1.0.0',
-    description: '',
-    tags: [] as string[]
-  })
   const [newTag, setNewTag] = useState("")
   
   const filteredNodes = nodeTypesList.filter(n =>
@@ -569,7 +615,16 @@ export default function StudioPage() {
   return (
     <div className="h-[calc(100vh-4rem)] -m-6 -mt-8">
       <ReactFlowProvider>
-        <StudioContent />
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-muted-foreground">
+              <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+              <p>Loading Studio...</p>
+            </div>
+          </div>
+        }>
+          <StudioContent />
+        </Suspense>
       </ReactFlowProvider>
     </div>
   )

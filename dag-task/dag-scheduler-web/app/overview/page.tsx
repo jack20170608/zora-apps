@@ -107,7 +107,14 @@ export default function OverviewPage() {
   const { data: trendsData } = useTrends(7)
 
   const trendItems = trendsData || []
-  const mockRecentExecutions: Execution[] = []
+  const mockRecentExecutions: Execution[] = [
+    { id: "exec-001", workflowId: "wf-001", workflowKey: "etl-daily", workflowName: "Daily ETL Pipeline", version: "2.1.0", status: "running", triggerType: "scheduled", startedAt: "2024-01-07T10:30:00Z", progress: 65 },
+    { id: "exec-002", workflowId: "wf-002", workflowKey: "backup-weekly", workflowName: "Weekly Database Backup", version: "1.5.0", status: "success", triggerType: "manual", startedAt: "2024-01-07T09:00:00Z", endedAt: "2024-01-07T09:15:00Z", duration: 900000 },
+    { id: "exec-003", workflowId: "wf-003", workflowKey: "ml-training", workflowName: "ML Model Training", version: "3.0.0", status: "failed", triggerType: "api", startedAt: "2024-01-07T08:00:00Z", endedAt: "2024-01-07T08:45:00Z", duration: 2700000, errorMessage: "GPU memory insufficient" },
+    { id: "exec-008", workflowId: "wf-005", workflowKey: "email-notifications", workflowName: "Email Notification System", version: "1.2.0", status: "success", triggerType: "scheduled", startedAt: "2024-01-07T10:00:00Z", endedAt: "2024-01-07T10:02:00Z", duration: 120000 },
+    { id: "exec-010", workflowId: "wf-007", workflowKey: "log-analysis", workflowName: "Log Analysis Pipeline", version: "1.8.0", status: "success", triggerType: "scheduled", startedAt: "2024-01-07T07:00:00Z", endedAt: "2024-01-07T07:30:00Z", duration: 1800000 },
+    { id: "exec-011", workflowId: "wf-008", workflowKey: "api-health-check", workflowName: "API Health Check", version: "1.0.0", status: "running", triggerType: "scheduled", startedAt: "2024-01-07T10:45:00Z", progress: 30 },
+  ]
 
   return (
     <PageTransition>
