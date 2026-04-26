@@ -51,47 +51,7 @@ CREATE TABLE t_agent_status (
         REFERENCES t_agents(agent_id) ON DELETE CASCADE
 );
 
--- 4. Migrate data from t_agent_registry
-INSERT INTO t_agents (agent_id, name, status, registered_at, last_heartbeat_at, created_at)
-SELECT
-    agent_id,
-    COALESCE(token_name, agent_id) AS name,
-    CASE WHEN running THEN 'ACTIVE' ELSE 'INACTIVE' END AS status,
-    registered_at,
-    last_heartbeat_at,
-    registered_at AS created_at
-FROM t_agent_registry;
-
-INSERT INTO t_agent_tokens (token_id, agent_id, name, description, created_by, created_at, expires_at, revoked, revoked_at, revoked_by)
-SELECT
-    token_id,
-    agent_id,
-    token_name,
-    description,
-    created_by,
-    created_at,
-    expires_at,
-    revoked,
-    revoked_at,
-    revoked_by
-FROM t_agent_registry
-WHERE token_id IS NOT NULL AND token_id <> '';
-
-INSERT INTO t_agent_status (agent_id, agent_url, max_concurrent_tasks, max_pending_tasks, supported_execution_keys, running, pending_tasks, running_tasks, finished_tasks, last_heartbeat_at)
-SELECT
-    agent_id,
-    agent_url,
-    max_concurrent_tasks,
-    max_pending_tasks,
-    supported_execution_keys,
-    running,
-    pending_tasks,
-    running_tasks,
-    finished_tasks,
-    last_heartbeat_at
-FROM t_agent_registry;
-
--- 5. Create indexes
+-- 4. Create indexes
 CREATE INDEX idx_t_agents_status ON t_agents(status);
 CREATE INDEX idx_t_agents_labels ON t_agents USING GIN(labels);
 CREATE INDEX idx_agent_tokens_agent_id ON t_agent_tokens(agent_id);
