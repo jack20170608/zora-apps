@@ -102,6 +102,34 @@ public class AgentStatus {
             .withLastHeartbeatAt(status.getLastHeartbeatAt());
     }
 
+    /**
+     * Creates a new AgentStatus with updated values from a status report.
+     *
+     * @param report the status report containing new values
+     * @return a new AgentStatus instance with updated fields
+     */
+    public AgentStatus withUpdatedStatus(AgentStatusReport report) {
+        return builder(this)
+            .withRunning(report.running())
+            .withPendingTasks(report.pendingTasks())
+            .withRunningTasks(report.runningTasks())
+            .withFinishedTasks(report.finishedTasks())
+            .withLastHeartbeatAt(java.time.Instant.now())
+            .build();
+    }
+
+    /**
+     * Creates a new AgentStatus marked as unregistered (not running).
+     *
+     * @return a new AgentStatus instance with running set to false
+     */
+    public AgentStatus withUnregistered() {
+        return builder(this)
+            .withRunning(false)
+            .withLastHeartbeatAt(java.time.Instant.now())
+            .build();
+    }
+
     public Long getId() {
         return id;
     }

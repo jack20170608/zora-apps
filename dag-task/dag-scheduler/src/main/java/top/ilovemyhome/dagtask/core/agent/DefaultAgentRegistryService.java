@@ -6,7 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.TaskRecord;
-import top.ilovemyhome.dagtask.si.agent.*;
+import top.ilovemyhome.dagtask.si.agent.Agent;
+import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
+import top.ilovemyhome.dagtask.si.agent.AgentStatus;
+import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
+import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
+import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 import top.ilovemyhome.dagtask.si.persistence.AgentDao;
 import top.ilovemyhome.dagtask.si.persistence.AgentStatusDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
@@ -14,7 +19,17 @@ import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Default implementation of {@link AgentRegistryService} with database persistence.
+ * Maintains an in-memory cache of agent status information for fast access and persists
+ * all changes to the database using {@link AgentDao} and {@link AgentStatusDao}.
+ *
+ * This implementation uses {@link ConcurrentHashMap} for thread-safe cache access
+ * and delegates persistence to the DAO layer, allowing the registry to survive
+ * server restarts.
+ */
 public class DefaultAgentRegistryService implements AgentRegistryService {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultAgentRegistryService.class);
@@ -23,20 +38,33 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
     private final TaskRecordDao taskRecordDao;
     private final AgentDao agentDao;
     private final AgentStatusDao agentStatusDao;
+    private final ConcurrentHashMap<String, AgentStatus> agentCache = new ConcurrentHashMap<>();
 
     /**
      * Creates a DefaultAgentRegistryService with the required dependencies.
      *
      * @param taskRecordDao DAO for updating task records when results are reported
-     * @param agentDao DAO for persisting agent registry information
+     * @param agentDao DAO for persisting agent identity information
+     * @param agentStatusDao DAO for persisting agent runtime status
      */
-    public DefaultAgentRegistryService(Jdbi jdbi, TaskRecordDao taskRecordDao, AgentDao agentDao, AgentStatusDao agentStatusDao) {
+    public DefaultAgentRegistryService(Jdbi jdbi, TaskRecordDao taskRecordDao,
+                                        AgentDao agentDao, AgentStatusDao agentStatusDao) {
         this.jdbi = jdbi;
         this.taskRecordDao = Objects.requireNonNull(taskRecordDao, "taskRecordDao must not be null");
         this.agentDao = Objects.requireNonNull(agentDao, "agentDao must not be null");
         this.agentStatusDao = Objects.requireNonNull(agentStatusDao, "agentStatusDao must not be null");
+        // Warm the cache from database
+        loadAllFromDatabase();
     }
 
+    /**
+     * Loads all agents from database into the in-memory cache on startup.
+     */
+    private void loadAllFromDatabase() {
+        List<AgentStatus> allAgents = agentStatusDao.findAll();
+        allAgents.forEach(agent -> agentCache.put(agent.getAgentId(), agent));
+        logger.info("Loaded {} agents from database into registry cache", allAgents.size());
+    }
 
     @Override
     public boolean registerAgent(AgentRegisterRequest registration) {
@@ -46,17 +74,28 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
         }
 
         Agent agent = AgentRegisterRequest.toAgent(registration);
+        agent.setStatus(Agent.Status.ACTIVE);
+        AgentStatus status = AgentRegisterRequest.toAgentStatus(registration);
+
         jdbi.useTransaction(h -> {
             if (agentDao.exists(registration.agentId())) {
-                // Update existing agent in database
-                agentDao.updateStatus(registration.agentId(), agent.getStatus());
+                // Reactivate existing agent
+                agentDao.updateStatus(registration.agentId(), Agent.Status.ACTIVE);
+                if (agentStatusDao.exists(registration.agentId())) {
+                    agentStatusDao.updateStatus(registration.agentId(), true, 0, 0, 0);
+                } else {
+                    agentStatusDao.create(status);
+                }
                 logger.info("Agent [{}] already exists in database, reactivating", registration.agentId());
             } else {
-                // Insert new agent into database
-                Long id = agentDao.create(agent);
-                logger.info("Agent [{}] registered successfully Id:{}, URL: {}, max concurrent: {}",
-                    registration.agentId(), id, registration.agentUrl(), registration.maxConcurrentTasks());
+                // Insert new agent and status
+                agentDao.create(agent);
+                agentStatusDao.create(status);
+                logger.info("Agent [{}] registered successfully, URL: {}, max concurrent: {}",
+                    registration.agentId(), registration.agentUrl(), registration.maxConcurrentTasks());
             }
+            // Update cache
+            agentCache.put(registration.agentId(), status);
         });
 
         return true;
@@ -69,16 +108,17 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
             return false;
         }
 
-        if (!agentRegistryDao.exists(unregistration.agentId())) {
+        if (!agentDao.exists(unregistration.agentId())) {
             logger.warn("Cannot unregister agent [{}]: agent not found in database", unregistration.agentId());
             return false;
         }
 
-        // Mark as unregistered in database
-        agentRegistryDao.markUnregistered(unregistration.agentId());
+        // Mark as inactive in agent table and unregistered in status table
+        agentDao.updateStatus(unregistration.agentId(), Agent.Status.INACTIVE);
+        agentStatusDao.markUnregistered(unregistration.agentId());
 
         // Update cache
-        AgentRegistryItem existing = agentCache.get(unregistration.agentId());
+        AgentStatus existing = agentCache.get(unregistration.agentId());
         if (existing != null) {
             agentCache.put(unregistration.agentId(), existing.withUnregistered());
         }
@@ -124,13 +164,13 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
             return false;
         }
 
-        if (!agentRegistryDao.exists(statusReport.agentId())) {
+        if (!agentStatusDao.exists(statusReport.agentId())) {
             logger.warn("Agent [{}] not found in database when processing status report", statusReport.agentId());
             return false;
         }
 
         // Update database
-        agentRegistryDao.updateStatus(
+        agentStatusDao.updateStatus(
             statusReport.agentId(),
             statusReport.running(),
             statusReport.pendingTasks(),
@@ -139,7 +179,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
         );
 
         // Update cache
-        AgentRegistryItem existing = agentCache.get(statusReport.agentId());
+        AgentStatus existing = agentCache.get(statusReport.agentId());
         if (existing != null) {
             agentCache.put(statusReport.agentId(), existing.withUpdatedStatus(statusReport));
         }
@@ -154,9 +194,9 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      * Gets information about a registered agent by ID from the cache.
      *
      * @param agentId the agent identifier
-     * @return the agent information if found, empty otherwise
+     * @return the agent status if found, empty otherwise
      */
-    public Optional<AgentRegistryItem> getAgent(String agentId) {
+    public Optional<AgentStatus> getAgent(String agentId) {
         return Optional.ofNullable(agentCache.get(agentId));
     }
 
@@ -165,9 +205,9 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      *
      * @return an unmodifiable list of active agents
      */
-    public List<AgentRegistryItem> listActiveAgents() {
+    public List<AgentStatus> listActiveAgents() {
         return agentCache.values().stream()
-            .filter(AgentRegistryItem::isRunning)
+            .filter(AgentStatus::isRunning)
             .toList();
     }
 
@@ -176,7 +216,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      *
      * @return an unmodifiable list of all agents in the registry
      */
-    public List<AgentRegistryItem> listAllAgents() {
+    public List<AgentStatus> listAllAgents() {
         return agentCache.values().stream().toList();
     }
 

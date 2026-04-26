@@ -1,6 +1,6 @@
 package top.ilovemyhome.dagtask.core.dispatcher;
 
-import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
+import top.ilovemyhome.dagtask.si.agent.AgentStatus;
 
 import java.util.List;
 
@@ -20,5 +20,5 @@ public interface LoadBalanceStrategy {
      *                   and all are active/running)
      * @return the selected agent, or null if no suitable agent available
      */
-    AgentRegistryItem select(List<AgentRegistryItem> candidates);
+    AgentStatus select(List<AgentStatus> candidates);
 }

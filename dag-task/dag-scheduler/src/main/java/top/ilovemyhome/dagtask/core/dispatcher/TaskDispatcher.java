@@ -3,7 +3,7 @@ package top.ilovemyhome.dagtask.core.dispatcher;
 import top.ilovemyhome.dagtask.si.DispatchResult;
 import top.ilovemyhome.dagtask.si.TaskDispatchRecord;
 import top.ilovemyhome.dagtask.si.TaskRecord;
-import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
+import top.ilovemyhome.dagtask.si.agent.AgentStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -79,7 +79,7 @@ public interface TaskDispatcher {
      * @param executionKey the execution key
      * @return list of available candidate agents (active + supports execution key + has capacity)
      */
-    List<AgentRegistryItem> getAvailableCandidates(String executionKey);
+    List<AgentStatus> getAvailableCandidates(String executionKey);
 
     /**
      * Finds all currently active (running) agents from the registry.
@@ -87,7 +87,7 @@ public interface TaskDispatcher {
      *
      * @return list of all active agents
      */
-    List<AgentRegistryItem> findAllActiveAgents();
+    List<AgentStatus> findAllActiveAgents();
 
     /**
      * Finds an agent by its unique agent ID.
@@ -95,5 +95,5 @@ public interface TaskDispatcher {
      * @param agentId the unique agent identifier to search for
      * @return an Optional containing the agent if found, empty otherwise
      */
-    Optional<AgentRegistryItem> findAgentByAgentId(String agentId);
+    Optional<AgentStatus> findAgentByAgentId(String agentId);
 }

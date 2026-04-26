@@ -8,14 +8,13 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.DispatchResult;
 import top.ilovemyhome.dagtask.si.TaskDispatchRecord;
 import top.ilovemyhome.dagtask.si.TaskRecord;
-import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
-import top.ilovemyhome.dagtask.si.dto.AgentRegistrySearchCriteria;
+import top.ilovemyhome.dagtask.si.agent.AgentStatus;
 import top.ilovemyhome.dagtask.si.dto.OperationRequest;
 import top.ilovemyhome.dagtask.si.dto.SubmitRequest;
 import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
 import top.ilovemyhome.dagtask.si.enums.OpsType;
 import top.ilovemyhome.dagtask.si.enums.TaskType;
-import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
+import top.ilovemyhome.dagtask.si.persistence.AgentStatusDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskDispatchDao;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 
@@ -38,7 +37,7 @@ import static top.ilovemyhome.dagtask.si.Constants.*;
  * <p>
  * This class:
  * <ol>
- *     <li>Queries the agent registry for all currently active agents</li>
+ *     <li>Queries the agent status table for all currently active agents</li>
  *     <li>Filters agents to only those that support the task's execution key</li>
  *     <li>Uses the configured load balancing strategy to select the best candidate</li>
  *     <li>Sends an HTTP submission request to the selected agent's endpoint</li>
@@ -49,7 +48,7 @@ import static top.ilovemyhome.dagtask.si.Constants.*;
  * Filtering logic:
  * <ul>
  *     <li>Only includes agents that are marked as running (active)</li>
- *     <li>Only includes agents whose {@link AgentRegistryItem#getSupportedExecutionKeys()} contains
+ *     <li>Only includes agents whose {@link AgentStatus#getSupportedExecutionKeys()} contains
  *         the task's {@link TaskRecord#getExecutionKey()}</li>
  *     <li>Excludes agents that have already reached their maximum concurrent task limit</li>
  * </ul>
@@ -58,7 +57,7 @@ import static top.ilovemyhome.dagtask.si.Constants.*;
  * Usage:
  * <pre>{@code
  * TaskDispatcher dispatcher = new DefaultTaskDispatcher(
- *     agentRegistryDao,
+ *     agentStatusDao,
  *     taskDispatchDao,
  *     new LeastLoadLoadBalance(),
  *     objectMapper
@@ -74,7 +73,7 @@ import static top.ilovemyhome.dagtask.si.Constants.*;
  */
 public class DefaultTaskDispatcher implements TaskDispatcher {
 
-    private final AgentRegistryDao agentRegistryDao;
+    private final AgentStatusDao agentStatusDao;
     private final TaskDispatchDao taskDispatchDao;
     private final LoadBalanceStrategy loadBalanceStrategy;
     private final ObjectMapper objectMapper;
@@ -85,34 +84,34 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
     /**
      * Creates a new DefaultTaskDispatcher with default HTTP client.
      *
-     * @param agentRegistryDao DAO for accessing agent registry
+     * @param agentStatusDao DAO for accessing agent runtime status
      * @param taskDispatchDao DAO for tracking dispatch information
      * @param loadBalanceStrategy strategy for selecting among candidate agents
      * @param objectMapper Jackson object mapper for JSON serialization
      */
-    public DefaultTaskDispatcher(AgentRegistryDao agentRegistryDao,
+    public DefaultTaskDispatcher(AgentStatusDao agentStatusDao,
                           TaskDispatchDao taskDispatchDao,
                           LoadBalanceStrategy loadBalanceStrategy,
                           ObjectMapper objectMapper) {
-        this(agentRegistryDao, taskDispatchDao, loadBalanceStrategy, objectMapper,
+        this(agentStatusDao, taskDispatchDao, loadBalanceStrategy, objectMapper,
             HttpClient.newHttpClient());
     }
 
     /**
      * Creates a new DefaultTaskDispatcher with a provided HTTP client.
      *
-     * @param agentRegistryDao DAO for accessing agent registry
+     * @param agentStatusDao DAO for accessing agent runtime status
      * @param taskDispatchDao DAO for tracking dispatch information
      * @param loadBalanceStrategy strategy for selecting among candidate agents
      * @param objectMapper Jackson object mapper for JSON serialization
      * @param httpClient HTTP client to use for sending requests to agents
      */
-    public DefaultTaskDispatcher(AgentRegistryDao agentRegistryDao,
+    public DefaultTaskDispatcher(AgentStatusDao agentStatusDao,
                           TaskDispatchDao taskDispatchDao,
                           LoadBalanceStrategy loadBalanceStrategy,
                           ObjectMapper objectMapper,
                           HttpClient httpClient) {
-        this.agentRegistryDao = Objects.requireNonNull(agentRegistryDao, "agentRegistryDao must not be null");
+        this.agentStatusDao = Objects.requireNonNull(agentStatusDao, "agentStatusDao must not be null");
         this.taskDispatchDao = Objects.requireNonNull(taskDispatchDao, "taskDispatchDao must not be null");
         this.loadBalanceStrategy = Objects.requireNonNull(loadBalanceStrategy, "loadBalanceStrategy must not be null");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
@@ -139,14 +138,14 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
         String executionKey = task.getExecutionKey();
 
         // Step 1: Get all active agents
-        List<AgentRegistryItem> activeAgents = findAllActiveAgents();
+        List<AgentStatus> activeAgents = findAllActiveAgents();
         if (activeAgents.isEmpty()) {
             logger.warn("No active agents available for task {}", task.getId());
             return DispatchResult.noAvailableAgent("No active agents registered in the system");
         }
 
         // Step 2: Filter by execution key support
-        List<AgentRegistryItem> candidates = filterCandidates(activeAgents, executionKey);
+        List<AgentStatus> candidates = filterCandidates(activeAgents, executionKey);
         if (candidates.isEmpty()) {
             logger.warn("No active agents support execution key '{}' for task {}",
                 executionKey, task.getId());
@@ -161,7 +160,7 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
         }
 
         // Step 4: Use load balancing strategy to select one agent
-        AgentRegistryItem selected = loadBalanceStrategy.select(candidates);
+        AgentStatus selected = loadBalanceStrategy.select(candidates);
         if (selected == null) {
             logger.warn("Load balance strategy returned null for {} candidates", candidates.size());
             return DispatchResult.selectionFailed();
@@ -298,11 +297,15 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
      * @param executionKey the execution key to filter by
      * @return filtered list of candidate agents
      */
-    private List<AgentRegistryItem> filterCandidates(List<AgentRegistryItem> activeAgents, String executionKey) {
+    private List<AgentStatus> filterCandidates(List<AgentStatus> activeAgents, String executionKey) {
         return activeAgents.stream()
-            .filter(agent -> agent.getSupportedExecutionKeys() == null
-                || agent.getSupportedExecutionKeys().isEmpty()
-                || agent.getSupportedExecutionKeys().contains(executionKey))
+            .filter(agent -> {
+                String keys = agent.getSupportedExecutionKeys();
+                if (keys == null || keys.isBlank()) {
+                    return true;
+                }
+                return List.of(keys.split(",")).contains(executionKey);
+            })
             .collect(Collectors.toList());
     }
 
@@ -313,7 +316,7 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
      * @param candidates the pre-filtered candidate list
      * @return filtered list containing only agents with available capacity
      */
-    private List<AgentRegistryItem> filterByCapacity(List<AgentRegistryItem> candidates) {
+    private List<AgentStatus> filterByCapacity(List<AgentStatus> candidates) {
         return candidates.stream()
             .filter(agent -> agent.getRunningTasks() < agent.getMaxConcurrentTasks())
             .collect(Collectors.toList());
@@ -327,7 +330,7 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
      * @param agent the selected agent
      * @return the dispatch result
      */
-    private DispatchResult submitToAgent(TaskRecord task, AgentRegistryItem agent) {
+    private DispatchResult submitToAgent(TaskRecord task, AgentStatus agent) {
         String agentUrl = agent.getAgentUrl();
         String submitUrl = buildAgentUrl(agentUrl) + API_VERSION + API_SUBMIT;
 
@@ -431,7 +434,7 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
      * @return number of available agents for this execution key
      */
     public int countAvailableAgents(String executionKey) {
-        List<AgentRegistryItem> active = findAllActiveAgents();
+        List<AgentStatus> active = findAllActiveAgents();
         return filterCandidates(active, executionKey).size();
     }
 
@@ -442,9 +445,9 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
      * @param executionKey the execution key
      * @return list of available candidate agents (active + supports execution key + has capacity)
      */
-    public List<AgentRegistryItem> getAvailableCandidates(String executionKey) {
-        List<AgentRegistryItem> active = findAllActiveAgents();
-        List<AgentRegistryItem> filtered = filterCandidates(active, executionKey);
+    public List<AgentStatus> getAvailableCandidates(String executionKey) {
+        List<AgentStatus> active = findAllActiveAgents();
+        List<AgentStatus> filtered = filterCandidates(active, executionKey);
         return filterByCapacity(filtered);
     }
 
@@ -454,11 +457,8 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
      *
      * @return list of all active agents
      */
-    public List<AgentRegistryItem> findAllActiveAgents() {
-        AgentRegistrySearchCriteria criteria = AgentRegistrySearchCriteria.builder()
-                .withRunning(true)
-                .build();
-        return agentRegistryDao.search(criteria);
+    public List<AgentStatus> findAllActiveAgents() {
+        return agentStatusDao.findAllActive();
     }
 
     /**
@@ -467,13 +467,8 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
      * @param agentId the unique agent identifier to search for
      * @return an Optional containing the agent if found, empty otherwise
      */
-    public java.util.Optional<AgentRegistryItem> findAgentByAgentId(String agentId) {
-        AgentRegistrySearchCriteria criteria = AgentRegistrySearchCriteria.builder()
-                .withAgentId(agentId)
-                .build();
-        return agentRegistryDao.search(criteria)
-                .stream()
-                .findFirst();
+    public java.util.Optional<AgentStatus> findAgentByAgentId(String agentId) {
+        return agentStatusDao.findByAgentId(agentId);
     }
 
     // =========================================================================

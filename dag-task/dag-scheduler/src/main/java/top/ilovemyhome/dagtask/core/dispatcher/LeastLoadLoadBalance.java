@@ -1,6 +1,6 @@
 package top.ilovemyhome.dagtask.core.dispatcher;
 
-import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
+import top.ilovemyhome.dagtask.si.agent.AgentStatus;
 
 import java.util.Comparator;
 import java.util.List;
@@ -27,11 +27,11 @@ public class LeastLoadLoadBalance implements LoadBalanceStrategy {
      * Comparator that orders agents by current running task count ascending.
      * The agent with the fewest running tasks comes first.
      */
-    private static final Comparator<AgentRegistryItem> LEAST_RUNNING_COMPARATOR =
-        Comparator.comparingInt(AgentRegistryItem::getRunningTasks);
+    private static final Comparator<AgentStatus> LEAST_RUNNING_COMPARATOR =
+        Comparator.comparingInt(AgentStatus::getRunningTasks);
 
     @Override
-    public AgentRegistryItem select(List<AgentRegistryItem> candidates) {
+    public AgentStatus select(List<AgentStatus> candidates) {
         if (candidates == null || candidates.isEmpty()) {
             return null;
         }

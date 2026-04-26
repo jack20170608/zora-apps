@@ -1,6 +1,6 @@
 package top.ilovemyhome.dagtask.si;
 
-import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
+import top.ilovemyhome.dagtask.si.agent.AgentStatus;
 
 /**
  * Result of a task dispatch operation.
@@ -16,11 +16,11 @@ import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
  */
 public record DispatchResult(
     boolean success,
-    AgentRegistryItem selectedAgent,
+    AgentStatus selectedAgent,
     Long dispatchedTaskId,
     String message) {
 
-    public static DispatchResult success(AgentRegistryItem agent, Long taskId) {
+    public static DispatchResult success(AgentStatus agent, Long taskId) {
         return new DispatchResult(true, agent, taskId,
             String.format("Task %d dispatched successfully to agent %s at %s",
                 taskId, agent.getAgentId(), agent.getAgentUrl()));
@@ -51,25 +51,25 @@ public record DispatchResult(
             "Failed to serialize request: " + message);
     }
 
-    public static DispatchResult agentQueueFull(AgentRegistryItem agent) {
+    public static DispatchResult agentQueueFull(AgentStatus agent) {
         return new DispatchResult(false, agent, null,
             String.format("Agent %s at %s has full pending queue",
                 agent.getAgentId(), agent.getAgentUrl()));
     }
 
-    public static DispatchResult badRequest(AgentRegistryItem agent, String response) {
+    public static DispatchResult badRequest(AgentStatus agent, String response) {
         return new DispatchResult(false, agent, null,
             String.format("Agent %s returned 400 Bad Request: %s",
                 agent.getAgentId(), response));
     }
 
-    public static DispatchResult unexpectedHttpStatus(AgentRegistryItem agent, int statusCode, String body) {
+    public static DispatchResult unexpectedHttpStatus(AgentStatus agent, int statusCode, String body) {
         return new DispatchResult(false, agent, null,
             String.format("Agent %s returned unexpected status code %d: %s",
                 agent.getAgentId(), statusCode, body));
     }
 
-    public static DispatchResult connectionFailed(AgentRegistryItem agent, String error) {
+    public static DispatchResult connectionFailed(AgentStatus agent, String error) {
         return new DispatchResult(false, agent, null,
             String.format("Connection failed to agent %s at %s: %s",
                 agent.getAgentId(), agent.getAgentUrl(), error));

@@ -156,23 +156,27 @@ public class DagSchedulerBuilder {
         }
 
         // Create DAOs if not overridden
-        var agentRegistryDao = new AgentRegistryDaoJdbiImpl(jdbiToUse);
+        var agentDao = new AgentDaoJdbiImpl(jdbiToUse);
+        var agentStatusDao = new AgentStatusDaoJdbiImpl(jdbiToUse);
+        var agentTokenDao = new AgentTokenDaoJdbiImpl(jdbiToUse);
         var taskTemplateDao = new TaskTemplateDaoJdbiImpl(jdbiToUse);
         var taskOrderDao = new TaskOrderDaoJdbiImpl(jdbiToUse);
         var taskRecordDao = new TaskRecordDaoJdbiImpl(jdbiToUse);
         var taskDispatchDao = new TaskDispatchDaoJdbiImpl(jdbiToUse);
 
         var taskOrderService = new TaskOrderServiceImpl(jdbiToUse, taskRecordDao, taskOrderDao);
-        var agentRegistryService = new DefaultAgentRegistryService(jdbi, taskRecordDao, agentRegistryDao);
+        var agentRegistryService = new DefaultAgentRegistryService(jdbi, taskRecordDao, agentDao, agentStatusDao);
         var taskTemplateService = new TaskTemplateServiceImpl(taskTemplateDao);
-        var taskDispatcher = new DefaultTaskDispatcher(agentRegistryDao, taskDispatchDao, new RandomLoadBalance(), objectMapper, null);
+        var taskDispatcher = new DefaultTaskDispatcher(agentStatusDao, taskDispatchDao, new RandomLoadBalance(), objectMapper, null);
         var dagManageService = new DagManageServiceImpl(jdbiToUse, taskOrderDao, taskRecordDao, taskTemplateDao, objectMapper);
         var dagScheduleService = new DagScheduleServiceImpl(taskRecordDao, taskDispatcher);
         return new DagSchedulerServer(
             config,
             jdbiToUse,
             objectMapper,
-            agentRegistryDao,
+            agentDao,
+            agentStatusDao,
+            agentTokenDao,
             taskOrderDao,
             taskRecordDao,
             taskTemplateDao,

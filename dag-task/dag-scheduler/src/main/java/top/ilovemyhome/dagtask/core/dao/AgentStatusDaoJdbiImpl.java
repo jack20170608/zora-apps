@@ -37,6 +37,12 @@ public class AgentStatusDaoJdbiImpl extends BaseDaoJdbiImpl<AgentStatus> impleme
     }
 
     @Override
+    public List<AgentStatus> findAllActive() {
+        String sql = String.format("select * from %s where running = true", table.getName());
+        return find(sql, Map.of(), null);
+    }
+
+    @Override
     public int updateStatus(String agentId, boolean running, int pendingTasks, int runningTasks, int finishedTasks) {
         Objects.requireNonNull(agentId, "agentId must not be null");
         String sql = String.format(
