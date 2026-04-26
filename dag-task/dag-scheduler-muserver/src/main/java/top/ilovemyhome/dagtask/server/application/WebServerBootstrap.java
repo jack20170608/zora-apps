@@ -25,12 +25,7 @@ import top.ilovemyhome.dagtask.scheduler.config.AutoApproveConfig;
 import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
 import top.ilovemyhome.dagtask.scheduler.token.TokenManagementApi;
 import top.ilovemyhome.dagtask.scheduler.token.TokenService;
-import top.ilovemyhome.dagtask.server.interfaces.api.AgentAdminApi;
-import top.ilovemyhome.dagtask.server.interfaces.api.ExecutionApi;
 import top.ilovemyhome.dagtask.server.interfaces.api.FooUserHandler;
-import top.ilovemyhome.dagtask.server.interfaces.api.StatsApi;
-import top.ilovemyhome.dagtask.server.interfaces.api.WorkflowApi;
-import top.ilovemyhome.dagtask.server.web.LoginHandler;
 import top.ilovemyhome.dagtask.server.web.security.SecurityHandler;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
@@ -63,27 +58,26 @@ public class WebServerBootstrap {
         int port = config.getInt("server.port");
         logger.info("Start mu server on port: {}.", port);
         long start = System.currentTimeMillis();
-        AppSecurityContext appSecurityContext = appContext.getBean("appSecurityContext", AppSecurityContext.class);
         MuServerBuilder muServerBuilder = MuServerBuilder.httpServer()
-                .withHttpPort(port)
-                .addResponseCompleteListener(info -> {
-                    MuRequest req = info.request();
-                    MuResponse resp = info.response();
-                    logger.info("Response completed: success={}, remoteAddr={}, clientAddress={}, req={}, status={}, duration={}.",
-                            info.completedSuccessfully(), req.remoteAddress(), req.clientIP(), req, resp.status(), info.duration());
-                })
-                .withIdleTimeout(30, TimeUnit.MINUTES)
-                .withMaxRequestSize(300_000_000) //300MB
-                .addHandler(Method.GET, "/", (req, res, map) -> res.redirect("/" + contextPath + "/index.html"))
+            .withHttpPort(port)
+            .addResponseCompleteListener(info -> {
+                MuRequest req = info.request();
+                MuResponse resp = info.response();
+                logger.info("Response completed: success={}, remoteAddr={}, clientAddress={}, req={}, status={}, duration={}.",
+                    info.completedSuccessfully(), req.remoteAddress(), req.clientIP(), req, resp.status(), info.duration());
+            })
+            .withIdleTimeout(30, TimeUnit.MINUTES)
+            .withMaxRequestSize(300_000_000) //300MB
+            .addHandler(Method.GET, "/", (req, res, map) -> res.redirect("/" + contextPath + "/index.html"))
+            .addHandler(Method.GET, "/index.html", (req, res, map) -> res.redirect("/" + contextPath + "/swagger-ui/index.html?url=/" + contextPath + "/openapi.json"))
+            .addHandler(context(contextPath)
+                .addHandler(ResourceHandlerBuilder.classpathHandler("/swagger-ui"))
+                .addHandler(Method.GET, "/", (req, res, map) -> res.redirect("/" + contextPath + "/swagger-ui/index.html?url=/" + contextPath + "/openapi.json"))
                 .addHandler(Method.GET, "/index.html", (req, res, map) -> res.redirect("/" + contextPath + "/swagger-ui/index.html?url=/" + contextPath + "/openapi.json"))
-                .addHandler(context(contextPath)
-                        .addHandler(ResourceHandlerBuilder.classpathHandler("/swagger-ui"))
-                        .addHandler(Method.GET, "/", (req, res, map) -> res.redirect("/" + contextPath + "/swagger-ui/index.html?url=/" + contextPath + "/openapi.json"))
-                        .addHandler(Method.GET, "/index.html", (req, res, map) -> res.redirect("/" + contextPath + "/swagger-ui/index.html?url=/" + contextPath + "/openapi.json"))
-                        .addHandler(new SecurityHandler(appContext))
-                        .addHandler(ResourceHandlerBuilder.classpathHandler("/static"))
-                        .addHandler(createRestHandler(appContext))
-                );
+                .addHandler(new SecurityHandler(appContext))
+                .addHandler(ResourceHandlerBuilder.classpathHandler("/static"))
+                .addHandler(createRestHandler(appContext))
+            );
 
         MuServer muServer = muServerBuilder.start();
         logger.info("Mu server started in {} ms.", System.currentTimeMillis() - start);
@@ -108,10 +102,10 @@ public class WebServerBootstrap {
         AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
 
         // New frontend-friendly APIs
-        WorkflowApi workflowApi = new WorkflowApi(schedulerServer.getTaskTemplateService(), schedulerServer.getDagManageService());
-        ExecutionApi executionApi = new ExecutionApi(schedulerServer.getTaskOrderDao(), schedulerServer.getTaskRecordDao());
-        AgentAdminApi agentAdminApi = new AgentAdminApi(schedulerServer.getAgentRegistryDao());
-        StatsApi statsApi = new StatsApi();
+//        WorkflowApi workflowApi = new WorkflowApi(schedulerServer.getTaskTemplateService(), schedulerServer.getDagManageService());
+//        ExecutionApi executionApi = new ExecutionApi(schedulerServer.getTaskOrderDao(), schedulerServer.getTaskRecordDao());
+//        AgentAdminApi agentAdminApi = new AgentAdminApi(schedulerServer.getAgentRegistryDao());
+//        StatsApi statsApi = new StatsApi();
 
         // Create authentication components
         JwtConfig jwtConfig = readJwtConfig(config);
@@ -122,49 +116,50 @@ public class WebServerBootstrap {
         TokenManagementApi tokenManagementApi = new TokenManagementApi(tokenService);
 
         return RestHandlerBuilder
-                .restHandler(new FooUserHandler(appContext),
-                    agentRegistryApi,
-                    taskOrderApi,
-                    taskTemplateApi,
-                    publicRegistrationApi,
-                    tokenManagementApi)
-                .addRequestFilter(appSecurityContext.getFacetFilter())
-                    tokenManagementApi,
-                    workflowApi,
-                    executionApi,
-                    agentAdminApi,
-                    statsApi)
-                .addCustomReader(createJacksonJsonProvider())
-                .addCustomWriter(createJacksonJsonProvider())
-                .withCollectionParameterStrategy(CollectionParameterStrategy.NO_TRANSFORM)
-                .withOpenApiHtmlUrl("/api.html")
-                .withOpenApiJsonUrl("/openapi.json")
-                .addExceptionMapper(ClientErrorException.class, e -> Response.status(Response.Status.BAD_REQUEST.getStatusCode())
-                        .type(MediaType.APPLICATION_JSON)
-                        .entity(Map.of("message", e.getMessage()))
-                        .build())
-                .addExceptionMapper(InternalServerErrorException.class, e -> Response.status(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
-                        .type(MediaType.APPLICATION_JSON)
-                        .entity(Map.of("message", e.getMessage()))
-                        .build())
-                .addExceptionMapper(JsonMappingException.class, e -> Response.status(Response.Status.BAD_REQUEST.getStatusCode())
-                        .type(MediaType.APPLICATION_JSON)
-                        .entity(Map.of("message", e.getMessage()))
-                        .build())
-                .withOpenApiDocument(
-                        OpenAPIObjectBuilder.openAPIObject()
-                                .withInfo(
-                                        infoObject()
-                                                .withTitle("Dag Task Server API")
-                                                .withDescription("DAG-based task scheduling system REST API")
-                                                .withVersion("1.0")
-                                                .build())
-                                .withExternalDocs(
-                                        externalDocumentationObject()
-                                                .withDescription("Documentation docs")
-                                                .withUrl(URI.create("https//muserver.io/jaxrs"))
-                                                .build())
-                );
+            .restHandler(new FooUserHandler(appContext),
+                agentRegistryApi,
+                taskOrderApi,
+                taskTemplateApi,
+                publicRegistrationApi,
+                tokenManagementApi
+                //,
+//                workflowApi,
+//                executionApi,
+//                agentAdminApi,
+//                statsApi
+            )
+            .addRequestFilter(appSecurityContext.getFacetFilter())
+            .addCustomReader(createJacksonJsonProvider())
+            .addCustomWriter(createJacksonJsonProvider())
+            .withCollectionParameterStrategy(CollectionParameterStrategy.NO_TRANSFORM)
+            .withOpenApiHtmlUrl("/api.html")
+            .withOpenApiJsonUrl("/openapi.json")
+            .addExceptionMapper(ClientErrorException.class, e -> Response.status(Response.Status.BAD_REQUEST.getStatusCode())
+                .type(MediaType.APPLICATION_JSON)
+                .entity(Map.of("message", e.getMessage()))
+                .build())
+            .addExceptionMapper(InternalServerErrorException.class, e -> Response.status(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
+                .type(MediaType.APPLICATION_JSON)
+                .entity(Map.of("message", e.getMessage()))
+                .build())
+            .addExceptionMapper(JsonMappingException.class, e -> Response.status(Response.Status.BAD_REQUEST.getStatusCode())
+                .type(MediaType.APPLICATION_JSON)
+                .entity(Map.of("message", e.getMessage()))
+                .build())
+            .withOpenApiDocument(
+                OpenAPIObjectBuilder.openAPIObject()
+                    .withInfo(
+                        infoObject()
+                            .withTitle("Dag Task Server API")
+                            .withDescription("DAG-based task scheduling system REST API")
+                            .withVersion("1.0")
+                            .build())
+                    .withExternalDocs(
+                        externalDocumentationObject()
+                            .withDescription("Documentation docs")
+                            .withUrl(URI.create("https//muserver.io/jaxrs"))
+                            .build())
+            );
     }
 
     private static JwtConfig readJwtConfig(Config config) {
