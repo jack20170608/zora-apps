@@ -6,9 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.TaskRecord;
-import top.ilovemyhome.dagtask.si.persistence.AgentRegistryDao;
+import top.ilovemyhome.dagtask.si.persistence.AgentDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
-import top.ilovemyhome.dagtask.si.agent.AgentRegistryItem;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
@@ -17,48 +16,27 @@ import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Default implementation of {@link AgentRegistryService} with database persistence.
- * Maintains an in-memory cache of agent information for fast access and persists
- * all changes to the database using {@link AgentRegistryDao}.
- *
- * This implementation uses {@link ConcurrentHashMap} for thread-safe cache access
- * and delegates persistence to the DAO layer, allowing the registry to survive
- * server restarts.
- */
 public class DefaultAgentRegistryService implements AgentRegistryService {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultAgentRegistryService.class);
 
     private final Jdbi jdbi;
     private final TaskRecordDao taskRecordDao;
-    private final AgentRegistryDao agentRegistryDao;
-    private final ConcurrentHashMap<String, AgentRegistryItem> agentCache = new ConcurrentHashMap<>();
+    private final AgentDao agentDao;
 
     /**
      * Creates a DefaultAgentRegistryService with the required dependencies.
      *
      * @param taskRecordDao DAO for updating task records when results are reported
-     * @param agentRegistryDao DAO for persisting agent registry information
+     * @param agentDao DAO for persisting agent registry information
      */
-    public DefaultAgentRegistryService(Jdbi jdbi, TaskRecordDao taskRecordDao, AgentRegistryDao agentRegistryDao) {
+    public DefaultAgentRegistryService(Jdbi jdbi, TaskRecordDao taskRecordDao, AgentDao agentDao) {
         this.jdbi = jdbi;
         this.taskRecordDao = Objects.requireNonNull(taskRecordDao, "taskRecordDao must not be null");
-        this.agentRegistryDao = Objects.requireNonNull(agentRegistryDao, "agentRegistryDao must not be null");
-        // Warm the cache from database
-        loadAllFromDatabase();
+        this.agentDao = Objects.requireNonNull(agentDao, "agentDao must not be null");
     }
 
-    /**
-     * Loads all agents from database into the in-memory cache on startup.
-     */
-    private void loadAllFromDatabase() {
-        List<AgentRegistryItem> allAgents = agentRegistryDao.findAll();
-        allAgents.forEach(agent -> agentCache.put(agent.getAgentId(), agent));
-        logger.info("Loaded {} agents from database into registry cache", allAgents.size());
-    }
 
     @Override
     public boolean registerAgent(AgentRegisterRequest registration) {
@@ -66,6 +44,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
             logger.warn("Cannot register agent: invalid registration (agentId is blank)");
             return false;
         }
+
         AgentRegistryItem agentRegistryItem = AgentRegistryItem.fromRegistration(registration);
         jdbi.useTransaction(h -> {
             if (agentRegistryDao.exists(registration.agentId())) {
