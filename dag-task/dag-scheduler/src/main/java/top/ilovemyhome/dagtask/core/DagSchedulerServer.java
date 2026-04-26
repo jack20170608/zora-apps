@@ -259,6 +259,15 @@ public class DagSchedulerServer {
         return taskTemplateDao;
     }
 
+    /**
+     * Gets the DagManageService for this server.
+     *
+     * @return the DAG manage service
+     */
+    public DagManageService getDagManageService() {
+        return dagManageService;
+    }
+
     public ExecutorService getThreadPool() {
         return threadPool;
     }

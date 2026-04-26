@@ -1,25 +1,25 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { RootLayoutClient } from "./root-layout-client";
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import { Providers } from "@/components/providers"
+import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "DAG Scheduler",
-  description: "DAG-based task scheduling system - Visual workflow builder",
-};
+  title: "DAG Scheduler - Workflow Management",
+  description: "Enterprise-grade DAG-based task scheduling and workflow management platform",
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="zh-CN" suppressHydrationWarning>
       <body className={inter.className}>
-        <RootLayoutClient>{children}</RootLayoutClient>
+        <Providers>{children}</Providers>
       </body>
     </html>
-  );
+  )
 }
