@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -44,8 +44,13 @@ const navigation = [
 ]
 
 export function Header() {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -104,12 +109,12 @@ export function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
-                {theme === "dark" ? (
-                  <Moon className="h-5 w-5" />
-                ) : theme === "light" ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
+                {!mounted ? (
                   <Monitor className="h-5 w-5" />
+                ) : resolvedTheme === "dark" ? (
+                  <Moon className="h-5 w-5" />
+                ) : (
+                  <Sun className="h-5 w-5" />
                 )}
                 <span className="sr-only">Toggle theme</span>
               </Button>
