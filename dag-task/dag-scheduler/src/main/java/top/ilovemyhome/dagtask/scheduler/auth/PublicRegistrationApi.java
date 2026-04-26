@@ -10,12 +10,14 @@ import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.Constants;
+import top.ilovemyhome.dagtask.si.agent.Agent;
 import top.ilovemyhome.dagtask.si.auth.AgentRegistrationRequest;
 import top.ilovemyhome.dagtask.si.auth.AgentRegistrationResponse;
 import top.ilovemyhome.dagtask.si.auth.TokenPushRequest;
 import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
 import top.ilovemyhome.dagtask.scheduler.config.AutoApproveConfig;
 import top.ilovemyhome.dagtask.scheduler.token.TokenService;
+import top.ilovemyhome.dagtask.si.persistence.AgentDao;
 
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -30,7 +32,7 @@ import java.util.Base64;
  * Agents call this endpoint on first startup when no token exists locally.
  * </p>
  * <p>
- * Simplified flow: check whitelist → if match generate token and push → done.
+ * Simplified flow: check whitelist → if match create agent and generate token → push → done.
  * No approval workflow is stored. If not match, reject immediately.
  * </p>
  */
@@ -43,15 +45,18 @@ public class PublicRegistrationApi {
     private final TokenService tokenService;
     private final TokenPusher tokenPusher;
     private final AutoApproveConfig autoApproveConfig;
+    private final AgentDao agentDao;
     private final SecureRandom random = new SecureRandom();
 
     @Inject
     public PublicRegistrationApi(TokenService tokenService,
                                  TokenPusher tokenPusher,
-                                 AutoApproveConfig autoApproveConfig) {
+                                 AutoApproveConfig autoApproveConfig,
+                                 AgentDao agentDao) {
         this.tokenService = tokenService;
         this.tokenPusher = tokenPusher;
         this.autoApproveConfig = autoApproveConfig;
+        this.agentDao = agentDao;
     }
 
     /**
@@ -92,9 +97,28 @@ public class PublicRegistrationApi {
         Instant issuedAt = Instant.now();
         Instant expiresAt = issuedAt.plus(365, ChronoUnit.DAYS);
 
-        // Generate token
+        // Create or update agent record
+        String agentId = request.name();
+        if (!agentDao.exists(agentId)) {
+            Agent agent = Agent.builder()
+                .withAgentId(agentId)
+                .withName(request.name())
+                .withDescription(request.description())
+                .withLabelsJson("{}")
+                .withStatus(Agent.Status.ACTIVE)
+                .withRegisteredAt(issuedAt)
+                .withLastHeartbeatAt(issuedAt)
+                .build();
+            agentDao.create(agent);
+            LOGGER.info("Created agent record for: name={}", request.name());
+        } else {
+            agentDao.updateStatus(agentId, Agent.Status.ACTIVE);
+            LOGGER.info("Reactivated existing agent: name={}", request.name());
+        }
+
+        // Generate token bound to the agent
         var tokenResult = tokenService.generateToken(
-            request.name(), request.description(), 365, "system");
+            agentId, request.name(), request.description(), 365, "system");
         String jwt = tokenService.generateJwt(tokenResult);
 
         // Push token to callback

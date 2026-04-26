@@ -58,7 +58,9 @@ public class DagSchedulerServer {
     private final ObjectMapper objectMapper;
 
     // DAO layer
-    private final AgentRegistryDao agentRegistryDao;
+    private final AgentDao agentDao;
+    private final AgentStatusDao agentStatusDao;
+    private final AgentTokenDao agentTokenDao;
     private final TaskOrderDao taskOrderDao;
     private final TaskRecordDao taskRecordDao;
     private final TaskTemplateDao taskTemplateDao;
@@ -80,7 +82,9 @@ public class DagSchedulerServer {
         DagServerConfig config,
         Jdbi jdbi,
         ObjectMapper objectMapper,
-        AgentRegistryDao agentRegistryDao,
+        AgentDao agentDao,
+        AgentStatusDao agentStatusDao,
+        AgentTokenDao agentTokenDao,
         TaskOrderDao taskOrderDao,
         TaskRecordDao taskRecordDao,
         TaskTemplateDao taskTemplateDao,
@@ -93,7 +97,9 @@ public class DagSchedulerServer {
         this.config = config;
         this.jdbi = Objects.requireNonNull(jdbi, "jdbi must not be null");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
-        this.agentRegistryDao = Objects.requireNonNull(agentRegistryDao, "agentRegistryDao must not be null");
+        this.agentDao = Objects.requireNonNull(agentDao, "agentDao must not be null");
+        this.agentStatusDao = Objects.requireNonNull(agentStatusDao, "agentStatusDao must not be null");
+        this.agentTokenDao = Objects.requireNonNull(agentTokenDao, "agentTokenDao must not be null");
         this.taskOrderDao = Objects.requireNonNull(taskOrderDao, "taskOrderDao must not be null");
         this.taskRecordDao = Objects.requireNonNull(taskRecordDao, "taskRecordDao must not be null");
         this.taskTemplateDao = Objects.requireNonNull(taskTemplateDao, "taskTemplateDao must not be null");
@@ -251,8 +257,16 @@ public class DagSchedulerServer {
         return dagScheduleService;
     }
 
-    public AgentRegistryDao getAgentRegistryDao() {
-        return agentRegistryDao;
+    public AgentDao getAgentDao() {
+        return agentDao;
+    }
+
+    public AgentStatusDao getAgentStatusDao() {
+        return agentStatusDao;
+    }
+
+    public AgentTokenDao getAgentTokenDao() {
+        return agentTokenDao;
     }
 
     public TaskTemplateDao getTaskTemplateDao() {

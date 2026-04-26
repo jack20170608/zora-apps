@@ -104,15 +104,15 @@ public class WebServerBootstrap {
         // New frontend-friendly APIs
 //        WorkflowApi workflowApi = new WorkflowApi(schedulerServer.getTaskTemplateService(), schedulerServer.getDagManageService());
 //        ExecutionApi executionApi = new ExecutionApi(schedulerServer.getTaskOrderDao(), schedulerServer.getTaskRecordDao());
-//        AgentAdminApi agentAdminApi = new AgentAdminApi(schedulerServer.getAgentRegistryDao());
+//        AgentAdminApi agentAdminApi = new AgentAdminApi(schedulerServer.getAgentDao(), schedulerServer.getAgentStatusDao());
 //        StatsApi statsApi = new StatsApi();
 
         // Create authentication components
         JwtConfig jwtConfig = readJwtConfig(config);
         AutoApproveConfig autoApproveConfig = readAutoApproveConfig(config);
-        TokenService tokenService = new TokenService(schedulerServer.getAgentRegistryDao(), jwtConfig);
+        TokenService tokenService = new TokenService(schedulerServer.getAgentTokenDao(), jwtConfig);
         TokenPusher tokenPusher = new DefaultTokenPusher();
-        PublicRegistrationApi publicRegistrationApi = new PublicRegistrationApi(tokenService, tokenPusher, autoApproveConfig);
+        PublicRegistrationApi publicRegistrationApi = new PublicRegistrationApi(tokenService, tokenPusher, autoApproveConfig, schedulerServer.getAgentDao());
         TokenManagementApi tokenManagementApi = new TokenManagementApi(tokenService);
 
         return RestHandlerBuilder

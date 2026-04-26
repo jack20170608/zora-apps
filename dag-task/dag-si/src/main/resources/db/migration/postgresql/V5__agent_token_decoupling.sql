@@ -21,7 +21,7 @@ CREATE TABLE t_agents (
 CREATE TABLE t_agent_tokens (
     id BIGSERIAL PRIMARY KEY,
     token_id VARCHAR(64) NOT NULL UNIQUE,
-    agent_id VARCHAR(255) NOT NULL,
+    agent_id VARCHAR(255),
     name VARCHAR(255) NOT NULL,
     description TEXT,
     created_by VARCHAR(100) NOT NULL,
