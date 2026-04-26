@@ -6,12 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.TaskRecord;
+import top.ilovemyhome.dagtask.si.agent.*;
 import top.ilovemyhome.dagtask.si.persistence.AgentDao;
+import top.ilovemyhome.dagtask.si.persistence.AgentStatusDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
-import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
-import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
-import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
-import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 
 import java.util.List;
 import java.util.Objects;
@@ -24,6 +22,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
     private final Jdbi jdbi;
     private final TaskRecordDao taskRecordDao;
     private final AgentDao agentDao;
+    private final AgentStatusDao agentStatusDao;
 
     /**
      * Creates a DefaultAgentRegistryService with the required dependencies.
@@ -31,10 +30,11 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      * @param taskRecordDao DAO for updating task records when results are reported
      * @param agentDao DAO for persisting agent registry information
      */
-    public DefaultAgentRegistryService(Jdbi jdbi, TaskRecordDao taskRecordDao, AgentDao agentDao) {
+    public DefaultAgentRegistryService(Jdbi jdbi, TaskRecordDao taskRecordDao, AgentDao agentDao, AgentStatusDao agentStatusDao) {
         this.jdbi = jdbi;
         this.taskRecordDao = Objects.requireNonNull(taskRecordDao, "taskRecordDao must not be null");
         this.agentDao = Objects.requireNonNull(agentDao, "agentDao must not be null");
+        this.agentStatusDao = Objects.requireNonNull(agentStatusDao, "agentStatusDao must not be null");
     }
 
 
@@ -45,26 +45,18 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
             return false;
         }
 
-        AgentRegistryItem agentRegistryItem = AgentRegistryItem.fromRegistration(registration);
+        Agent agent = AgentRegisterRequest.toAgent(registration);
         jdbi.useTransaction(h -> {
-            if (agentRegistryDao.exists(registration.agentId())) {
+            if (agentDao.exists(registration.agentId())) {
                 // Update existing agent in database
-                agentRegistryDao.updateStatus(
-                    registration.agentId(),
-                    true,
-                    0,
-                    0,
-                    0
-                );
+                agentDao.updateStatus(registration.agentId(), agent.getStatus());
                 logger.info("Agent [{}] already exists in database, reactivating", registration.agentId());
             } else {
                 // Insert new agent into database
-                Long id = agentRegistryDao.create(agentRegistryItem);
+                Long id = agentDao.create(agent);
                 logger.info("Agent [{}] registered successfully Id:{}, URL: {}, max concurrent: {}",
                     registration.agentId(), id, registration.agentUrl(), registration.maxConcurrentTasks());
             }
-            // Update cache
-            agentCache.put(registration.agentId(), agentRegistryItem);
         });
 
         return true;
