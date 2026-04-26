@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation"
 import Link from "next/link"
+import { useState } from "react"
 import {
   ArrowLeft,
   GitBranch,
@@ -12,6 +13,12 @@ import {
   CheckCircle2,
   XCircle,
   History,
+  GitCompare,
+  ArrowRight,
+  Plus,
+  Minus,
+  Download,
+  Upload,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -54,6 +61,10 @@ export default function WorkflowDetailPage() {
   const params = useParams()
   const workflowId = params.id as string
   const workflow = mockWorkflow
+  const [compareVersions, setCompareVersions] = useState<{left: string; right: string}>({
+    left: "2.0.0",
+    right: "2.1.0"
+  })
 
   return (
     <div className="space-y-6">
@@ -75,6 +86,24 @@ export default function WorkflowDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              const dataStr = JSON.stringify(workflow, null, 2)
+              const dataBlob = new Blob([dataStr], { type: 'application/json' })
+              const url = URL.createObjectURL(dataBlob)
+              const link = document.createElement('a')
+              link.href = url
+              link.download = `${workflow.key}.json`
+              document.body.appendChild(link)
+              link.click()
+              document.body.removeChild(link)
+              URL.revokeObjectURL(url)
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
           <Button variant="outline">
             <Play className="mr-2 h-4 w-4" />
             Execute
@@ -122,6 +151,7 @@ export default function WorkflowDetailPage() {
         <TabsList>
           <TabsTrigger value="dag">DAG Preview</TabsTrigger>
           <TabsTrigger value="versions">Versions</TabsTrigger>
+          <TabsTrigger value="compare">Compare</TabsTrigger>
           <TabsTrigger value="executions">Executions</TabsTrigger>
           <TabsTrigger value="parameters">Parameters</TabsTrigger>
         </TabsList>
@@ -186,6 +216,79 @@ export default function WorkflowDetailPage() {
                     </Badge>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="compare">
+          <Card>
+            <CardHeader>
+              <CardTitle>Version Comparison</CardTitle>
+              <CardDescription>Compare changes between versions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Base Version</label>
+                  <select 
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    value={compareVersions.left}
+                    onChange={e => setCompareVersions({...compareVersions, left: e.target.value})}
+                  >
+                    {mockVersions.map(v => (
+                      <option key={v.version} value={v.version}>v{v.version}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="pt-5">
+                  <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Compare Version</label>
+                  <select 
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    value={compareVersions.right}
+                    onChange={e => setCompareVersions({...compareVersions, right: e.target.value})}
+                  >
+                    {mockVersions.map(v => (
+                      <option key={v.version} value={v.version}>v{v.version}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                  <Plus className="h-4 w-4 text-emerald-400" />
+                  <div>
+                    <p className="text-sm font-medium text-emerald-400">Added: Data Verification Node</p>
+                    <p className="text-xs text-muted-foreground">New validation step at end of pipeline</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                  <GitCompare className="h-4 w-4 text-amber-400" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-400">Modified: Extract Data Node</p>
+                    <p className="text-xs text-muted-foreground">Changed timeout from 300s to 600s</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
+                  <History className="h-4 w-4 text-blue-400" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-400">Unchanged: Transform Data Node</p>
+                    <p className="text-xs text-muted-foreground">No modifications in this version</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 rounded-lg bg-muted">
+                <p className="text-sm font-medium mb-2">Summary</p>
+                <div className="flex gap-4 text-xs">
+                  <span className="text-emerald-400">1 addition</span>
+                  <span className="text-amber-400">1 modification</span>
+                  <span className="text-blue-400">1 unchanged</span>
+                </div>
               </div>
             </CardContent>
           </Card>

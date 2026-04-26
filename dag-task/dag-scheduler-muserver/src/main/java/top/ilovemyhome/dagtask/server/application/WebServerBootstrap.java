@@ -25,7 +25,12 @@ import top.ilovemyhome.dagtask.scheduler.config.AutoApproveConfig;
 import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
 import top.ilovemyhome.dagtask.scheduler.token.TokenManagementApi;
 import top.ilovemyhome.dagtask.scheduler.token.TokenService;
+import top.ilovemyhome.dagtask.server.interfaces.api.AgentAdminApi;
+import top.ilovemyhome.dagtask.server.interfaces.api.ExecutionApi;
 import top.ilovemyhome.dagtask.server.interfaces.api.FooUserHandler;
+import top.ilovemyhome.dagtask.server.interfaces.api.StatsApi;
+import top.ilovemyhome.dagtask.server.interfaces.api.WorkflowApi;
+import top.ilovemyhome.dagtask.server.web.LoginHandler;
 import top.ilovemyhome.dagtask.server.web.security.SecurityHandler;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
@@ -102,6 +107,12 @@ public class WebServerBootstrap {
         TaskTemplateApi taskTemplateApi = new TaskTemplateApi(schedulerServer.getTaskTemplateService());
         AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
 
+        // New frontend-friendly APIs
+        WorkflowApi workflowApi = new WorkflowApi(schedulerServer.getTaskTemplateService(), schedulerServer.getDagManageService());
+        ExecutionApi executionApi = new ExecutionApi(schedulerServer.getTaskOrderDao(), schedulerServer.getTaskRecordDao());
+        AgentAdminApi agentAdminApi = new AgentAdminApi(schedulerServer.getAgentRegistryDao());
+        StatsApi statsApi = new StatsApi();
+
         // Create authentication components
         JwtConfig jwtConfig = readJwtConfig(config);
         AutoApproveConfig autoApproveConfig = readAutoApproveConfig(config);
@@ -118,6 +129,11 @@ public class WebServerBootstrap {
                     publicRegistrationApi,
                     tokenManagementApi)
                 .addRequestFilter(appSecurityContext.getFacetFilter())
+                    tokenManagementApi,
+                    workflowApi,
+                    executionApi,
+                    agentAdminApi,
+                    statsApi)
                 .addCustomReader(createJacksonJsonProvider())
                 .addCustomWriter(createJacksonJsonProvider())
                 .withCollectionParameterStrategy(CollectionParameterStrategy.NO_TRANSFORM)

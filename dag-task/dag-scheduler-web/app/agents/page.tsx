@@ -9,76 +9,14 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  Tag,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useAgents } from "@/hooks/use-api"
 import type { Agent, AgentStatus } from "@/types"
 import { formatRelativeTime } from "@/lib/utils"
-
-const mockAgents: Agent[] = [
-  {
-    id: "agent-001",
-    name: "worker-01",
-    host: "192.168.1.101",
-    status: "online",
-    version: "2.1.0",
-    capabilities: ["shell", "python", "docker"],
-    currentTasks: 3,
-    maxTasks: 10,
-    cpuUsage: 45,
-    memoryUsage: 62,
-    diskUsage: 30,
-    lastHeartbeat: "2024-01-07T10:55:00Z",
-    tags: ["production", "gpu"],
-  },
-  {
-    id: "agent-002",
-    name: "worker-02",
-    host: "192.168.1.102",
-    status: "busy",
-    version: "2.1.0",
-    capabilities: ["shell", "python", "java"],
-    currentTasks: 10,
-    maxTasks: 10,
-    cpuUsage: 89,
-    memoryUsage: 78,
-    diskUsage: 45,
-    lastHeartbeat: "2024-01-07T10:54:00Z",
-    tags: ["production"],
-  },
-  {
-    id: "agent-003",
-    name: "worker-03",
-    host: "192.168.1.103",
-    status: "online",
-    version: "2.0.1",
-    capabilities: ["shell", "database"],
-    currentTasks: 1,
-    maxTasks: 5,
-    cpuUsage: 23,
-    memoryUsage: 34,
-    diskUsage: 60,
-    lastHeartbeat: "2024-01-07T10:56:00Z",
-    tags: ["staging"],
-  },
-  {
-    id: "agent-004",
-    name: "gpu-01",
-    host: "192.168.1.201",
-    status: "offline",
-    version: "2.1.0",
-    capabilities: ["python", "ml"],
-    currentTasks: 0,
-    maxTasks: 4,
-    cpuUsage: 0,
-    memoryUsage: 0,
-    diskUsage: 25,
-    lastHeartbeat: "2024-01-07T08:00:00Z",
-    tags: ["production", "gpu", "ml"],
-  },
-]
 
 const statusConfig: Record<AgentStatus, { label: string; variant: any; color: string; icon: any }> = {
   online: { label: "Online", variant: "success", color: "#10B981", icon: CheckCircle2 },
@@ -89,7 +27,7 @@ const statusConfig: Record<AgentStatus, { label: string; variant: any; color: st
 function AgentCard({ agent }: { agent: Agent }) {
   const config = statusConfig[agent.status]
   const StatusIcon = config.icon
-  const loadPercent = (agent.currentTasks / agent.maxTasks) * 100
+  const loadPercent = agent.maxTasks > 0 ? (agent.currentTasks / agent.maxTasks) * 100 : 0
 
   return (
     <motion.div
@@ -117,7 +55,7 @@ function AgentCard({ agent }: { agent: Agent }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-1.5">
-            {agent.tags.map((tag) => (
+            {agent.tags?.map((tag) => (
               <Badge key={tag} variant="secondary" className="text-xs">
                 {tag}
               </Badge>
@@ -170,7 +108,7 @@ function AgentCard({ agent }: { agent: Agent }) {
             <span>v{agent.version}</span>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {formatRelativeTime(agent.lastHeartbeat)}
+              {agent.lastHeartbeat ? formatRelativeTime(agent.lastHeartbeat) : '-'}
             </span>
           </div>
         </CardContent>
@@ -179,10 +117,47 @@ function AgentCard({ agent }: { agent: Agent }) {
   )
 }
 
+function AgentCardSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-lg" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          </div>
+          <Skeleton className="h-5 w-16" />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-1.5">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-full" />
+        </div>
+        <div className="flex justify-between pt-2">
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function AgentsPage() {
-  const onlineCount = mockAgents.filter(a => a.status === 'online').length
-  const busyCount = mockAgents.filter(a => a.status === 'busy').length
-  const offlineCount = mockAgents.filter(a => a.status === 'offline').length
+  const { data: agents, isLoading } = useAgents()
+
+  const agentList: Agent[] = agents || []
+  const onlineCount = agentList.filter((a: Agent) => a.status === 'online').length
+  const busyCount = agentList.filter((a: Agent) => a.status === 'busy').length
+  const offlineCount = agentList.filter((a: Agent) => a.status === 'offline').length
 
   return (
     <div className="space-y-6">
@@ -230,9 +205,17 @@ export default function AgentsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {mockAgents.map((agent) => (
-          <AgentCard key={agent.id} agent={agent} />
-        ))}
+        {isLoading ? (
+          <>
+            <AgentCardSkeleton />
+            <AgentCardSkeleton />
+            <AgentCardSkeleton />
+          </>
+        ) : (
+          agentList.map((agent: Agent) => (
+            <AgentCard key={agent.id} agent={agent} />
+          ))
+        )}
       </div>
     </div>
   )

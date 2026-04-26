@@ -11,11 +11,14 @@ import {
   Activity,
   TrendingUp,
   AlertTriangle,
+  Bell,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useToast } from "@/components/ui/toast-provider"
+import { PageTransition, StaggerContainer, StaggerItem } from "@/components/ui/page-transition"
 import {
   AreaChart,
   Area,
@@ -30,77 +33,8 @@ import {
 } from "recharts"
 import type { Execution, ExecutionStatus } from "@/types"
 import { formatRelativeTime } from "@/lib/utils"
-
-const mockTrends = [
-  { date: "2024-01-01", successful: 42, failed: 3 },
-  { date: "2024-01-02", successful: 49, failed: 3 },
-  { date: "2024-01-03", successful: 46, failed: 2 },
-  { date: "2024-01-04", successful: 58, failed: 3 },
-  { date: "2024-01-05", successful: 52, failed: 3 },
-  { date: "2024-01-06", successful: 36, failed: 2 },
-  { date: "2024-01-07", successful: 40, failed: 2 },
-]
-
-const mockRecentExecutions: Execution[] = [
-  {
-    id: "exec-001",
-    workflowId: "wf-001",
-    workflowKey: "etl-daily",
-    workflowName: "Daily ETL Pipeline",
-    version: "2.1.0",
-    status: "running",
-    triggerType: "scheduled",
-    startedAt: "2024-01-07T10:30:00Z",
-    progress: 65,
-  },
-  {
-    id: "exec-002",
-    workflowId: "wf-002",
-    workflowKey: "backup-weekly",
-    workflowName: "Weekly Database Backup",
-    version: "1.5.0",
-    status: "success",
-    triggerType: "manual",
-    startedAt: "2024-01-07T09:00:00Z",
-    endedAt: "2024-01-07T09:15:00Z",
-    duration: 900000,
-  },
-  {
-    id: "exec-003",
-    workflowId: "wf-003",
-    workflowKey: "ml-training",
-    workflowName: "ML Model Training",
-    version: "3.0.0",
-    status: "failed",
-    triggerType: "api",
-    startedAt: "2024-01-07T08:00:00Z",
-    endedAt: "2024-01-07T08:45:00Z",
-    duration: 2700000,
-    errorMessage: "GPU memory insufficient",
-  },
-  {
-    id: "exec-004",
-    workflowId: "wf-001",
-    workflowKey: "etl-daily",
-    workflowName: "Daily ETL Pipeline",
-    version: "2.1.0",
-    status: "success",
-    triggerType: "scheduled",
-    startedAt: "2024-01-06T10:30:00Z",
-    endedAt: "2024-01-06T10:45:00Z",
-    duration: 900000,
-  },
-  {
-    id: "exec-005",
-    workflowId: "wf-004",
-    workflowKey: "data-cleanup",
-    workflowName: "Data Cleanup Task",
-    version: "1.0.0",
-    status: "pending",
-    triggerType: "scheduled",
-    startedAt: "2024-01-07T11:00:00Z",
-  },
-]
+import { useDashboardStats, useTrends } from "@/hooks/use-api"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const statusConfig: Record<ExecutionStatus, { label: string; variant: any; color: string; icon: any }> = {
   success: { label: "Success", variant: "success", color: "#10B981", icon: CheckCircle2 },
@@ -119,6 +53,16 @@ const statusDistribution = [
   { name: "Running", value: 7, color: "#3B82F6" },
   { name: "Pending", value: 46, color: "#6B7280" },
 ]
+
+function getStatusDistribution(stats: any) {
+  if (!stats) return statusDistribution
+  return [
+    { name: "Success", value: stats.totalExecutions - stats.failedExecutions24h, color: "#10B981" },
+    { name: "Failed", value: stats.failedExecutions24h, color: "#EF4444" },
+    { name: "Running", value: stats.runningExecutions, color: "#3B82F6" },
+    { name: "Pending", value: Math.max(0, stats.totalExecutions - stats.runningExecutions - stats.failedExecutions24h), color: "#6B7280" },
+  ]
+}
 
 function StatCard({ title, value, description, icon: Icon, trend }: {
   title: string
@@ -158,7 +102,15 @@ function StatCard({ title, value, description, icon: Icon, trend }: {
 }
 
 export default function OverviewPage() {
+  const { addToast } = useToast()
+  const { data: stats, isLoading: statsLoading } = useDashboardStats()
+  const { data: trendsData } = useTrends(7)
+
+  const trendItems = trendsData || []
+  const mockRecentExecutions: Execution[] = []
+
   return (
+    <PageTransition>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -167,17 +119,42 @@ export default function OverviewPage() {
             Monitor system health and workflow performance at a glance.
           </p>
         </div>
-        <Button>
-          <Play className="mr-2 h-4 w-4" />
-          New Execution
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => addToast({
+              title: "System Status",
+              description: "All systems operational",
+              type: "success"
+            })}
+          >
+            <Bell className="mr-2 h-4 w-4" />
+            Test Toast
+          </Button>
+          <Button>
+            <Play className="mr-2 h-4 w-4" />
+            New Execution
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Workflows" value={24} description="18 active" icon={GitBranch} trend={{ value: 12, positive: true }} />
-        <StatCard title="Running Executions" value={7} description="Currently processing" icon={Activity} />
-        <StatCard title="Success Rate" value="94.2%" description="Last 7 days" icon={CheckCircle2} trend={{ value: 2.5, positive: true }} />
-        <StatCard title="Online Agents" value="5/6" description="Available workers" icon={Server} />
+        {statsLoading ? (
+          <>
+            <Card><CardContent className="p-6"><Skeleton className="h-4 w-24 mb-2" /><Skeleton className="h-8 w-16" /></CardContent></Card>
+            <Card><CardContent className="p-6"><Skeleton className="h-4 w-24 mb-2" /><Skeleton className="h-8 w-16" /></CardContent></Card>
+            <Card><CardContent className="p-6"><Skeleton className="h-4 w-24 mb-2" /><Skeleton className="h-8 w-16" /></CardContent></Card>
+            <Card><CardContent className="p-6"><Skeleton className="h-4 w-24 mb-2" /><Skeleton className="h-8 w-16" /></CardContent></Card>
+          </>
+        ) : (
+          <>
+            <StatCard title="Total Workflows" value={stats?.totalWorkflows || 0} description={`${stats?.activeWorkflows || 0} active`} icon={GitBranch} />
+            <StatCard title="Running Executions" value={stats?.runningExecutions || 0} description="Currently processing" icon={Activity} />
+            <StatCard title="Success Rate" value={`${stats?.successRate || 0}%`} description="Last 7 days" icon={CheckCircle2} />
+            <StatCard title="Online Agents" value={`${stats?.onlineAgents || 0}/${stats?.totalAgents || 0}`} description="Available workers" icon={Server} />
+          </>
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -187,7 +164,7 @@ export default function OverviewPage() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={mockTrends}>
+              <AreaChart data={trendItems.length > 0 ? trendItems.map((t: any) => ({ date: t.date, successful: t.successes, failed: t.failures })) : []}>
                 <defs>
                   <linearGradient id="colorSuccessful" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
@@ -216,8 +193,8 @@ export default function OverviewPage() {
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
-                <Pie data={statusDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {statusDistribution.map((entry, index) => (
+                <Pie data={getStatusDistribution(stats)} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                  {getStatusDistribution(stats).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -225,7 +202,7 @@ export default function OverviewPage() {
               </PieChart>
             </ResponsiveContainer>
             <div className="flex flex-wrap gap-3 justify-center">
-              {statusDistribution.map((item) => (
+              {getStatusDistribution(stats).map((item) => (
                 <div key={item.name} className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                   <span className="text-xs text-muted-foreground">{item.name}</span>
@@ -317,5 +294,6 @@ export default function OverviewPage() {
         </Card>
       </div>
     </div>
+    </PageTransition>
   )
 }

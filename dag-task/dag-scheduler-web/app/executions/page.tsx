@@ -14,12 +14,18 @@ import {
   X,
   ChevronDown,
   Calendar,
+  Square,
+  CheckSquare,
+  MoreHorizontal,
+  Trash2,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Pagination } from "@/components/ui/pagination"
+import { TableRowSkeleton } from "@/components/ui/skeleton"
 import type { Execution, ExecutionStatus } from "@/types"
 import { formatDate, formatDuration, formatRelativeTime } from "@/lib/utils"
 
@@ -123,6 +129,10 @@ export default function ExecutionsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedStatuses, setSelectedStatuses] = useState<ExecutionStatus[]>([])
   const [showFilters, setShowFilters] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(false)
+  const [selectedExecutions, setSelectedExecutions] = useState<Set<string>>(new Set())
+  const pageSize = 5
 
   const filteredExecutions = mockExecutions.filter((execution) => {
     const matchesSearch =
@@ -132,10 +142,49 @@ export default function ExecutionsPage() {
     return matchesSearch && matchesStatus
   })
 
+  const totalPages = Math.ceil(filteredExecutions.length / pageSize)
+  const paginatedExecutions = filteredExecutions.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  )
+
   const toggleStatus = (status: ExecutionStatus) => {
     setSelectedStatuses((prev) =>
       prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
     )
+    setCurrentPage(1)
+  }
+
+  const toggleExecutionSelection = (id: string) => {
+    setSelectedExecutions(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
+
+  const selectAllExecutions = () => {
+    if (selectedExecutions.size === paginatedExecutions.length) {
+      setSelectedExecutions(new Set())
+    } else {
+      setSelectedExecutions(new Set(paginatedExecutions.map(e => e.id)))
+    }
+  }
+
+  const handleBatchRetry = () => {
+    alert(`Retrying ${selectedExecutions.size} executions`)
+    setSelectedExecutions(new Set())
+  }
+
+  const handleBatchDelete = () => {
+    if (confirm(`Delete ${selectedExecutions.size} executions?`)) {
+      alert(`Deleted ${selectedExecutions.size} executions`)
+      setSelectedExecutions(new Set())
+    }
   }
 
   return (
@@ -229,10 +278,38 @@ export default function ExecutionsPage() {
 
       <Card>
         <CardContent className="p-0">
+          {selectedExecutions.size > 0 && (
+            <div className="flex items-center gap-2 p-3 border-b bg-muted/50">
+              <span className="text-sm text-muted-foreground">
+                {selectedExecutions.size} selected
+              </span>
+              <div className="flex-1" />
+              <Button size="sm" variant="outline" onClick={handleBatchRetry}>
+                <RotateCcw className="mr-2 h-3.5 w-3.5" />
+                Retry
+              </Button>
+              <Button size="sm" variant="destructive" onClick={handleBatchDelete}>
+                <Trash2 className="mr-2 h-3.5 w-3.5" />
+                Delete
+              </Button>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
+                  <th className="p-4 w-10">
+                    <button
+                      onClick={selectAllExecutions}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {selectedExecutions.size === paginatedExecutions.length && paginatedExecutions.length > 0 ? (
+                        <CheckSquare className="h-4 w-4" />
+                      ) : (
+                        <Square className="h-4 w-4" />
+                      )}
+                    </button>
+                  </th>
                   <th className="text-left p-4 text-xs font-medium text-muted-foreground">Execution</th>
                   <th className="text-left p-4 text-xs font-medium text-muted-foreground">Workflow</th>
                   <th className="text-left p-4 text-xs font-medium text-muted-foreground">Status</th>
@@ -243,15 +320,42 @@ export default function ExecutionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {filteredExecutions.map((execution) => {
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <tr key={i}>
+                      <td colSpan={7} className="p-4">
+                        <TableRowSkeleton cols={7} />
+                      </td>
+                    </tr>
+                  ))
+                ) : paginatedExecutions.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                      No executions found matching your criteria
+                    </td>
+                  </tr>
+                ) : paginatedExecutions.map((execution) => {
                   const config = statusConfig[execution.status]
+                  const isSelected = selectedExecutions.has(execution.id)
                   return (
                     <motion.tr
                       key={execution.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="hover:bg-muted/50 transition-colors"
+                      className={`hover:bg-muted/50 transition-colors ${isSelected ? 'bg-muted/30' : ''}`}
                     >
+                      <td className="p-4">
+                        <button
+                          onClick={() => toggleExecutionSelection(execution.id)}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="h-4 w-4" />
+                          ) : (
+                            <Square className="h-4 w-4" />
+                          )}
+                        </button>
+                      </td>
                       <td className="p-4">
                         <Link href={`/executions/${execution.id}`} className="block">
                           <p className="text-sm font-mono font-medium">{execution.id}</p>
@@ -308,6 +412,15 @@ export default function ExecutionsPage() {
               </tbody>
             </table>
           </div>
+          {filteredExecutions.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalItems={filteredExecutions.length}
+              pageSize={pageSize}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

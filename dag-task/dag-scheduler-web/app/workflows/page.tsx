@@ -18,87 +18,23 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react"
+import { PageTransition } from "@/components/ui/page-transition"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Workflow, ExecutionStatus } from "@/types"
+import { useWorkflows, useDeleteWorkflow, useExecuteWorkflow } from "@/hooks/use-api"
+import type { Workflow } from "@/types"
 import { formatRelativeTime } from "@/lib/utils"
 
 type ViewMode = "grid" | "list"
-
-const mockWorkflows: Workflow[] = [
-  {
-    id: "wf-001",
-    key: "etl-daily",
-    name: "Daily ETL Pipeline",
-    description: "Extract, transform and load daily data from multiple sources",
-    version: "2.1.0",
-    active: true,
-    dagDefinition: { nodes: [], edges: [] },
-    parameterSchema: { fields: [] },
-    tags: ["etl", "daily", "production"],
-    createdAt: "2024-01-01T00:00:00Z",
-    updatedAt: "2024-01-07T00:00:00Z",
-    executionCount: 156,
-    successRate: 98.1,
-    lastExecution: {
-      id: "exec-001",
-      status: "running" as ExecutionStatus,
-      startedAt: "2024-01-07T10:30:00Z",
-    },
-  },
-  {
-    id: "wf-002",
-    key: "backup-weekly",
-    name: "Weekly Database Backup",
-    description: "Automated database backup with verification",
-    version: "1.5.0",
-    active: true,
-    dagDefinition: { nodes: [], edges: [] },
-    parameterSchema: { fields: [] },
-    tags: ["backup", "maintenance"],
-    createdAt: "2023-12-01T00:00:00Z",
-    updatedAt: "2024-01-05T00:00:00Z",
-    executionCount: 12,
-    successRate: 100,
-    lastExecution: {
-      id: "exec-002",
-      status: "success" as ExecutionStatus,
-      startedAt: "2024-01-07T09:00:00Z",
-      endedAt: "2024-01-07T09:15:00Z",
-      duration: 900000,
-    },
-  },
-  {
-    id: "wf-003",
-    key: "ml-training",
-    name: "ML Model Training",
-    description: "End-to-end machine learning model training pipeline",
-    version: "3.0.0",
-    active: false,
-    dagDefinition: { nodes: [], edges: [] },
-    parameterSchema: { fields: [] },
-    tags: ["ml", "training", "gpu"],
-    createdAt: "2023-11-15T00:00:00Z",
-    updatedAt: "2024-01-06T00:00:00Z",
-    executionCount: 8,
-    successRate: 75,
-    lastExecution: {
-      id: "exec-003",
-      status: "failed" as ExecutionStatus,
-      startedAt: "2024-01-07T08:00:00Z",
-      endedAt: "2024-01-07T08:45:00Z",
-      duration: 2700000,
-    },
-  },
-]
 
 const statusIcons = {
   success: CheckCircle2,
@@ -115,6 +51,8 @@ const statusColors = {
 }
 
 function WorkflowCard({ workflow }: { workflow: Workflow }) {
+  const executeMutation = useExecuteWorkflow()
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -141,11 +79,13 @@ function WorkflowCard({ workflow }: { workflow: Workflow }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => executeMutation.mutate({ id: workflow.key })}>
                   <Play className="mr-2 h-4 w-4" /> Execute
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Pencil className="mr-2 h-4 w-4" /> Edit
+                <DropdownMenuItem asChild>
+                  <Link href={`/studio?workflow=${workflow.key}`}>
+                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive">
                   <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -158,7 +98,7 @@ function WorkflowCard({ workflow }: { workflow: Workflow }) {
           <p className="text-sm text-muted-foreground line-clamp-2">{workflow.description}</p>
           
           <div className="flex flex-wrap gap-1.5">
-            {workflow.tags.map((tag) => (
+            {workflow.tags?.map((tag) => (
               <Badge key={tag} variant="secondary" className="text-xs">
                 {tag}
               </Badge>
@@ -168,7 +108,7 @@ function WorkflowCard({ workflow }: { workflow: Workflow }) {
           <div className="flex items-center justify-between pt-2 border-t">
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span>v{workflow.version}</span>
-              <span>{workflow.executionCount} runs</span>
+              <span>{workflow.executionCount || 0} runs</span>
             </div>
             {workflow.lastExecution && (
               <div className="flex items-center gap-1.5">
@@ -208,18 +148,52 @@ function WorkflowCard({ workflow }: { workflow: Workflow }) {
   )
 }
 
+function WorkflowCardSkeleton() {
+  return (
+    <Card className="h-full">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </div>
+          <Skeleton className="h-8 w-8" />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-2/3" />
+        <div className="flex gap-1.5">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-full" />
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function WorkflowsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
   const [searchQuery, setSearchQuery] = useState("")
+  
+  const { data: workflowsData, isLoading } = useWorkflows({ page: 1, pageSize: 50 })
+  
+  const workflows: Workflow[] = workflowsData?.items || []
 
-  const filteredWorkflows = mockWorkflows.filter(
+  const filteredWorkflows = workflows.filter(
     (w) =>
       w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       w.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      w.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
+      w.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   return (
+    <PageTransition>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -269,7 +243,13 @@ export default function WorkflowsPage() {
         </div>
       </div>
 
-      {viewMode === "grid" ? (
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <WorkflowCardSkeleton />
+          <WorkflowCardSkeleton />
+          <WorkflowCardSkeleton />
+        </div>
+      ) : viewMode === "grid" ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredWorkflows.map((workflow) => (
             <WorkflowCard key={workflow.id} workflow={workflow} />
@@ -290,11 +270,11 @@ export default function WorkflowsPage() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex gap-1">
-                      {workflow.tags.map((tag) => (
+                      {workflow.tags?.map((tag) => (
                         <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
                       ))}
                     </div>
-                    <span className="text-sm text-muted-foreground">{workflow.executionCount} runs</span>
+                    <span className="text-sm text-muted-foreground">{workflow.executionCount || 0} runs</span>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <Play className="h-4 w-4" />
@@ -311,5 +291,6 @@ export default function WorkflowsPage() {
         </Card>
       )}
     </div>
+    </PageTransition>
   )
 }

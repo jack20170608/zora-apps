@@ -20,14 +20,17 @@ import "reactflow/dist/style.css"
 import {
   Save, Trash2, ZoomIn, ZoomOut, Maximize,
   Undo, Redo, CheckCircle2, AlertCircle,
-  Search, ChevronRight, Settings,
+  Search, ChevronRight, Settings, Play, Plus, X,
+  FileText, GitBranch, Type, Terminal, FileCode,
+  Container, Database, Diamond, Split, Merge,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { DagNode, DagEdge, NodeType, DagNodeData } from "@/types"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import type { DagNode, NodeType, DagNodeData } from "@/types"
 
 const nodeTypesList = [
   { type: "task" as NodeType, label: "Task", color: "#3B82F6", description: "General purpose task" },
@@ -197,6 +200,16 @@ function StudioContent() {
   }), [])
 
   const [paletteSearch, setPaletteSearch] = useState("")
+  const [rightPanel, setRightPanel] = useState<'info' | 'properties'>('info')
+  const [workflowInfo, setWorkflowInfo] = useState({
+    key: '',
+    name: '',
+    version: '1.0.0',
+    description: '',
+    tags: [] as string[]
+  })
+  const [newTag, setNewTag] = useState("")
+  
   const filteredNodes = nodeTypesList.filter(n =>
     n.label.toLowerCase().includes(paletteSearch.toLowerCase())
   )
@@ -273,32 +286,269 @@ function StudioContent() {
         </div>
       </div>
 
-      {/* Properties Panel */}
-      <div className="w-72 border-l bg-card flex flex-col">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold">Properties</h2>
+      {/* Right Panel */}
+      <div className="w-80 border-l bg-card flex flex-col">
+        <div className="p-2 border-b flex gap-1">
+          <Button 
+            variant={rightPanel === 'info' ? 'secondary' : 'ghost'} 
+            size="sm" 
+            className="flex-1 text-xs"
+            onClick={() => setRightPanel('info')}
+          >
+            <FileText className="mr-1.5 h-3.5 w-3.5" />
+            Workflow
+          </Button>
+          <Button 
+            variant={rightPanel === 'properties' ? 'secondary' : 'ghost'} 
+            size="sm" 
+            className="flex-1 text-xs"
+            onClick={() => selected && setRightPanel('properties')}
+            disabled={!selected}
+          >
+            <Settings className="mr-1.5 h-3.5 w-3.5" />
+            Node
+          </Button>
         </div>
-        {selected ? (
+        
+        {rightPanel === 'info' ? (
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Type</label>
-                <p className="text-sm font-medium mt-1.5 capitalize">{selected.data.type}</p>
+                <label className="text-xs font-medium text-muted-foreground">Workflow Key *</label>
+                <Input 
+                  value={workflowInfo.key} 
+                  onChange={e => setWorkflowInfo({...workflowInfo, key: e.target.value})}
+                  className="mt-1.5" 
+                  placeholder="e.g., etl-daily"
+                />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Label</label>
-                <Input value={selected.data.label}
-                  onChange={e => updateNode(selected.id, { label: e.target.value })}
-                  className="mt-1.5" />
+                <label className="text-xs font-medium text-muted-foreground">Name *</label>
+                <Input 
+                  value={workflowInfo.name} 
+                  onChange={e => setWorkflowInfo({...workflowInfo, name: e.target.value})}
+                  className="mt-1.5" 
+                  placeholder="Workflow display name"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Version *</label>
+                <Input 
+                  value={workflowInfo.version} 
+                  onChange={e => setWorkflowInfo({...workflowInfo, version: e.target.value})}
+                  className="mt-1.5" 
+                  placeholder="1.0.0"
+                />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Description</label>
-                <Input value={selected.data.description || ""}
-                  onChange={e => updateNode(selected.id, { description: e.target.value })}
-                  className="mt-1.5" placeholder="Optional..." />
+                <Input 
+                  value={workflowInfo.description} 
+                  onChange={e => setWorkflowInfo({...workflowInfo, description: e.target.value})}
+                  className="mt-1.5" 
+                  placeholder="Describe this workflow..."
+                />
               </div>
-              <Button variant="destructive" size="sm" className="w-full" onClick={() => deleteNode(selected.id)}>
-                <Trash2 className="h-4 w-4 mr-2" />Delete Node
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Tags</label>
+                <div className="flex gap-2 mt-1.5">
+                  <Input 
+                    value={newTag}
+                    onChange={e => setNewTag(e.target.value)}
+                    className="flex-1" 
+                    placeholder="Add tag..."
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newTag.trim()) {
+                        setWorkflowInfo({...workflowInfo, tags: [...workflowInfo.tags, newTag.trim()]})
+                        setNewTag('')
+                      }
+                    }}
+                  />
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      if (newTag.trim()) {
+                        setWorkflowInfo({...workflowInfo, tags: [...workflowInfo.tags, newTag.trim()]})
+                        setNewTag('')
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {workflowInfo.tags.map((tag, i) => (
+                    <Badge key={i} variant="secondary" className="gap-1 text-xs">
+                      {tag}
+                      <button 
+                        onClick={() => setWorkflowInfo({
+                          ...workflowInfo, 
+                          tags: workflowInfo.tags.filter((_, idx) => idx !== i)
+                        })}
+                        className="hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-2">
+                <Button 
+                  className="w-full" 
+                  onClick={() => {
+                    if (!workflowInfo.key || !workflowInfo.name) {
+                      alert('Please fill in required fields')
+                      return
+                    }
+                    save()
+                  }} 
+                  disabled={!valid}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Workflow
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={() => alert('Execute workflow: ' + workflowInfo.name)}
+                  disabled={!valid || nodes.length === 0}
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Execute Now
+                </Button>
+              </div>
+            </div>
+          </ScrollArea>
+        ) : selected ? (
+          <ScrollArea className="flex-1">
+            <div className="p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const info = nodeTypesList.find(n => n.type === selected.data.type)
+                  return info ? (
+                    <>
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: info.color }} />
+                      <span className="text-sm font-medium">{info.label} Node</span>
+                    </>
+                  ) : null
+                })()}
+              </div>
+              
+              <Tabs defaultValue="basic">
+                <TabsList className="w-full">
+                  <TabsTrigger value="basic" className="flex-1 text-xs">Basic</TabsTrigger>
+                  <TabsTrigger value="config" className="flex-1 text-xs">Config</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="basic" className="space-y-3 mt-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Label</label>
+                    <Input 
+                      value={selected.data.label}
+                      onChange={e => updateNode(selected.id, { label: e.target.value })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Description</label>
+                    <Input 
+                      value={selected.data.description || ""}
+                      onChange={e => updateNode(selected.id, { description: e.target.value })}
+                      className="mt-1.5" 
+                      placeholder="Optional description..."
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="config" className="space-y-3 mt-3">
+                  {selected.data.type === 'shell' && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Command</label>
+                      <Input 
+                        value={(selected.data.config?.command as string) || ""}
+                        onChange={e => updateNode(selected.id, { 
+                          config: { ...selected.data.config, command: e.target.value }
+                        })}
+                        className="mt-1.5 font-mono text-xs" 
+                        placeholder="echo 'Hello World'"
+                      />
+                    </div>
+                  )}
+                  {selected.data.type === 'python' && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">Script</label>
+                      <Input 
+                        value={(selected.data.config?.script as string) || ""}
+                        onChange={e => updateNode(selected.id, { 
+                          config: { ...selected.data.config, script: e.target.value }
+                        })}
+                        className="mt-1.5 font-mono text-xs" 
+                        placeholder="script.py"
+                      />
+                    </div>
+                  )}
+                  {selected.data.type === 'docker' && (
+                    <>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Image</label>
+                        <Input 
+                          value={(selected.data.config?.image as string) || ""}
+                          onChange={e => updateNode(selected.id, { 
+                            config: { ...selected.data.config, image: e.target.value }
+                          })}
+                          className="mt-1.5 text-xs" 
+                          placeholder="nginx:latest"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Command</label>
+                        <Input 
+                          value={(selected.data.config?.command as string) || ""}
+                          onChange={e => updateNode(selected.id, { 
+                            config: { ...selected.data.config, command: e.target.value }
+                          })}
+                          className="mt-1.5 font-mono text-xs" 
+                          placeholder="Optional..."
+                        />
+                      </div>
+                    </>
+                  )}
+                  {selected.data.type === 'database' && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">SQL Query</label>
+                      <Input 
+                        value={(selected.data.config?.query as string) || ""}
+                        onChange={e => updateNode(selected.id, { 
+                          config: { ...selected.data.config, query: e.target.value }
+                        })}
+                        className="mt-1.5 font-mono text-xs" 
+                        placeholder="SELECT * FROM table"
+                      />
+                    </div>
+                  )}
+                  {!['shell', 'python', 'docker', 'database'].includes(selected.data.type) && (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      No specific configuration for this node type
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+              
+              <Separator />
+              
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="w-full" 
+                onClick={() => deleteNode(selected.id)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Node
               </Button>
             </div>
           </ScrollArea>
@@ -306,7 +556,7 @@ function StudioContent() {
           <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground">
             <div>
               <Settings className="h-8 w-8 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">Select a node to configure</p>
+              <p className="text-sm">Select a node to configure its properties</p>
             </div>
           </div>
         )}

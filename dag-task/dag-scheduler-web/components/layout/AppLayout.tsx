@@ -29,6 +29,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { CommandPalette } from "./CommandPalette"
+import { Breadcrumb } from "./Breadcrumb"
+import { KeyboardShortcuts } from "./KeyboardShortcuts"
+import { ErrorBoundary } from "@/components/error-boundary"
 import { cn } from "@/lib/utils"
 
 const navigation = [
@@ -206,13 +210,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <Header />
       <Sidebar />
+      <CommandPalette />
+      <KeyboardShortcuts />
       <main
         className={cn(
           "pt-16 transition-all duration-300",
           sidebarCollapsed ? "pl-16" : "pl-64"
         )}
       >
-        <div className="p-6 lg:p-8">{children}</div>
+        <div className="p-6 lg:p-8">
+          <Breadcrumb />
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </div>
       </main>
     </div>
   )
