@@ -196,7 +196,7 @@ Authorization: Basic {{username}} {{password}}
 ]
 
 ### Test Case 3.6: Invalid Report - Empty agentId
-POST http://localhost:8080/api/v1/scheduler/report_result
+POST {{baseUrl}}/api/v1/scheduler/report_result
 Content-Type: application/json
 Authorization: Basic {{username}} {{password}}
 
@@ -356,10 +356,9 @@ Authorization: Basic {{username}} {{password}}
 ###
 
 ### Step 4: Unregister Agent
-POST http://localhost:8080/api/v1/scheduler/unregister
+POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
 Authorization: Basic {{username}} {{password}}
-
 
 {
   "agentId": "lifecycle-test-agent"
@@ -370,7 +369,7 @@ Authorization: Basic {{username}} {{password}}
 ### Scenario 2: Multiple Agents Reporting Concurrently
 
 ### Register Agent A
-POST http://localhost:8080/api/v1/scheduler/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
 Authorization: Basic {{username}} {{password}}
 
@@ -386,7 +385,7 @@ Authorization: Basic {{username}} {{password}}
 ###
 
 ### Register Agent B
-POST http://localhost:8080/api/v1/scheduler/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
 Authorization: Basic {{username}} {{password}}
 
@@ -402,8 +401,9 @@ Authorization: Basic {{username}} {{password}}
 ###
 
 ### Both Agents Report Status
-POST http://localhost:8080/api/v1/scheduler/report_status
+POST {{baseUrl}}/api/v1/scheduler/report_status
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "concurrent-agent-a",
@@ -417,8 +417,9 @@ Content-Type: application/json
 
 ###
 
-POST http://localhost:8080/api/v1/scheduler/report_status
+POST {{baseUrl}}/api/v1/scheduler/report_status
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "concurrent-agent-b",
@@ -433,8 +434,9 @@ Content-Type: application/json
 ###
 
 ### Both Agents Report Task Results
-POST http://localhost:8080/api/v1/scheduler/report_result
+POST {{baseUrl}}/api/v1/scheduler/report_result
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 [
   {
@@ -448,8 +450,9 @@ Content-Type: application/json
 
 ###
 
-POST http://localhost:8080/api/v1/scheduler/report_result
+POST {{baseUrl}}/api/v1/scheduler/report_result
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 [
   {
@@ -464,8 +467,9 @@ Content-Type: application/json
 ###
 
 ### Cleanup: Unregister Both Agents
-POST http://localhost:8080/api/v1/scheduler/unregister
+POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "concurrent-agent-a"
@@ -473,8 +477,9 @@ Content-Type: application/json
 
 ###
 
-POST http://localhost:8080/api/v1/scheduler/unregister
+POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "concurrent-agent-b"
@@ -487,8 +492,9 @@ Content-Type: application/json
 ### ============================================================
 
 ### Test: Very Long agentId (Boundary Test)
-POST http://localhost:8080/api/v1/scheduler/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-with-very-long-name-that-might-exceed-normal-limits-and-test-boundary-conditions-12345678901234567890",
@@ -501,7 +507,7 @@ Content-Type: application/json
 ###
 
 ### Test: Special Characters in agentId
-POST http://localhost:8080/api/v1/scheduler/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
 
 {
@@ -515,7 +521,7 @@ Content-Type: application/json
 ###
 
 ### Test: Negative Numbers (Should be validated)
-POST http://localhost:8080/api/v1/scheduler/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
 
 {
@@ -529,7 +535,7 @@ Content-Type: application/json
 ###
 
 ### Test: Zero Concurrent Tasks
-POST http://localhost:8080/api/v1/scheduler/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
 
 {
@@ -543,7 +549,7 @@ Content-Type: application/json
 ###
 
 ### Cleanup Edge Case Test Agents
-POST http://localhost:8080/api/v1/scheduler/unregister
+POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
 
 {
@@ -552,7 +558,7 @@ Content-Type: application/json
 
 ###
 
-POST http://localhost:8080/api/v1/scheduler/unregister
+POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
 
 {
@@ -561,7 +567,7 @@ Content-Type: application/json
 
 ###
 
-POST http://localhost:8080/api/v1/scheduler/unregister
+POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
 
 {
@@ -570,7 +576,7 @@ Content-Type: application/json
 
 ###
 
-POST http://localhost:8080/api/v1/scheduler/unregister
+POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
 
 {
@@ -587,7 +593,7 @@ Content-Type: application/json
 ### Below are example requests that can be used as templates
 
 ### Rapid Status Updates (Simulate High Frequency Heartbeats)
-POST http://localhost:8080/api/v1/scheduler/report_status
+POST {{baseUrl}}/api/v1/scheduler/report_status
 Content-Type: application/json
 
 {
@@ -603,7 +609,7 @@ Content-Type: application/json
 ###
 
 ### Bulk Task Results Report
-POST http://localhost:8080/api/v1/scheduler/report_result
+POST {{baseUrl}}/api/v1/scheduler/report_result
 Content-Type: application/json
 
 [
