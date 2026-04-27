@@ -12,18 +12,22 @@ public record AgentRegisterRequest(
     List<String> supportedExecutionKeys
 ) {
     public static Agent toAgent(AgentRegisterRequest request){
+        Instant now = Instant.now();
         return Agent.builder()
             .withAgentId(request.agentId())
             .withName(request.name())
             .withDescription("Registered agent with URL: " + request.agentUrl())
             .withLabelsJson("{}") // Placeholder for labels, can be extended to include actual labels
             .withStatus(Agent.Status.PENDING)
-            .withRegisteredAt(Instant.now())
-            .withLastHeartbeatAt(Instant.now())
+            .withRegisteredAt(now)
+            .withLastHeartbeatAt(now)
+            .withCreatedAt(now)
+            .withUpdatedAt(now)
             .build();
     }
 
     public static AgentStatus toAgentStatus(AgentRegisterRequest request){
+        var now = Instant.now();
         return AgentStatus.builder()
             .withAgentId(request.agentId())
             .withAgentUrl(request.agentUrl())
@@ -33,7 +37,7 @@ public record AgentRegisterRequest(
             .withRunning(false)
             .withPendingTasks(0)
             .withRunningTasks(0)
-            .withLastHeartbeatAt(Instant.now())
+            .withLastHeartbeatAt(now)
             .build();
     }
 }

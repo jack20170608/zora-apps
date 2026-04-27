@@ -8,8 +8,9 @@
 ### ============================================================
 
 ### Test Case 1.1: Successful Agent Registration
-POST http://localhost:8080/api/v1/scheduler/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-001",
@@ -21,18 +22,22 @@ Content-Type: application/json
 }
 
 ### Test Case 1.2: Registration with Minimal Required Fields
-POST http://localhost:8080/api/v1/scheduler/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
-  "agentId": "agent-002",
-  "agentUrl": "http://localhost:9092",
-  "maxConcurrentTasks": 3
+    "agentId": "agent-002",
+    "name": "Test Agent 002",
+    "agentUrl": "http://localhost:9092",
+    "maxConcurrentTasks": 3,
+    "supportedExecutionKeys": ["java", "shell"]
 }
 
 ### Test Case 1.3: Duplicate Registration (Should Reactivate Existing)
-POST http://localhost:8080/api/v1/scheduler/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-001",
@@ -44,8 +49,9 @@ Content-Type: application/json
 }
 
 ### Test Case 1.4: Invalid Registration - Missing agentId
-POST http://localhost:8080/api/v1/scheduler/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "name": "Invalid Agent",
@@ -54,8 +60,9 @@ Content-Type: application/json
 }
 
 ### Test Case 1.5: Invalid Registration - Empty agentId
-POST http://localhost:8080/api/v1/scheduler/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "",
@@ -70,31 +77,35 @@ Content-Type: application/json
 ### ============================================================
 
 ### Test Case 2.1: Successful Agent Unregistration
-POST http://localhost:8080/api/v1/scheduler/unregister
+POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-002"
 }
 
 ### Test Case 2.2: Unregister Non-Existent Agent
-POST http://localhost:8080/api/v1/scheduler/unregister
+POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-non-existent"
 }
 
 ### Test Case 2.3: Invalid Unregistration - Missing agentId
-POST http://localhost:8080/api/v1/scheduler/unregister
+POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
 }
 
 ### Test Case 2.4: Invalid Unregistration - Empty agentId
-POST http://localhost:8080/api/v1/scheduler/unregister
+POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": ""
@@ -106,8 +117,9 @@ Content-Type: application/json
 ### ============================================================
 
 ### Test Case 3.1: Report Single Successful Task Result
-POST http://localhost:8080/api/v1/scheduler/report_result
+POST {{baseUrl}}/api/v1/scheduler/report_result
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 [
   {
