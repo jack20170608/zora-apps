@@ -158,6 +158,27 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
     }
 
     @Override
+    public boolean reportTaskResult(List<TaskExecuteResult> results) {
+        if (results == null || results.isEmpty()) {
+            logger.warn("Cannot process task results: empty or null list");
+            return false;
+        }
+
+        boolean allSuccess = true;
+        for (TaskExecuteResult result : results) {
+            boolean success = reportTaskResult(result);
+            if (!success) {
+                allSuccess = false;
+                logger.warn("Failed to process task result for task [{}] from agent [{}]",
+                    result.taskId(), result.agentId());
+            }
+        }
+
+        logger.debug("Processed {} task results, all success: {}", results.size(), allSuccess);
+        return allSuccess;
+    }
+
+    @Override
     public boolean reportAgentStatus(AgentStatusReport statusReport) {
         if (statusReport == null || StringUtils.isBlank(statusReport.agentId())) {
             logger.warn("Cannot process agent status: invalid report");
