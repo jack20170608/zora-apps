@@ -1,0 +1,626 @@
+### AgentRegistryApi HTTP Test Cases
+### Base URL: http://localhost:8080
+### All endpoints accept JSON and return JSON responses
+
+### ============================================================
+### 1. Agent Registration Endpoint
+### POST /api/v1/scheduler/register
+### ============================================================
+
+### Test Case 1.1: Successful Agent Registration
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "agentId": "agent-001",
+  "name": "Test Agent 001",
+  "agentUrl": "http://localhost:9091",
+  "maxConcurrentTasks": 5,
+  "maxPendingTasks": 10,
+  "supportedExecutionKeys": ["shell", "python", "java"]
+}
+
+### Test Case 1.2: Registration with Minimal Required Fields
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "agentId": "agent-002",
+  "agentUrl": "http://localhost:9092",
+  "maxConcurrentTasks": 3
+}
+
+### Test Case 1.3: Duplicate Registration (Should Reactivate Existing)
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "agentId": "agent-001",
+  "name": "Test Agent 001 - Updated",
+  "agentUrl": "http://localhost:9091",
+  "maxConcurrentTasks": 8,
+  "maxPendingTasks": 20,
+  "supportedExecutionKeys": ["shell", "python", "java", "go"]
+}
+
+### Test Case 1.4: Invalid Registration - Missing agentId
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "name": "Invalid Agent",
+  "agentUrl": "http://localhost:9093",
+  "maxConcurrentTasks": 5
+}
+
+### Test Case 1.5: Invalid Registration - Empty agentId
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "agentId": "",
+  "name": "Invalid Agent",
+  "agentUrl": "http://localhost:9093",
+  "maxConcurrentTasks": 5
+}
+
+### ============================================================
+### 2. Agent Unregistration Endpoint
+### POST /api/v1/scheduler/unregister
+### ============================================================
+
+### Test Case 2.1: Successful Agent Unregistration
+POST http://localhost:8080/api/v1/scheduler/unregister
+Content-Type: application/json
+
+{
+  "agentId": "agent-002"
+}
+
+### Test Case 2.2: Unregister Non-Existent Agent
+POST http://localhost:8080/api/v1/scheduler/unregister
+Content-Type: application/json
+
+{
+  "agentId": "agent-non-existent"
+}
+
+### Test Case 2.3: Invalid Unregistration - Missing agentId
+POST http://localhost:8080/api/v1/scheduler/unregister
+Content-Type: application/json
+
+{
+}
+
+### Test Case 2.4: Invalid Unregistration - Empty agentId
+POST http://localhost:8080/api/v1/scheduler/unregister
+Content-Type: application/json
+
+{
+  "agentId": ""
+}
+
+### ============================================================
+### 3. Task Result Reporting Endpoint
+### POST /api/v1/scheduler/report_result
+### ============================================================
+
+### Test Case 3.1: Report Single Successful Task Result
+POST http://localhost:8080/api/v1/scheduler/report_result
+Content-Type: application/json
+
+[
+  {
+    "agentId": "agent-001",
+    "taskId": 1001,
+    "success": true,
+    "output": "{\"result\": \"Task completed successfully\", \"data\": {\"processed\": 150, \"errors\": 0}}",
+    "endTime": "2025-04-27T10:30:00Z"
+  }
+]
+
+### Test Case 3.2: Report Single Failed Task Result
+POST http://localhost:8080/api/v1/scheduler/report_result
+Content-Type: application/json
+
+[
+  {
+    "agentId": "agent-001",
+    "taskId": 1002,
+    "success": false,
+    "output": "{\"error\": \"NullPointerException\", \"stackTrace\": \"at com.example.Task.execute(Task.java:42)\"}",
+    "endTime": "2025-04-27T10:35:00Z"
+  }
+]
+
+### Test Case 3.3: Report Multiple Task Results
+POST http://localhost:8080/api/v1/scheduler/report_result
+Content-Type: application/json
+
+[
+  {
+    "agentId": "agent-001",
+    "taskId": 1003,
+    "success": true,
+    "output": "{\"result\": \"Batch job completed\"}",
+    "endTime": "2025-04-27T10:40:00Z"
+  },
+  {
+    "agentId": "agent-001",
+    "taskId": 1004,
+    "success": true,
+    "output": "{\"result\": \"Data processing finished\"}",
+    "endTime": "2025-04-27T10:41:00Z"
+  }
+]
+
+### Test Case 3.4: Report Result for Non-Existent Task
+POST http://localhost:8080/api/v1/scheduler/report_result
+Content-Type: application/json
+
+[
+  {
+    "agentId": "agent-001",
+    "taskId": 999999,
+    "success": true,
+    "output": "{\"result\": \"Unknown task\"}",
+    "endTime": "2025-04-27T10:45:00Z"
+  }
+]
+
+### Test Case 3.5: Invalid Report - Missing Required Fields
+POST http://localhost:8080/api/v1/scheduler/report_result
+Content-Type: application/json
+
+[
+  {
+    "agentId": "agent-001",
+    "success": true
+  }
+]
+
+### Test Case 3.6: Invalid Report - Empty agentId
+POST http://localhost:8080/api/v1/scheduler/report_result
+Content-Type: application/json
+
+[
+  {
+    "agentId": "",
+    "taskId": 1005,
+    "success": true,
+    "output": "Test result"
+  }
+]
+
+### ============================================================
+### 4. Agent Status Reporting Endpoint (Heartbeat)
+### POST /api/v1/scheduler/report_status
+### ============================================================
+
+### Test Case 4.1: Report Agent Status - Running with Tasks
+POST http://localhost:8080/api/v1/scheduler/report_status
+Content-Type: application/json
+
+{
+  "agentId": "agent-001",
+  "running": true,
+  "pendingTasks": 3,
+  "runningTasks": 2,
+  "finishedTasks": 15,
+  "maxConcurrentTasks": 5,
+  "maxPendingTasks": 10
+}
+
+### Test Case 4.2: Report Agent Status - Idle State
+POST http://localhost:8080/api/v1/scheduler/report_status
+Content-Type: application/json
+
+{
+  "agentId": "agent-001",
+  "running": true,
+  "pendingTasks": 0,
+  "runningTasks": 0,
+  "finishedTasks": 50,
+  "maxConcurrentTasks": 5,
+  "maxPendingTasks": 10
+}
+
+### Test Case 4.3: Report Agent Status - Stopped Agent
+POST http://localhost:8080/api/v1/scheduler/report_status
+Content-Type: application/json
+
+{
+  "agentId": "agent-001",
+  "running": false,
+  "pendingTasks": 0,
+  "runningTasks": 0,
+  "finishedTasks": 100,
+  "maxConcurrentTasks": 5,
+  "maxPendingTasks": 10
+}
+
+### Test Case 4.4: Report Status for Non-Existent Agent
+POST http://localhost:8080/api/v1/scheduler/report_status
+Content-Type: application/json
+
+{
+  "agentId": "agent-non-existent",
+  "running": true,
+  "pendingTasks": 1,
+  "runningTasks": 0,
+  "finishedTasks": 0,
+  "maxConcurrentTasks": 3,
+  "maxPendingTasks": 5
+}
+
+### Test Case 4.5: Invalid Status Report - Missing agentId
+POST http://localhost:8080/api/v1/scheduler/report_status
+Content-Type: application/json
+
+{
+  "running": true,
+  "pendingTasks": 2,
+  "runningTasks": 1,
+  "finishedTasks": 10
+}
+
+### Test Case 4.6: Invalid Status Report - Empty agentId
+POST http://localhost:8080/api/v1/scheduler/report_status
+Content-Type: application/json
+
+{
+  "agentId": "",
+  "running": true,
+  "pendingTasks": 2,
+  "runningTasks": 1,
+  "finishedTasks": 10
+}
+
+### ============================================================
+### Integration Test Scenarios
+### ============================================================
+
+### Scenario 1: Complete Agent Lifecycle
+### Step 1: Register Agent
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "agentId": "lifecycle-test-agent",
+  "name": "Lifecycle Test Agent",
+  "agentUrl": "http://localhost:9099",
+  "maxConcurrentTasks": 5,
+  "maxPendingTasks": 10,
+  "supportedExecutionKeys": ["shell", "python"]
+}
+
+###
+
+### Step 2: Report Status (Heartbeat)
+POST http://localhost:8080/api/v1/scheduler/report_status
+Content-Type: application/json
+
+{
+  "agentId": "lifecycle-test-agent",
+  "running": true,
+  "pendingTasks": 2,
+  "runningTasks": 1,
+  "finishedTasks": 5,
+  "maxConcurrentTasks": 5,
+  "maxPendingTasks": 10
+}
+
+###
+
+### Step 3: Report Task Result
+POST http://localhost:8080/api/v1/scheduler/report_result
+Content-Type: application/json
+
+[
+  {
+    "agentId": "lifecycle-test-agent",
+    "taskId": 2001,
+    "success": true,
+    "output": "{\"result\": \"Task completed successfully\"}",
+    "endTime": "2025-04-27T11:00:00Z"
+  }
+]
+
+###
+
+### Step 4: Unregister Agent
+POST http://localhost:8080/api/v1/scheduler/unregister
+Content-Type: application/json
+
+{
+  "agentId": "lifecycle-test-agent"
+}
+
+###
+
+### Scenario 2: Multiple Agents Reporting Concurrently
+
+### Register Agent A
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "agentId": "concurrent-agent-a",
+  "name": "Concurrent Agent A",
+  "agentUrl": "http://localhost:9101",
+  "maxConcurrentTasks": 3,
+  "maxPendingTasks": 5,
+  "supportedExecutionKeys": ["shell"]
+}
+
+###
+
+### Register Agent B
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "agentId": "concurrent-agent-b",
+  "name": "Concurrent Agent B",
+  "agentUrl": "http://localhost:9102",
+  "maxConcurrentTasks": 4,
+  "maxPendingTasks": 8,
+  "supportedExecutionKeys": ["python", "java"]
+}
+
+###
+
+### Both Agents Report Status
+POST http://localhost:8080/api/v1/scheduler/report_status
+Content-Type: application/json
+
+{
+  "agentId": "concurrent-agent-a",
+  "running": true,
+  "pendingTasks": 1,
+  "runningTasks": 2,
+  "finishedTasks": 10,
+  "maxConcurrentTasks": 3,
+  "maxPendingTasks": 5
+}
+
+###
+
+POST http://localhost:8080/api/v1/scheduler/report_status
+Content-Type: application/json
+
+{
+  "agentId": "concurrent-agent-b",
+  "running": true,
+  "pendingTasks": 0,
+  "runningTasks": 1,
+  "finishedTasks": 25,
+  "maxConcurrentTasks": 4,
+  "maxPendingTasks": 8
+}
+
+###
+
+### Both Agents Report Task Results
+POST http://localhost:8080/api/v1/scheduler/report_result
+Content-Type: application/json
+
+[
+  {
+    "agentId": "concurrent-agent-a",
+    "taskId": 3001,
+    "success": true,
+    "output": "{\"result\": \"Shell script executed successfully\"}",
+    "endTime": "2025-04-27T12:00:00Z"
+  }
+]
+
+###
+
+POST http://localhost:8080/api/v1/scheduler/report_result
+Content-Type: application/json
+
+[
+  {
+    "agentId": "concurrent-agent-b",
+    "taskId": 3002,
+    "success": false,
+    "output": "{\"error\": \"Python script failed with exit code 1\", \"stderr\": \"ModuleNotFoundError: No module named 'requests'\"}",
+    "endTime": "2025-04-27T12:05:00Z"
+  }
+]
+
+###
+
+### Cleanup: Unregister Both Agents
+POST http://localhost:8080/api/v1/scheduler/unregister
+Content-Type: application/json
+
+{
+  "agentId": "concurrent-agent-a"
+}
+
+###
+
+POST http://localhost:8080/api/v1/scheduler/unregister
+Content-Type: application/json
+
+{
+  "agentId": "concurrent-agent-b"
+}
+
+###
+
+### ============================================================
+### Edge Cases and Error Handling Tests
+### ============================================================
+
+### Test: Very Long agentId (Boundary Test)
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "agentId": "agent-with-very-long-name-that-might-exceed-normal-limits-and-test-boundary-conditions-12345678901234567890",
+  "name": "Boundary Test Agent",
+  "agentUrl": "http://localhost:9098",
+  "maxConcurrentTasks": 1,
+  "maxPendingTasks": 2
+}
+
+###
+
+### Test: Special Characters in agentId
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "agentId": "agent_test.v1-alpha",
+  "name": "Special Char Agent",
+  "agentUrl": "http://localhost:9097",
+  "maxConcurrentTasks": 2,
+  "maxPendingTasks": 4
+}
+
+###
+
+### Test: Negative Numbers (Should be validated)
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "agentId": "agent-negative-test",
+  "name": "Negative Test Agent",
+  "agentUrl": "http://localhost:9096",
+  "maxConcurrentTasks": -5,
+  "maxPendingTasks": -10
+}
+
+###
+
+### Test: Zero Concurrent Tasks
+POST http://localhost:8080/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+  "agentId": "agent-zero-concurrent",
+  "name": "Zero Concurrent Agent",
+  "agentUrl": "http://localhost:9095",
+  "maxConcurrentTasks": 0,
+  "maxPendingTasks": 0
+}
+
+###
+
+### Cleanup Edge Case Test Agents
+POST http://localhost:8080/api/v1/scheduler/unregister
+Content-Type: application/json
+
+{
+  "agentId": "agent-with-very-long-name-that-might-exceed-normal-limits-and-test-boundary-conditions-12345678901234567890"
+}
+
+###
+
+POST http://localhost:8080/api/v1/scheduler/unregister
+Content-Type: application/json
+
+{
+  "agentId": "agent_test.v1-alpha"
+}
+
+###
+
+POST http://localhost:8080/api/v1/scheduler/unregister
+Content-Type: application/json
+
+{
+  "agentId": "agent-negative-test"
+}
+
+###
+
+POST http://localhost:8080/api/v1/scheduler/unregister
+Content-Type: application/json
+
+{
+  "agentId": "agent-zero-concurrent"
+}
+
+###
+
+### ============================================================
+### Performance and Load Testing Scenarios
+### ============================================================
+
+### Note: These tests are designed for load testing tools like k6 or JMeter
+### Below are example requests that can be used as templates
+
+### Rapid Status Updates (Simulate High Frequency Heartbeats)
+POST http://localhost:8080/api/v1/scheduler/report_status
+Content-Type: application/json
+
+{
+  "agentId": "load-test-agent",
+  "running": true,
+  "pendingTasks": 0,
+  "runningTasks": 0,
+  "finishedTasks": 1000,
+  "maxConcurrentTasks": 10,
+  "maxPendingTasks": 20
+}
+
+###
+
+### Bulk Task Results Report
+POST http://localhost:8080/api/v1/scheduler/report_result
+Content-Type: application/json
+
+[
+  {
+    "agentId": "load-test-agent",
+    "taskId": 10001,
+    "success": true,
+    "output": "{\"batch\": 1, \"item\": 1}",
+    "endTime": "2025-04-27T13:00:00Z"
+  },
+  {
+    "agentId": "load-test-agent",
+    "taskId": 10002,
+    "success": true,
+    "output": "{\"batch\": 1, \"item\": 2}",
+    "endTime": "2025-04-27T13:00:01Z"
+  },
+  {
+    "agentId": "load-test-agent",
+    "taskId": 10003,
+    "success": true,
+    "output": "{\"batch\": 1, \"item\": 3}",
+    "endTime": "2025-04-27T13:00:02Z"
+  }
+]
+
+###
+
+### ============================================================
+### Response Format Reference
+### ============================================================
+
+### Success Response (HTTP 200 OK):
+### {
+###   "code": 200,
+###   "message": "Operation successful message",
+###   "timestamp": 1714215600000,
+###   "data": null
+### }
+
+### Error Response (HTTP 400 Bad Request):
+### {
+###   "code": 400,
+###   "message": "Error description",
+###   "timestamp": 1714215600000,
+###   "data": null
+### }
+
+### ============================================================
+### End of Test Cases
+### ============================================================

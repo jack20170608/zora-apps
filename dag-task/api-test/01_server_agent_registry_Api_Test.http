@@ -5,16 +5,22 @@
 # 1. Register a new agent with the scheduling center
 # -----------------------------------------------------------------------------
 ### Register agent example - default-agent
-POST {{baseUrl}}/api/v1/agent/register
+POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
 Authorization: Basic {{username}} {{password}}
 
 {
-  "agentId": "default-agent-001",
-  "agentUrl": "http://localhost:9000/hahaha",
-  "maxConcurrentTasks": 10,
-  "maxPendingTasks": 100,
-  "supportedExecutionKeys": ["shell", "python", "java", "docker"]
+    "agentId": "default-agent-001",
+    "name": "Default Agent 001",
+    "agentUrl": "http://localhost:9000/hahaha",
+    "maxConcurrentTasks": 10,
+    "maxPendingTasks": 100,
+    "supportedExecutionKeys": [
+        "shell",
+        "python",
+        "java",
+        "docker"
+    ]
 }
 
 ### Register another agent - python-worker

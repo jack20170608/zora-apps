@@ -9,7 +9,7 @@ CREATE TABLE t_agents (
     agent_id VARCHAR(255) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    labels JSONB,
+    labels TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     registered_at TIMESTAMP WITH TIME ZONE NOT NULL,
     last_heartbeat_at TIMESTAMP WITH TIME ZONE,
@@ -53,7 +53,6 @@ CREATE TABLE t_agent_status (
 
 -- 4. Create indexes
 CREATE INDEX idx_t_agents_status ON t_agents(status);
-CREATE INDEX idx_t_agents_labels ON t_agents USING GIN(labels);
 CREATE INDEX idx_agent_tokens_agent_id ON t_agent_tokens(agent_id);
 CREATE INDEX idx_agent_tokens_token_id ON t_agent_tokens(token_id);
 CREATE INDEX idx_agent_tokens_revoked ON t_agent_tokens(revoked);

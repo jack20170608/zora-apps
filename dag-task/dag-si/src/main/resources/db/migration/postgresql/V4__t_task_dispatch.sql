@@ -18,8 +18,7 @@ CREATE TABLE t_task_dispatch (
     dispatch_time TIMESTAMP NOT NULL,
     last_update_time TIMESTAMP NOT NULL,
     status VARCHAR(50) NOT NULL,
-    parameters VARCHAR,
-    CONSTRAINT fk_t_task_dispatch_task_id FOREIGN KEY (task_id) REFERENCES t_task(id)
+    parameters VARCHAR
 );
 
 -- Index for finding dispatch record by task ID (primary lookup for management operations)
