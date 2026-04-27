@@ -509,6 +509,7 @@ Authorization: Basic {{username}} {{password}}
 ### Test: Special Characters in agentId
 POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent_test.v1-alpha",
@@ -523,6 +524,7 @@ Content-Type: application/json
 ### Test: Negative Numbers (Should be validated)
 POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-negative-test",
@@ -537,6 +539,7 @@ Content-Type: application/json
 ### Test: Zero Concurrent Tasks
 POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-zero-concurrent",
@@ -551,6 +554,7 @@ Content-Type: application/json
 ### Cleanup Edge Case Test Agents
 POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-with-very-long-name-that-might-exceed-normal-limits-and-test-boundary-conditions-12345678901234567890"
@@ -560,6 +564,7 @@ Content-Type: application/json
 
 POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent_test.v1-alpha"
@@ -569,6 +574,7 @@ Content-Type: application/json
 
 POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-negative-test"
@@ -578,6 +584,7 @@ Content-Type: application/json
 
 POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-zero-concurrent"
@@ -595,6 +602,7 @@ Content-Type: application/json
 ### Rapid Status Updates (Simulate High Frequency Heartbeats)
 POST {{baseUrl}}/api/v1/scheduler/report_status
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "load-test-agent",
@@ -611,6 +619,7 @@ Content-Type: application/json
 ### Bulk Task Results Report
 POST {{baseUrl}}/api/v1/scheduler/report_result
 Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
 
 [
   {
