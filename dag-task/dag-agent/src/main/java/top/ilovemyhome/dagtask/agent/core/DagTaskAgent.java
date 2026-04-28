@@ -79,11 +79,12 @@ public class DagTaskAgent {
         if (config.isAutoRegister()) {
             var registration = new AgentRegisterRequest(
                     config.getAgentId(),
-                    config.getBaseUrl(),
                     config.getAgentName(),
+                    config.getAgentUrl(),
                     config.getMaxConcurrentTasks(),
                     config.getMaxPendingTasks(),
-                    config.getSupportedExecutionKeys()
+                    config.getSupportedExecutionKeys(),
+                    config.isGenerateToken()
             );
             var response = agentSchedulerClient.register(registration);
             boolean registeredSuccess = response.getStatus() >= 200 && response.getStatus() < 300;

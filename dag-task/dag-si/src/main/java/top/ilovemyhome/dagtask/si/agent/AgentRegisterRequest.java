@@ -9,7 +9,8 @@ public record AgentRegisterRequest(
     String agentUrl,
     int maxConcurrentTasks,
     int maxPendingTasks,
-    List<String> supportedExecutionKeys
+    List<String> supportedExecutionKeys,
+    boolean generateToken
 ) {
     public static Agent toAgent(AgentRegisterRequest request){
         Instant now = Instant.now();

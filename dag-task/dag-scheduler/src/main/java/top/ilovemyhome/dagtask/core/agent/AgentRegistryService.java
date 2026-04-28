@@ -22,7 +22,18 @@ public interface AgentRegistryService {
      * @param registration the agent registration information containing agent capabilities and endpoint
      * @return true if registration was successful, false otherwise
      */
-    boolean registerAgent(AgentRegisterRequest registration);
+    default boolean registerAgent(AgentRegisterRequest registration) {
+        return registerAgent(registration, null);
+    }
+
+    /**
+     * Register a new agent instance with the scheduling center.
+     *
+     * @param registration the agent registration information containing agent capabilities and endpoint
+     * @param clientIp the client IP address for whitelist validation, may be null
+     * @return true if registration was successful, false otherwise
+     */
+    boolean registerAgent(AgentRegisterRequest registration, String clientIp);
 
     /**
      * Unregister an existing agent instance from the scheduling center.

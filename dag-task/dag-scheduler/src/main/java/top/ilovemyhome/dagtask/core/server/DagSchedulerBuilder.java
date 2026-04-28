@@ -14,6 +14,7 @@ import top.ilovemyhome.dagtask.core.service.DagManageServiceImpl;
 import top.ilovemyhome.dagtask.core.service.DagScheduleServiceImpl;
 import top.ilovemyhome.dagtask.core.service.TaskTemplateServiceImpl;
 import top.ilovemyhome.dagtask.core.task.TaskOrderServiceImpl;
+import top.ilovemyhome.dagtask.si.persistence.AgentWhitelistDao;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.zora.common.date.LocalDateUtils;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
@@ -159,13 +160,14 @@ public class DagSchedulerBuilder {
         var agentDao = new AgentDaoJdbiImpl(jdbiToUse);
         var agentStatusDao = new AgentStatusDaoJdbiImpl(jdbiToUse);
         var agentTokenDao = new AgentTokenDaoJdbiImpl(jdbiToUse);
+        var agentWhitelistDao = new AgentWhitelistDaoJdbiImpl(jdbiToUse);
         var taskTemplateDao = new TaskTemplateDaoJdbiImpl(jdbiToUse);
         var taskOrderDao = new TaskOrderDaoJdbiImpl(jdbiToUse);
         var taskRecordDao = new TaskRecordDaoJdbiImpl(jdbiToUse);
         var taskDispatchDao = new TaskDispatchDaoJdbiImpl(jdbiToUse);
 
         var taskOrderService = new TaskOrderServiceImpl(jdbiToUse, taskRecordDao, taskOrderDao);
-        var agentRegistryService = new DefaultAgentRegistryService(jdbi, taskRecordDao, agentDao, agentStatusDao);
+        var agentRegistryService = new DefaultAgentRegistryService(jdbi, taskRecordDao, agentDao, agentStatusDao, agentWhitelistDao);
         var taskTemplateService = new TaskTemplateServiceImpl(taskTemplateDao);
         var taskDispatcher = new DefaultTaskDispatcher(agentStatusDao, taskDispatchDao, new RandomLoadBalance(), objectMapper, null);
         var dagManageService = new DagManageServiceImpl(jdbiToUse, taskOrderDao, taskRecordDao, taskTemplateDao, objectMapper);
@@ -177,6 +179,7 @@ public class DagSchedulerBuilder {
             agentDao,
             agentStatusDao,
             agentTokenDao,
+            agentWhitelistDao,
             taskOrderDao,
             taskRecordDao,
             taskTemplateDao,

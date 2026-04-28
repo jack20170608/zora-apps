@@ -1,0 +1,158 @@
+### ============================================================
+### Agent Whitelist Admin API Test Cases
+### Base URL: http://localhost:8080
+### ============================================================
+
+### -----------------------------------------------------------
+### 1. Create Whitelist Entry by IP Segment
+### -----------------------------------------------------------
+POST {{baseUrl}}/api/v1/agents/whitelist
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "ipSegment": "127.0.0.1/32",
+  "description": "Allow localhost registration"
+}
+
+> {%
+client.test("Create whitelist entry by IP", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.data != null, "Response should contain data");
+    client.assert(json.data.id != null, "Created entry should have an id");
+    client.assert(json.data.ipSegment === "127.0.0.1/32", "ipSegment should match");
+    client.assert(json.data.enabled === true, "Entry should be enabled by default");
+});
+%}
+
+### -----------------------------------------------------------
+### 2. Create Whitelist Entry by AgentId
+### -----------------------------------------------------------
+POST {{baseUrl}}/api/v1/agents/whitelist
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "agentId": "whitelist-agent-001",
+  "description": "Allow specific agent by ID"
+}
+
+> {%
+client.test("Create whitelist entry by agentId", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.data != null, "Response should contain data");
+    client.assert(json.data.agentId === "whitelist-agent-001", "agentId should match");
+});
+%}
+
+### -----------------------------------------------------------
+### 3. List All Whitelist Entries
+### -----------------------------------------------------------
+GET {{baseUrl}}/api/v1/agents/whitelist
+Authorization: Basic {{username}} {{password}}
+
+> {%
+client.test("List all whitelist entries", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(Array.isArray(json.data), "Data should be an array");
+    client.assert(json.data.length >= 2, "Should have at least 2 entries");
+});
+%}
+
+### -----------------------------------------------------------
+### 4. Register Agent from Whitelisted IP (should succeed)
+### -----------------------------------------------------------
+POST {{baseUrl}}/api/v1/scheduler/register
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "agentId": "whitelist-test-agent",
+  "name": "Whitelist Test Agent",
+  "agentUrl": "http://localhost:9091",
+  "maxConcurrentTasks": 5,
+  "maxPendingTasks": 10,
+  "supportedExecutionKeys": ["shell", "python"]
+}
+
+> {%
+client.test("Register from whitelisted IP should succeed", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+});
+%}
+
+### -----------------------------------------------------------
+### 5. Disable localhost whitelist entry
+### -----------------------------------------------------------
+PUT {{baseUrl}}/api/v1/agents/whitelist/1
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "enabled": false
+}
+
+> {%
+client.test("Disable whitelist entry", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.data.enabled === false, "Entry should be disabled");
+});
+%}
+
+### -----------------------------------------------------------
+### 6. Delete whitelist entry by agentId
+### -----------------------------------------------------------
+### Note: Adjust the id based on actual created entry
+DELETE {{baseUrl}}/api/v1/agents/whitelist/2
+Authorization: Basic {{username}} {{password}}
+
+> {%
+client.test("Delete whitelist entry", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+});
+%}
+
+### -----------------------------------------------------------
+### 7. Cleanup: Unregister test agent
+### -----------------------------------------------------------
+POST {{baseUrl}}/api/v1/scheduler/unregister
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "agentId": "whitelist-test-agent"
+}
+
+> {%
+client.test("Cleanup: unregister test agent", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+});
+%}
+
+### -----------------------------------------------------------
+### 8. Cleanup: Delete remaining whitelist entries
+### -----------------------------------------------------------
+DELETE {{baseUrl}}/api/v1/agents/whitelist/1
+Authorization: Basic {{username}} {{password}}
+
+> {%
+client.test("Cleanup: delete remaining whitelist entry", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+});
+%}

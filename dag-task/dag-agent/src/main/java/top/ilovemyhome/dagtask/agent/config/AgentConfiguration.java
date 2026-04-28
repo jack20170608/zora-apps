@@ -37,6 +37,7 @@ public class AgentConfiguration {
     private String dagServerUrl;
     private String agentId;
     private boolean autoRegister = true;
+    private boolean generateToken = false;
     private int maxConcurrentTasks = 4;
     private int maxPendingTasks = 100;
     private String deadLetterPersistencePath;
@@ -73,6 +74,7 @@ public class AgentConfiguration {
         this.agentId = builder.agentId;
         this.agentName = builder.agentName;
         this.autoRegister = builder.autoRegister;
+        this.generateToken = builder.generateToken;
         this.maxConcurrentTasks = builder.maxConcurrentTasks;
         this.maxPendingTasks = builder.maxPendingTasks;
         this.deadLetterPersistencePath = builder.deadLetterPersistencePath;
@@ -102,6 +104,10 @@ public class AgentConfiguration {
 
     public boolean isAutoRegister() {
         return autoRegister;
+    }
+
+    public boolean isGenerateToken() {
+        return generateToken;
     }
 
     public int getMaxConcurrentTasks() {
@@ -190,6 +196,7 @@ public class AgentConfiguration {
         private String agentId;
         private String agentName;
         private boolean autoRegister = true;
+        private boolean generateToken = false;
         private int maxConcurrentTasks = 4;
         private int maxPendingTasks = 100;
         private String deadLetterPersistencePath;
@@ -219,6 +226,11 @@ public class AgentConfiguration {
 
         public Builder autoRegister(boolean autoRegister) {
             this.autoRegister = autoRegister;
+            return this;
+        }
+
+        public Builder generateToken(boolean generateToken) {
+            this.generateToken = generateToken;
             return this;
         }
 

@@ -738,6 +738,16 @@ Authorization: Basic {{username}} {{password}}
   }
 ]
 
+> {%
+client.test("Scenario 2: Report Task Result for Agent A", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
+
 ###
 
 POST {{baseUrl}}/api/v1/scheduler/report_result
@@ -754,6 +764,16 @@ Authorization: Basic {{username}} {{password}}
   }
 ]
 
+> {%
+client.test("Scenario 2: Report Task Result for Agent B", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
+
 ###
 
 ### Cleanup: Unregister Both Agents
@@ -765,6 +785,16 @@ Authorization: Basic {{username}} {{password}}
   "agentId": "concurrent-agent-a"
 }
 
+> {%
+client.test("Scenario 2 Cleanup: Unregister Agent A", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
+
 ###
 
 POST {{baseUrl}}/api/v1/scheduler/unregister
@@ -774,6 +804,16 @@ Authorization: Basic {{username}} {{password}}
 {
   "agentId": "concurrent-agent-b"
 }
+
+> {%
+client.test("Scenario 2 Cleanup: Unregister Agent B", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
 
 ###
 
@@ -794,6 +834,16 @@ Authorization: Basic {{username}} {{password}}
   "maxPendingTasks": 2
 }
 
+> {%
+client.test("Edge Case: Very Long agentId (Boundary Test)", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
+
 ###
 
 ### Test: Special Characters in agentId
@@ -808,6 +858,16 @@ Authorization: Basic {{username}} {{password}}
   "maxConcurrentTasks": 2,
   "maxPendingTasks": 4
 }
+
+> {%
+client.test("Edge Case: Special Characters in agentId", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
 
 ###
 
@@ -824,6 +884,16 @@ Authorization: Basic {{username}} {{password}}
   "maxPendingTasks": -10
 }
 
+> {%
+client.test("Edge Case: Negative Numbers (Should be validated)", function() {
+    client.assert(response.status === 400, "Response status should be 400");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 400, "Response code should be 400");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
+
 ###
 
 ### Test: Zero Concurrent Tasks
@@ -839,6 +909,16 @@ Authorization: Basic {{username}} {{password}}
   "maxPendingTasks": 0
 }
 
+> {%
+client.test("Edge Case: Zero Concurrent Tasks", function() {
+    client.assert(response.status === 400, "Response status should be 400");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 400, "Response code should be 400");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
+
 ###
 
 ### Cleanup Edge Case Test Agents
@@ -850,6 +930,16 @@ Authorization: Basic {{username}} {{password}}
   "agentId": "agent-with-very-long-name-that-might-exceed-normal-limits-and-test-boundary-conditions-12345678901234567890"
 }
 
+> {%
+client.test("Cleanup: Unregister Very Long agentId", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
+
 ###
 
 POST {{baseUrl}}/api/v1/scheduler/unregister
@@ -859,6 +949,16 @@ Authorization: Basic {{username}} {{password}}
 {
   "agentId": "agent_test.v1-alpha"
 }
+
+> {%
+client.test("Cleanup: Unregister Special Char Agent", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
 
 ###
 
@@ -870,6 +970,16 @@ Authorization: Basic {{username}} {{password}}
   "agentId": "agent-negative-test"
 }
 
+> {%
+client.test("Cleanup: Unregister Negative Test Agent", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
+
 ###
 
 POST {{baseUrl}}/api/v1/scheduler/unregister
@@ -879,6 +989,16 @@ Authorization: Basic {{username}} {{password}}
 {
   "agentId": "agent-zero-concurrent"
 }
+
+> {%
+client.test("Cleanup: Unregister Zero Concurrent Agent", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
 
 ###
 
@@ -903,6 +1023,16 @@ Authorization: Basic {{username}} {{password}}
   "maxConcurrentTasks": 10,
   "maxPendingTasks": 20
 }
+
+> {%
+client.test("Performance: Rapid Status Updates", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
 
 ###
 
@@ -934,6 +1064,16 @@ Authorization: Basic {{username}} {{password}}
     "endTime": "2025-04-27T13:00:02Z"
   }
 ]
+
+> {%
+client.test("Performance: Bulk Task Results Report", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    var json = JSON.parse(response.body);
+    client.assert(json.code === 200, "Response code should be 200");
+    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+});
+%}
 
 ###
 

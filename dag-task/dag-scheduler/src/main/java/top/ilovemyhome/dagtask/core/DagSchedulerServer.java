@@ -61,6 +61,7 @@ public class DagSchedulerServer {
     private final AgentDao agentDao;
     private final AgentStatusDao agentStatusDao;
     private final AgentTokenDao agentTokenDao;
+    private final AgentWhitelistDao agentWhitelistDao;
     private final TaskOrderDao taskOrderDao;
     private final TaskRecordDao taskRecordDao;
     private final TaskTemplateDao taskTemplateDao;
@@ -85,6 +86,7 @@ public class DagSchedulerServer {
         AgentDao agentDao,
         AgentStatusDao agentStatusDao,
         AgentTokenDao agentTokenDao,
+        AgentWhitelistDao agentWhitelistDao,
         TaskOrderDao taskOrderDao,
         TaskRecordDao taskRecordDao,
         TaskTemplateDao taskTemplateDao,
@@ -100,6 +102,7 @@ public class DagSchedulerServer {
         this.agentDao = Objects.requireNonNull(agentDao, "agentDao must not be null");
         this.agentStatusDao = Objects.requireNonNull(agentStatusDao, "agentStatusDao must not be null");
         this.agentTokenDao = Objects.requireNonNull(agentTokenDao, "agentTokenDao must not be null");
+        this.agentWhitelistDao = Objects.requireNonNull(agentWhitelistDao, "agentWhitelistDao must not be null");
         this.taskOrderDao = Objects.requireNonNull(taskOrderDao, "taskOrderDao must not be null");
         this.taskRecordDao = Objects.requireNonNull(taskRecordDao, "taskRecordDao must not be null");
         this.taskTemplateDao = Objects.requireNonNull(taskTemplateDao, "taskTemplateDao must not be null");
@@ -267,6 +270,10 @@ public class DagSchedulerServer {
 
     public AgentTokenDao getAgentTokenDao() {
         return agentTokenDao;
+    }
+
+    public AgentWhitelistDao getAgentWhitelistDao() {
+        return agentWhitelistDao;
     }
 
     public TaskTemplateDao getTaskTemplateDao() {

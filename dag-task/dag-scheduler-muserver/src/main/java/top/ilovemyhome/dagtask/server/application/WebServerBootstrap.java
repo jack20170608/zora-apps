@@ -25,6 +25,7 @@ import top.ilovemyhome.dagtask.scheduler.config.AutoApproveConfig;
 import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
 import top.ilovemyhome.dagtask.scheduler.token.TokenManagementApi;
 import top.ilovemyhome.dagtask.scheduler.token.TokenService;
+import top.ilovemyhome.dagtask.server.interfaces.api.AgentWhitelistAdminApi;
 import top.ilovemyhome.dagtask.server.interfaces.api.FooUserHandler;
 import top.ilovemyhome.dagtask.server.web.security.SecurityHandler;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
@@ -100,6 +101,7 @@ public class WebServerBootstrap {
         TaskOrderApi taskOrderApi = new TaskOrderApi(schedulerServer.getTaskOrderDao());
         TaskTemplateApi taskTemplateApi = new TaskTemplateApi(schedulerServer.getTaskTemplateService());
         AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
+        AgentWhitelistAdminApi agentWhitelistAdminApi = new AgentWhitelistAdminApi(schedulerServer.getAgentWhitelistDao());
 
         // New frontend-friendly APIs
 //        WorkflowApi workflowApi = new WorkflowApi(schedulerServer.getTaskTemplateService(), schedulerServer.getDagManageService());
@@ -120,6 +122,7 @@ public class WebServerBootstrap {
                 agentRegistryApi,
                 taskOrderApi,
                 taskTemplateApi,
+                agentWhitelistAdminApi,
                 publicRegistrationApi,
                 tokenManagementApi
                 //,

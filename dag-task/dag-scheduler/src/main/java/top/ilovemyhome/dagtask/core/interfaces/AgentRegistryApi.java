@@ -1,10 +1,12 @@
 package top.ilovemyhome.dagtask.core.interfaces;
 
+import io.muserver.MuRequest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
@@ -70,9 +72,10 @@ public class AgentRegistryApi {
     @POST
     @Path(Constants.API_REGISTER)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response register(AgentRegisterRequest registration) {
-        LOGGER.debug("Received registration request from agent: {}", registration.agentId());
-        boolean success = agentRegistryService.registerAgent(registration);
+    public Response register(AgentRegisterRequest registration, @Context MuRequest muRequest) {
+        String clientIp = muRequest != null ? muRequest.clientIP() : null;
+        LOGGER.debug("Received registration request from agent: {}, clientIp: {}", registration.agentId(), clientIp);
+        boolean success = agentRegistryService.registerAgent(registration, clientIp);
         if (success) {
             return Response.ok().entity(ResEntityHelper.ok("Agent registered successfully", null)).build();
         } else {

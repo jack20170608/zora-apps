@@ -12,8 +12,11 @@ import top.ilovemyhome.dagtask.si.agent.AgentStatus;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
+import top.ilovemyhome.dagtask.core.util.IpAddressMatcher;
+import top.ilovemyhome.dagtask.si.agent.AgentWhitelist;
 import top.ilovemyhome.dagtask.si.persistence.AgentDao;
 import top.ilovemyhome.dagtask.si.persistence.AgentStatusDao;
+import top.ilovemyhome.dagtask.si.persistence.AgentWhitelistDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
 
 import java.util.List;
@@ -38,6 +41,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
     private final TaskRecordDao taskRecordDao;
     private final AgentDao agentDao;
     private final AgentStatusDao agentStatusDao;
+    private final AgentWhitelistDao agentWhitelistDao;
     private final ConcurrentHashMap<String, AgentStatus> agentCache = new ConcurrentHashMap<>();
 
     /**
@@ -48,11 +52,13 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      * @param agentStatusDao DAO for persisting agent runtime status
      */
     public DefaultAgentRegistryService(Jdbi jdbi, TaskRecordDao taskRecordDao,
-                                        AgentDao agentDao, AgentStatusDao agentStatusDao) {
+                                        AgentDao agentDao, AgentStatusDao agentStatusDao,
+                                        AgentWhitelistDao agentWhitelistDao) {
         this.jdbi = jdbi;
         this.taskRecordDao = Objects.requireNonNull(taskRecordDao, "taskRecordDao must not be null");
         this.agentDao = Objects.requireNonNull(agentDao, "agentDao must not be null");
         this.agentStatusDao = Objects.requireNonNull(agentStatusDao, "agentStatusDao must not be null");
+        this.agentWhitelistDao = Objects.requireNonNull(agentWhitelistDao, "agentWhitelistDao must not be null");
         // Warm the cache from database
         loadAllFromDatabase();
     }
@@ -67,9 +73,16 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
     }
 
     @Override
-    public boolean registerAgent(AgentRegisterRequest registration) {
+    public boolean registerAgent(AgentRegisterRequest registration, String clientIp) {
         if (registration == null || StringUtils.isBlank(registration.agentId())) {
             logger.warn("Cannot register agent: invalid registration (agentId is blank)");
+            return false;
+        }
+
+        // Validate against whitelist: deny by default if no matching rule found
+        if (!isAllowedByWhitelist(clientIp, registration.agentId())) {
+            logger.warn("Agent registration denied: agentId=[{}], clientIp=[{}] not in whitelist",
+                registration.agentId(), clientIp);
             return false;
         }
 
@@ -248,5 +261,35 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      */
     public int getRegistrySize() {
         return agentCache.size();
+    }
+
+    /**
+     * Check if the given client IP and agentId is allowed by the whitelist.
+     * 1. Fast path: if there is an enabled entry matching this agentId (regardless of IP), allow.
+     * 2. Otherwise, query enabled IP segments related to this agentId
+     *    (including generic entries where agent_id is null), then match client IP
+     *    against each CIDR segment in Java layer.
+     *
+     * @param clientIp the client IP address
+     * @param agentId  the agent identifier
+     * @return true if allowed, false otherwise
+     */
+    private boolean isAllowedByWhitelist(String clientIp, String agentId) {
+        // 1. Fast path: exact agentId match in database (no IP restriction)
+        if (StringUtils.isNotBlank(agentId) && agentWhitelistDao.existsByAgentId(agentId)) {
+            return true;
+        }
+
+        // 2. IP segment match: query only IP segments related to this agentId
+        if (StringUtils.isNotBlank(clientIp) && StringUtils.isNotBlank(agentId)) {
+            List<String> ipSegments = agentWhitelistDao.findIpSegmentsByAgentId(agentId);
+            for (String segment : ipSegments) {
+                if (IpAddressMatcher.matches(segment, clientIp)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
