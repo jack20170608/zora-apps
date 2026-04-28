@@ -12,7 +12,7 @@ import java.io.IOException;
  */
 public class AppLocal {
 
-    static EmbeddedPostgres embeddedPostgres = null;
+//    static EmbeddedPostgres embeddedPostgres = null;
 
     static void main(String[] args) {
 //        try {
