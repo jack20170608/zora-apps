@@ -130,7 +130,7 @@ public final class AppContext {
         logger.info("Flyway migration completed successfully");
     }
 
-    private void startDagServer(){
+    private void startDagServer(JwtConfig jwtConfig){
         DagSchedulerServer dagServer = DagSchedulerBuilder.builder()
             .dataSource(this.dataSource)
             .jdbi(this.jdbi)
@@ -141,9 +141,69 @@ public final class AppContext {
             .heartbeatTimeoutSeconds(5)
             .heartbeatIntervalSeconds(30)
             .maxHeartbeatFailedTimes(3)
+            .jwtConfig(jwtConfig)
             .build();
         registerBean(DagSchedulerServer.class, "dagSchedulerServer", dagServer);
         dagServer.start();
+    }
+
+    private static JwtConfig readJwtConfig(Config config) {
+        Config jwt = config.getConfig("jwt");
+        String issuer = jwt.getString("issuer");
+        String publicKeyPath = jwt.getString("publicKeyLocation");
+        String privateKeyPath = jwt.getString("privateKeyLocation");
+        try {
+            PublicKey publicKey = readPublicKey(publicKeyPath);
+            PrivateKey privateKey = readPrivateKey(privateKeyPath);
+            return new JwtConfig(issuer, publicKey, privateKey);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load JWT keys", e);
+        }
+    }
+
+    private static PublicKey readPublicKey(String path) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        String content = readKeyContent(path);
+        byte[] decoded = Base64.getDecoder().decode(content);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(decoded);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return kf.generatePublic(spec);
+    }
+
+    private static PrivateKey readPrivateKey(String path) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        String content = readKeyContent(path);
+        byte[] decoded = Base64.getDecoder().decode(content);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return kf.generatePrivate(spec);
+    }
+
+    private static String readKeyContent(String path) {
+        try {
+            if (path.startsWith("classpath:")) {
+                String resourcePath = path.substring("classpath:".length());
+                try (InputStream is = AppContext.class.getClassLoader().getResourceAsStream(resourcePath)) {
+                    if (is == null) {
+                        throw new RuntimeException("Resource not found in classpath: " + resourcePath);
+                    }
+                    return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
+                        .replace("-----BEGIN PUBLIC KEY-----", "")
+                        .replace("-----END PUBLIC KEY-----", "")
+                        .replace("-----BEGIN PRIVATE KEY-----", "")
+                        .replace("-----END PRIVATE KEY-----", "")
+                        .replaceAll("\\s", "");
+                }
+            } else {
+                java.io.File file = new java.io.File(path);
+                return java.nio.file.Files.readString(file.toPath())
+                    .replace("-----BEGIN PUBLIC KEY-----", "")
+                    .replace("-----END PUBLIC KEY-----", "")
+                    .replace("-----BEGIN PRIVATE KEY-----", "")
+                    .replace("-----END PRIVATE KEY-----", "")
+                    .replaceAll("\\s", "");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read key: " + path, e);
+        }
     }
 
     @SuppressWarnings("unchecked")

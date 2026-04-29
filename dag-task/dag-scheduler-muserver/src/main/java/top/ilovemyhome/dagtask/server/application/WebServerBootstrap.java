@@ -32,14 +32,6 @@ import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
 
 import java.net.URI;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -109,7 +101,7 @@ public class WebServerBootstrap {
 //        StatsApi statsApi = new StatsApi();
 
         // Create authentication components
-        JwtConfig jwtConfig = readJwtConfig(config);
+        JwtConfig jwtConfig = appContext.getBean("jwtConfig", JwtConfig.class);
         AutoApproveConfig autoApproveConfig = readAutoApproveConfig(config);
         TokenService tokenService = new TokenService(schedulerServer.getAgentTokenDao(), jwtConfig);
         AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
@@ -165,20 +157,6 @@ public class WebServerBootstrap {
             );
     }
 
-    private static JwtConfig readJwtConfig(Config config) {
-        Config jwt = config.getConfig("jwt");
-        String issuer = jwt.getString("issuer");
-        String publicKeyPath = jwt.getString("publicKeyLocation");
-        String privateKeyPath = jwt.getString("privateKeyLocation");
-        try {
-            PublicKey publicKey = readPublicKey(publicKeyPath);
-            PrivateKey privateKey = readPrivateKey(privateKeyPath);
-            return new JwtConfig(issuer, publicKey, privateKey);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to load JWT keys", e);
-        }
-    }
-
     private static AutoApproveConfig readAutoApproveConfig(Config config) {
         if (!config.hasPath("dag-task.auth.auto-approve")) {
             return new AutoApproveConfig(false, java.util.List.of());
@@ -187,48 +165,6 @@ public class WebServerBootstrap {
         boolean enabled = autoApprove.getBoolean("enabled");
         var patterns = autoApprove.getStringList("patterns");
         return new AutoApproveConfig(enabled, patterns);
-    }
-
-    private static PublicKey readPublicKey(String path) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        String content = readKeyContent(path);
-        byte[] decoded = Base64.getDecoder().decode(content);
-        X509EncodedKeySpec spec = new X509EncodedKeySpec(decoded);
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return kf.generatePublic(spec);
-    }
-
-    private static PrivateKey readPrivateKey(String path) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        String content = readKeyContent(path);
-        byte[] decoded = Base64.getDecoder().decode(content);
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return kf.generatePrivate(spec);
-    }
-
-    private static String readKeyContent(String path) {
-        String content;
-        try {
-            if (path.startsWith("classpath:")) {
-                String resourcePath = path.substring("classpath:".length());
-                try (java.io.InputStream is = WebServerBootstrap.class.getClassLoader().getResourceAsStream(resourcePath)) {
-                    if (is == null) {
-                        throw new RuntimeException("Resource not found in classpath: " + resourcePath);
-                    }
-                    content = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-                }
-            } else {
-                java.io.File file = new java.io.File(path);
-                content = java.nio.file.Files.readString(file.toPath());
-            }
-            return content
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replaceAll("\\s", "");
-        } catch (java.io.IOException e) {
-            throw new RuntimeException("Failed to read key: " + path, e);
-        }
     }
 
     private static final Logger logger = LoggerFactory.getLogger(WebServerBootstrap.class);
