@@ -39,3 +39,7 @@ dag-task/
 - 测试框架使用JUnit 5和Mockito
 - 日志框架使用SLF4J
 - 代码注释使用英文，项目文档使用中文
+
+## Claude Code 配置
+
+本项目已配置 `dag-task/.claude/settings.json`，允许所有 `mvn` 命令无需确认直接执行。如需调整权限规则，请编辑该文件中的 `permissions.allow` 数组。
