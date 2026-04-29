@@ -269,3 +269,15 @@ export interface FilterState {
   workflowId?: string;
   searchQuery: string;
 }
+
+// ==================== Agent Whitelist Types ====================
+
+export interface AgentWhitelist {
+  id: number;
+  ipSegment?: string;
+  agentId?: string;
+  description?: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -9,14 +9,17 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  Shield,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
 import { useAgents } from "@/hooks/use-api"
 import type { Agent, AgentStatus } from "@/types"
 import { formatRelativeTime } from "@/lib/utils"
+import Link from "next/link"
 
 const statusConfig: Record<AgentStatus, { label: string; variant: any; color: string; icon: any }> = {
   online: { label: "Online", variant: "success", color: "#10B981", icon: CheckCircle2 },
@@ -161,11 +164,19 @@ export default function AgentsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Agents</h1>
-        <p className="text-muted-foreground">
-          Monitor and manage execution agents in your cluster.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Agents</h1>
+          <p className="text-muted-foreground">
+            Monitor and manage execution agents in your cluster.
+          </p>
+        </div>
+        <Button variant="outline" asChild>
+          <Link href="/agents/whitelist">
+            <Shield className="mr-1.5 h-4 w-4" />
+            Whitelist
+          </Link>
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

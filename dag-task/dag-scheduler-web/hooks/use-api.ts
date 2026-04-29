@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { workflowApi, executionApi, agentApi, statsApi } from "@/lib/api/client"
-import type { Workflow, Execution, Agent, DashboardStats, TrendData } from "@/types"
+import { workflowApi, executionApi, agentApi, statsApi, agentWhitelistApi } from "@/lib/api/client"
+import type { Workflow, Execution, Agent, DashboardStats, TrendData, AgentWhitelist } from "@/types"
 import {
   mockWorkflows,
   mockExecutions,
   mockAgents,
   mockDashboardStats,
   mockTrends,
+  mockAgentWhitelists,
 } from "@/lib/api/mock-data"
 
 // ==================== Workflow Hooks ====================
@@ -206,5 +207,57 @@ export function useTrends(days?: number) {
         return mockTrends
       }
     },
+  })
+}
+
+// ==================== Agent Whitelist Hooks ====================
+
+export function useAgentWhitelists(params?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["agent-whitelists", params],
+    queryFn: async () => {
+      try {
+        const res = await agentWhitelistApi.list(params)
+        return res.data.data
+      } catch {
+        return mockAgentWhitelists
+      }
+    },
+  })
+}
+
+export function useAgentWhitelist(id: number) {
+  return useQuery({
+    queryKey: ["agent-whitelist", id],
+    queryFn: async () => {
+      const res = await agentWhitelistApi.get(id)
+      return res.data.data
+    },
+    enabled: !!id,
+  })
+}
+
+export function useCreateAgentWhitelist() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: agentWhitelistApi.create,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["agent-whitelists"] }),
+  })
+}
+
+export function useUpdateAgentWhitelist() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<AgentWhitelist> }) =>
+      agentWhitelistApi.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["agent-whitelists"] }),
+  })
+}
+
+export function useDeleteAgentWhitelist() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: agentWhitelistApi.delete,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["agent-whitelists"] }),
   })
 }

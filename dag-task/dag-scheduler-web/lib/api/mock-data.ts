@@ -1,4 +1,4 @@
-import type { Workflow, Execution, Agent, DashboardStats, TrendData } from "@/types";
+import type { Workflow, Execution, Agent, DashboardStats, TrendData, AgentWhitelist } from "@/types";
 
 export const mockWorkflows: Workflow[] = [
   {
@@ -291,4 +291,31 @@ export const mockTrends: TrendData[] = [
   { date: "2024-01-05", executions: 220, successful: 214, failed: 6, avgDuration: 460000 },
   { date: "2024-01-06", executions: 245, successful: 237, failed: 8, avgDuration: 480000 },
   { date: "2024-01-07", executions: 288, successful: 275, failed: 13, avgDuration: 520000 },
+];
+
+export const mockAgentWhitelists: AgentWhitelist[] = [
+  {
+    id: 1,
+    ipSegment: "127.0.0.1/32",
+    description: "Allow localhost registration",
+    enabled: true,
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+  },
+  {
+    id: 2,
+    agentId: "whitelist-agent-001",
+    description: "Allow specific agent by ID",
+    enabled: true,
+    createdAt: "2024-01-02T00:00:00Z",
+    updatedAt: "2024-01-02T00:00:00Z",
+  },
+  {
+    id: 3,
+    ipSegment: "192.168.1.0/24",
+    description: "Allow local network",
+    enabled: false,
+    createdAt: "2024-01-03T00:00:00Z",
+    updatedAt: "2024-01-05T00:00:00Z",
+  },
 ];

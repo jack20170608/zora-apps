@@ -9,7 +9,8 @@ import type {
   DashboardStats, 
   TrendData,
   DagDefinition,
-  ExecutionStatus
+  ExecutionStatus,
+  AgentWhitelist
 } from '@/types';
 
 const apiClient = axios.create({
@@ -126,6 +127,25 @@ export const statsApi = {
   
   getTrends: (params?: { days?: number }) =>
     apiClient.get<ApiResponse<TrendData[]>>(`/stats/trends`, { params }),
+};
+
+// ==================== Agent Whitelist API ====================
+
+export const agentWhitelistApi = {
+  list: (params?: { enabled?: boolean }) =>
+    apiClient.get<ApiResponse<AgentWhitelist[]>>('/agents/whitelist', { params }),
+
+  get: (id: number) =>
+    apiClient.get<ApiResponse<AgentWhitelist>>(`/agents/whitelist/${id}`),
+
+  create: (data: Partial<AgentWhitelist>) =>
+    apiClient.post<ApiResponse<AgentWhitelist>>('/agents/whitelist', data),
+
+  update: (id: number, data: Partial<AgentWhitelist>) =>
+    apiClient.put<ApiResponse<AgentWhitelist>>(`/agents/whitelist/${id}`, data),
+
+  delete: (id: number) =>
+    apiClient.delete<ApiResponse<void>>(`/agents/whitelist/${id}`),
 };
 
 // ==================== WebSocket ====================
