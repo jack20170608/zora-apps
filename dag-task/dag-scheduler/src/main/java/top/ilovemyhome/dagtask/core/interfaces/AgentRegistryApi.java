@@ -88,26 +88,15 @@ public class AgentRegistryApi {
 
         // Generate token if registration succeeded and token generation was requested
         if (response.success() && registration.generateToken()) {
-            var tokenResult = tokenService.generateToken(
+            var tokenInfo = tokenService.generateToken(
                 registration.agentId(),
                 registration.name(),
                 "Auto-generated token for agent: " + registration.agentId(),
                 30,
                 "system"
             );
-            String jwt = tokenService.generateJwt(tokenResult);
-            TokenInfo tokenInfo = new TokenInfo(
-                null,
-                tokenResult.tokenId(),
-                registration.agentId(),
-                tokenResult.name(),
-                tokenResult.description(),
-                tokenResult.createdBy(),
-                tokenResult.issuedAt(),
-                tokenResult.expiresAt(),
-                jwt
-            );
-            response = response.withTokenInfo(tokenInfo);
+            String jwt = tokenService.generateJwt(tokenInfo);
+            response = response.withTokenInfo(tokenInfo.withToken(jwt));
         }
 
         if (response.success()) {

@@ -17,4 +17,15 @@ public record TokenInfo(
     Instant expiresAt,
     String token
 ) {
+
+    /**
+     * Returns a new TokenInfo with the JWT token string set.
+     *
+     * @param token the JWT token string
+     * @return a new TokenInfo instance with the token field populated
+     */
+    public TokenInfo withToken(String token) {
+        return new TokenInfo(this.id, this.tokenId, this.agentId, this.name,
+            this.description, this.createdBy, this.createdAt, this.expiresAt, token);
+    }
 }

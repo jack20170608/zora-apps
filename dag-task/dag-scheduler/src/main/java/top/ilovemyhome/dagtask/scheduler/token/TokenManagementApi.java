@@ -72,28 +72,16 @@ public class TokenManagementApi {
         LOGGER.info("Manual token generation requested: name={}, expiresInDays={}, createdBy={}",
             request.name(), request.expiresInDays(), createdBy);
 
-        var result = tokenService.generateToken(
+        var tokenInfo = tokenService.generateToken(
             request.name(),
             request.description(),
             request.expiresInDays(),
             createdBy
         );
-        String jwt = tokenService.generateJwt(result);
-
-        TokenInfo data = new TokenInfo(
-            null,
-            result.tokenId(),
-            null,
-            result.name(),
-            result.description(),
-            result.createdBy(),
-            result.issuedAt(),
-            result.expiresAt(),
-            jwt
-        );
+        String jwt = tokenService.generateJwt(tokenInfo);
 
         return Response.ok()
-            .entity(ResEntityHelper.ok("Token generated successfully", data))
+            .entity(ResEntityHelper.ok("Token generated successfully", tokenInfo.withToken(jwt)))
             .build();
     }
 

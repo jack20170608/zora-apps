@@ -7,7 +7,6 @@ import top.ilovemyhome.dagtask.si.auth.AgentToken;
 import top.ilovemyhome.dagtask.si.auth.TokenInfo;
 import top.ilovemyhome.dagtask.si.persistence.AgentTokenDao;
 
-import java.security.PrivateKey;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.security.SecureRandom;
@@ -26,25 +25,14 @@ public class TokenService {
         this.jwtConfig = jwtConfig;
     }
 
-    public record GenerateTokenResult(
-        String tokenId,
-        String name,
-        String description,
-        Instant issuedAt,
-        Instant expiresAt,
-        String createdBy
-    ) {}
-
-    public GenerateTokenResult generateToken(String name, String description, int expiresInDays, String createdBy) {
+    public TokenInfo generateToken(String name, String description, int expiresInDays, String createdBy) {
         return generateToken(null, name, description, expiresInDays, createdBy);
     }
 
-    public GenerateTokenResult generateToken(String agentId, String name, String description, int expiresInDays, String createdBy) {
+    public TokenInfo generateToken(String agentId, String name, String description, int expiresInDays, String createdBy) {
         String tokenId = generateId();
         Instant issuedAt = Instant.now();
         Instant expiresAt = issuedAt.plus(expiresInDays, ChronoUnit.DAYS);
-
-        GenerateTokenResult result = new GenerateTokenResult(tokenId, name, description, issuedAt, expiresAt, createdBy);
 
         // Persist token metadata to the database
         AgentToken tokenRecord = AgentToken.builder()
@@ -61,17 +49,28 @@ public class TokenService {
             .build();
 
         agentTokenDao.create(tokenRecord);
-        return result;
+
+        return new TokenInfo(
+            null,
+            tokenId,
+            agentId,
+            name,
+            description,
+            createdBy,
+            issuedAt,
+            expiresAt,
+            null
+        );
     }
 
-    public String generateJwt(GenerateTokenResult result) {
+    public String generateJwt(TokenInfo tokenInfo) {
         return Jwts.builder()
             .issuer(jwtConfig.getIssuer())
             .subject("agent")
-            .id(result.tokenId())
-            .issuedAt(Date.from(result.issuedAt()))
-            .expiration(Date.from(result.expiresAt()))
-            .claim("name", result.name())
+            .id(tokenInfo.tokenId())
+            .issuedAt(Date.from(tokenInfo.createdAt()))
+            .expiration(Date.from(tokenInfo.expiresAt()))
+            .claim("name", tokenInfo.name())
             .signWith(jwtConfig.getPrivateKey(), SignatureAlgorithm.RS256)
             .compact();
     }
