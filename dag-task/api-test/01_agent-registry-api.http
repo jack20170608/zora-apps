@@ -11,6 +11,7 @@
 POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
 Authorization: Basic {{username}} {{password}}
+Accept: application/json
 
 {
   "agentId": "agent-001",
@@ -18,13 +19,20 @@ Authorization: Basic {{username}} {{password}}
   "agentUrl": "http://localhost:9091",
   "maxConcurrentTasks": 5,
   "maxPendingTasks": 10,
-  "supportedExecutionKeys": ["shell", "python", "java"]
+  "supportedExecutionKeys": ["shell", "python", "java"],
+    "generateToken": true
 }
 
 > {%
+
+    console.log("=== Response Details ===");
+    console.log("Status Code: " + response.status);
+    console.log("Response Body: " + response.body);
+
 client.test("Test Case 1.1: Successful Agent Registration", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+
+    let json = JSON.parse(response.body);
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -47,7 +55,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 1.2: Registration with Minimal Required Fields", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    let json = JSON.parse(response.body);
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");

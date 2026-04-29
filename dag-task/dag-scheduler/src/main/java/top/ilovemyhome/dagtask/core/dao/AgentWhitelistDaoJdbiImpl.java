@@ -61,12 +61,12 @@ public class AgentWhitelistDaoJdbiImpl extends BaseDaoJdbiImpl<AgentWhitelist> i
 
     @Override
     public List<String> findIpSegmentsByAgentId(String agentId) {
-        String sql = String.format(
-            "select ip_segment from %s where enabled = true " +
-            "and ip_segment is not null " +
-            "and (agent_id = :agentId or agent_id is null)",
-            table.getName()
-        );
+        String sql = """
+            select ip_segment from t_agent_whitelist
+            where enabled = true
+            and ip_segment is not null
+            and agent_id = :agentId;
+            """;
         return jdbi.withHandle(handle ->
             handle.createQuery(sql)
                 .bind("agentId", agentId)

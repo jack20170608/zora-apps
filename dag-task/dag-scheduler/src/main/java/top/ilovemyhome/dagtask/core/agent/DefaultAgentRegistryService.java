@@ -284,24 +284,8 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
         return agentCache.size();
     }
 
-    /**
-     * Check if the given client IP and agentId is allowed by the whitelist.
-     * 1. Fast path: if there is an enabled entry matching this agentId (regardless of IP), allow.
-     * 2. Otherwise, query enabled IP segments related to this agentId
-     *    (including generic entries where agent_id is null), then match client IP
-     *    against each CIDR segment in Java layer.
-     *
-     * @param clientIp the client IP address
-     * @param agentId  the agent identifier
-     * @return true if allowed, false otherwise
-     */
     private boolean isAllowedByWhitelist(String clientIp, String agentId) {
-        // 1. Fast path: exact agentId match in database (no IP restriction)
-        if (StringUtils.isNotBlank(agentId) && agentWhitelistDao.existsByAgentId(agentId)) {
-            return true;
-        }
-
-        // 2. IP segment match: query only IP segments related to this agentId
+        // IP segment match: query only IP segments related to this agentId
         if (StringUtils.isNotBlank(clientIp) && StringUtils.isNotBlank(agentId)) {
             List<String> ipSegments = agentWhitelistDao.findIpSegmentsByAgentId(agentId);
             for (String segment : ipSegments) {

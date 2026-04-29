@@ -76,13 +76,16 @@ public class AgentRegistryApi {
     @POST
     @Path(Constants.API_REGISTER)
     @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     public Response register(AgentRegisterRequest registration, @Context MuRequest muRequest) {
         String clientIp = muRequest != null ? muRequest.clientIP() : null;
         LOGGER.debug("Received registration request from agent: {}, clientIp: {}", registration.agentId(), clientIp);
         AgentRegisterResponse response = agentRegistryService.registerAgent(registration, clientIp);
 
         if (response.success()) {
-            return Response.ok().entity(ResEntityHelper.ok(response.message(), response)).build();
+            return Response.ok().entity(ResEntityHelper.ok(response.message(), response))
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .build();
         } else {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(ResEntityHelper.badRequest(response.message(), response))
