@@ -100,7 +100,6 @@ public class WebServerBootstrap {
 
         TaskOrderApi taskOrderApi = new TaskOrderApi(schedulerServer.getTaskOrderDao());
         TaskTemplateApi taskTemplateApi = new TaskTemplateApi(schedulerServer.getTaskTemplateService());
-        AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
         AgentWhitelistAdminApi agentWhitelistAdminApi = new AgentWhitelistAdminApi(schedulerServer.getAgentWhitelistDao());
 
         // New frontend-friendly APIs
@@ -113,6 +112,7 @@ public class WebServerBootstrap {
         JwtConfig jwtConfig = readJwtConfig(config);
         AutoApproveConfig autoApproveConfig = readAutoApproveConfig(config);
         TokenService tokenService = new TokenService(schedulerServer.getAgentTokenDao(), jwtConfig);
+        AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService(), tokenService);
         TokenPusher tokenPusher = new DefaultTokenPusher();
         PublicRegistrationApi publicRegistrationApi = new PublicRegistrationApi(tokenService, tokenPusher, autoApproveConfig, schedulerServer.getAgentDao());
         TokenManagementApi tokenManagementApi = new TokenManagementApi(tokenService);

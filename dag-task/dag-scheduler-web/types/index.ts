@@ -270,6 +270,29 @@ export interface FilterState {
   searchQuery: string;
 }
 
+// ==================== Token Types ====================
+
+export interface TokenInfo {
+  id?: number;
+  tokenId: string;
+  agentId?: string;
+  name: string;
+  description?: string;
+  createdBy: string;
+  createdAt: string;
+  expiresAt: string;
+  token: string;
+}
+
+// ==================== Agent Registration Types ====================
+
+export interface AgentRegisterResponse {
+  success: boolean;
+  whitelisted: boolean;
+  message: string;
+  tokenInfo?: TokenInfo;
+}
+
 // ==================== Agent Whitelist Types ====================
 
 export interface AgentWhitelist {

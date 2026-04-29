@@ -8,6 +8,7 @@ import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.agent.Agent;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
+import top.ilovemyhome.dagtask.si.agent.AgentRegisterResponse;
 import top.ilovemyhome.dagtask.si.agent.AgentStatus;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
@@ -73,17 +74,17 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
     }
 
     @Override
-    public boolean registerAgent(AgentRegisterRequest registration, String clientIp) {
+    public AgentRegisterResponse registerAgent(AgentRegisterRequest registration, String clientIp) {
         if (registration == null || StringUtils.isBlank(registration.agentId())) {
             logger.warn("Cannot register agent: invalid registration (agentId is blank)");
-            return false;
+            return AgentRegisterResponse.failure("Invalid registration: agentId is blank");
         }
 
         // Validate against whitelist: deny by default if no matching rule found
         if (!isAllowedByWhitelist(clientIp, registration.agentId())) {
             logger.warn("Agent registration denied: agentId=[{}], clientIp=[{}] not in whitelist",
                 registration.agentId(), clientIp);
-            return false;
+            return AgentRegisterResponse.denied();
         }
 
         Agent agent = AgentRegisterRequest.toAgent(registration);
@@ -111,7 +112,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
             agentCache.put(registration.agentId(), status);
         });
 
-        return true;
+        return AgentRegisterResponse.ok();
     }
 
     @Override

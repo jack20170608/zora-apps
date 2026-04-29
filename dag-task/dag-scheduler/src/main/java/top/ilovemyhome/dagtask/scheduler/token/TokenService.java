@@ -66,11 +66,11 @@ public class TokenService {
 
     public String generateJwt(GenerateTokenResult result) {
         return Jwts.builder()
-            .setIssuer(jwtConfig.getIssuer())
-            .setSubject("agent")
-            .setId(result.tokenId())
-            .setIssuedAt(Date.from(result.issuedAt()))
-            .setExpiration(Date.from(result.expiresAt()))
+            .issuer(jwtConfig.getIssuer())
+            .subject("agent")
+            .id(result.tokenId())
+            .issuedAt(Date.from(result.issuedAt()))
+            .expiration(Date.from(result.expiresAt()))
             .claim("name", result.name())
             .signWith(jwtConfig.getPrivateKey(), SignatureAlgorithm.RS256)
             .compact();
@@ -102,13 +102,15 @@ public class TokenService {
         List<AgentToken> tokens = agentTokenDao.findAll();
         return tokens.stream()
             .map(token -> new TokenInfo(
+                token.getId(),
                 token.getTokenId(),
+                token.getAgentId(),
                 token.getName(),
                 token.getDescription(),
                 token.getCreatedBy(),
                 token.getCreatedAt(),
                 token.getExpiresAt(),
-                token.isRevoked()
+                null
             ))
             .toList();
     }

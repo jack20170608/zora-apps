@@ -12,9 +12,12 @@ import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
+import top.ilovemyhome.dagtask.scheduler.token.TokenService;
 import top.ilovemyhome.dagtask.si.Constants;
+import top.ilovemyhome.dagtask.si.auth.TokenInfo;
 import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
+import top.ilovemyhome.dagtask.si.agent.AgentRegisterResponse;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
@@ -47,15 +50,18 @@ public class AgentRegistryApi {
     private static final Logger LOGGER = LoggerFactory.getLogger(AgentRegistryApi.class);
 
     private final AgentRegistryService agentRegistryService;
+    private final TokenService tokenService;
 
     /**
-     * Creates a new SchedulerAgentApi with injected dependency.
+     * Creates a new SchedulerAgentApi with injected dependencies.
      *
      * @param agentRegistryService the service that handles agent registry operations
+     * @param tokenService the service for generating agent tokens
      */
     @Inject
-    public AgentRegistryApi(AgentRegistryService agentRegistryService) {
+    public AgentRegistryApi(AgentRegistryService agentRegistryService, TokenService tokenService) {
         this.agentRegistryService = agentRegistryService;
+        this.tokenService = tokenService;
     }
 
     /**
@@ -64,10 +70,13 @@ public class AgentRegistryApi {
      * Agents call this endpoint when they start up to register themselves
      * with the scheduling center. The registration contains agent capabilities
      * and endpoint information that the scheduler uses to dispatch tasks.
+     * If the request includes {@code generateToken=true} and registration succeeds,
+     * a new JWT token will be generated and returned in the response.
      *
      * @param registration the agent registration information containing agent ID, URL,
      *                     maximum concurrent tasks, and supported execution keys
-     * @return HTTP 200 OK if registration succeeded, HTTP 400 Bad Request if failed
+     * @return HTTP 200 OK if registration succeeded with {@link AgentRegisterResponse} data,
+     *         HTTP 400 Bad Request if failed
      */
     @POST
     @Path(Constants.API_REGISTER)
@@ -75,12 +84,37 @@ public class AgentRegistryApi {
     public Response register(AgentRegisterRequest registration, @Context MuRequest muRequest) {
         String clientIp = muRequest != null ? muRequest.clientIP() : null;
         LOGGER.debug("Received registration request from agent: {}, clientIp: {}", registration.agentId(), clientIp);
-        boolean success = agentRegistryService.registerAgent(registration, clientIp);
-        if (success) {
-            return Response.ok().entity(ResEntityHelper.ok("Agent registered successfully", null)).build();
+        AgentRegisterResponse response = agentRegistryService.registerAgent(registration, clientIp);
+
+        // Generate token if registration succeeded and token generation was requested
+        if (response.success() && registration.generateToken()) {
+            var tokenResult = tokenService.generateToken(
+                registration.agentId(),
+                registration.name(),
+                "Auto-generated token for agent: " + registration.agentId(),
+                30,
+                "system"
+            );
+            String jwt = tokenService.generateJwt(tokenResult);
+            TokenInfo tokenInfo = new TokenInfo(
+                null,
+                tokenResult.tokenId(),
+                registration.agentId(),
+                tokenResult.name(),
+                tokenResult.description(),
+                tokenResult.createdBy(),
+                tokenResult.issuedAt(),
+                tokenResult.expiresAt(),
+                jwt
+            );
+            response = response.withTokenInfo(tokenInfo);
+        }
+
+        if (response.success()) {
+            return Response.ok().entity(ResEntityHelper.ok(response.message(), response)).build();
         } else {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(ResEntityHelper.badRequest("Registration failed"))
+                .entity(ResEntityHelper.badRequest(response.message(), response))
                 .build();
         }
     }

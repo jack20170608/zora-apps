@@ -1,6 +1,7 @@
 package top.ilovemyhome.dagtask.core.agent;
 
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
+import top.ilovemyhome.dagtask.si.agent.AgentRegisterResponse;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
@@ -20,9 +21,9 @@ public interface AgentRegistryService {
      * Register a new agent instance with the scheduling center.
      *
      * @param registration the agent registration information containing agent capabilities and endpoint
-     * @return true if registration was successful, false otherwise
+     * @return registration response with success status and optional token info
      */
-    default boolean registerAgent(AgentRegisterRequest registration) {
+    default AgentRegisterResponse registerAgent(AgentRegisterRequest registration) {
         return registerAgent(registration, null);
     }
 
@@ -31,9 +32,9 @@ public interface AgentRegistryService {
      *
      * @param registration the agent registration information containing agent capabilities and endpoint
      * @param clientIp the client IP address for whitelist validation, may be null
-     * @return true if registration was successful, false otherwise
+     * @return registration response with success status, whitelist check result, and optional token info
      */
-    boolean registerAgent(AgentRegisterRequest registration, String clientIp);
+    AgentRegisterResponse registerAgent(AgentRegisterRequest registration, String clientIp);
 
     /**
      * Unregister an existing agent instance from the scheduling center.

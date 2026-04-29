@@ -1,16 +1,17 @@
 import axios from 'axios';
-import type { 
-  ApiResponse, 
-  PaginatedResponse, 
-  Workflow, 
+import type {
+  ApiResponse,
+  PaginatedResponse,
+  Workflow,
   WorkflowVersion,
-  Execution, 
-  Agent, 
-  DashboardStats, 
+  Execution,
+  Agent,
+  DashboardStats,
   TrendData,
   DagDefinition,
   ExecutionStatus,
-  AgentWhitelist
+  AgentWhitelist,
+  AgentRegisterResponse
 } from '@/types';
 
 const apiClient = axios.create({
@@ -111,12 +112,15 @@ export const executionApi = {
 export const agentApi = {
   list: () =>
     apiClient.get<ApiResponse<Agent[]>>('/agents'),
-  
+
   get: (id: string) =>
     apiClient.get<ApiResponse<Agent>>(`/agents/${id}`),
-  
+
   getMetrics: (id: string) =>
     apiClient.get<ApiResponse<{ cpu: number[]; memory: number[]; tasks: number[] }>>(`/agents/${id}/metrics`),
+
+  register: (data: { agentId: string; name: string; agentUrl: string; maxConcurrentTasks: number; maxPendingTasks: number; supportedExecutionKeys: string[]; generateToken: boolean }) =>
+    apiClient.post<ApiResponse<AgentRegisterResponse>>('/agents/register', data),
 };
 
 // ==================== Stats API ====================

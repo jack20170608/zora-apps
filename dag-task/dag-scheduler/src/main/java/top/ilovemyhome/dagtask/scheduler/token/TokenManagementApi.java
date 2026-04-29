@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.Constants;
 import top.ilovemyhome.dagtask.si.auth.GenerateTokenRequest;
-import top.ilovemyhome.dagtask.si.auth.GenerateTokenResponse;
 import top.ilovemyhome.dagtask.si.auth.TokenInfo;
 import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
 
@@ -81,16 +80,20 @@ public class TokenManagementApi {
         );
         String jwt = tokenService.generateJwt(result);
 
-        GenerateTokenResponse.Data data = new GenerateTokenResponse.Data(
-            jwt,
+        TokenInfo data = new TokenInfo(
+            null,
             result.tokenId(),
+            null,
+            result.name(),
+            result.description(),
+            result.createdBy(),
+            result.issuedAt(),
             result.expiresAt(),
-            result.name()
+            jwt
         );
-        GenerateTokenResponse response = new GenerateTokenResponse(true, data, null);
 
         return Response.ok()
-            .entity(ResEntityHelper.ok("Token generated successfully", response))
+            .entity(ResEntityHelper.ok("Token generated successfully", data))
             .build();
     }
 
