@@ -12,9 +12,7 @@ import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.agent.AgentRegistryService;
-import top.ilovemyhome.dagtask.scheduler.token.TokenService;
 import top.ilovemyhome.dagtask.si.Constants;
-import top.ilovemyhome.dagtask.si.auth.TokenInfo;
 import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterResponse;
@@ -50,18 +48,15 @@ public class AgentRegistryApi {
     private static final Logger LOGGER = LoggerFactory.getLogger(AgentRegistryApi.class);
 
     private final AgentRegistryService agentRegistryService;
-    private final TokenService tokenService;
 
     /**
      * Creates a new SchedulerAgentApi with injected dependencies.
      *
      * @param agentRegistryService the service that handles agent registry operations
-     * @param tokenService the service for generating agent tokens
      */
     @Inject
-    public AgentRegistryApi(AgentRegistryService agentRegistryService, TokenService tokenService) {
+    public AgentRegistryApi(AgentRegistryService agentRegistryService) {
         this.agentRegistryService = agentRegistryService;
-        this.tokenService = tokenService;
     }
 
     /**
@@ -85,19 +80,6 @@ public class AgentRegistryApi {
         String clientIp = muRequest != null ? muRequest.clientIP() : null;
         LOGGER.debug("Received registration request from agent: {}, clientIp: {}", registration.agentId(), clientIp);
         AgentRegisterResponse response = agentRegistryService.registerAgent(registration, clientIp);
-
-        // Generate token if registration succeeded and token generation was requested
-        if (response.success() && registration.generateToken()) {
-            var tokenInfo = tokenService.generateToken(
-                registration.agentId(),
-                registration.name(),
-                "Auto-generated token for agent: " + registration.agentId(),
-                30,
-                "system"
-            );
-            String jwt = tokenService.generateJwt(tokenInfo);
-            response = response.withTokenInfo(tokenInfo.withToken(jwt));
-        }
 
         if (response.success()) {
             return Response.ok().entity(ResEntityHelper.ok(response.message(), response)).build();

@@ -15,10 +15,12 @@ import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 import top.ilovemyhome.dagtask.core.util.IpAddressMatcher;
 import top.ilovemyhome.dagtask.si.agent.AgentWhitelist;
+import top.ilovemyhome.dagtask.si.auth.TokenInfo;
 import top.ilovemyhome.dagtask.si.persistence.AgentDao;
 import top.ilovemyhome.dagtask.si.persistence.AgentStatusDao;
 import top.ilovemyhome.dagtask.si.persistence.AgentWhitelistDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
+import top.ilovemyhome.dagtask.scheduler.token.TokenService;
 
 import java.util.List;
 import java.util.Objects;
@@ -43,6 +45,7 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
     private final AgentDao agentDao;
     private final AgentStatusDao agentStatusDao;
     private final AgentWhitelistDao agentWhitelistDao;
+    private final TokenService tokenService;
     private final ConcurrentHashMap<String, AgentStatus> agentCache = new ConcurrentHashMap<>();
 
     /**
@@ -51,15 +54,18 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
      * @param taskRecordDao DAO for updating task records when results are reported
      * @param agentDao DAO for persisting agent identity information
      * @param agentStatusDao DAO for persisting agent runtime status
+     * @param tokenService service for generating agent tokens, must not be null
      */
     public DefaultAgentRegistryService(Jdbi jdbi, TaskRecordDao taskRecordDao,
                                         AgentDao agentDao, AgentStatusDao agentStatusDao,
-                                        AgentWhitelistDao agentWhitelistDao) {
+                                        AgentWhitelistDao agentWhitelistDao,
+                                        TokenService tokenService) {
         this.jdbi = jdbi;
         this.taskRecordDao = Objects.requireNonNull(taskRecordDao, "taskRecordDao must not be null");
         this.agentDao = Objects.requireNonNull(agentDao, "agentDao must not be null");
         this.agentStatusDao = Objects.requireNonNull(agentStatusDao, "agentStatusDao must not be null");
         this.agentWhitelistDao = Objects.requireNonNull(agentWhitelistDao, "agentWhitelistDao must not be null");
+        this.tokenService = Objects.requireNonNull(tokenService, "tokenService must not be null");
         // Warm the cache from database
         loadAllFromDatabase();
     }
@@ -112,7 +118,21 @@ public class DefaultAgentRegistryService implements AgentRegistryService {
             agentCache.put(registration.agentId(), status);
         });
 
-        return AgentRegisterResponse.ok();
+        AgentRegisterResponse response = AgentRegisterResponse.ok();
+
+        // Generate token if requested
+        if (registration.generateToken()) {
+            TokenInfo tokenInfo = tokenService.generateToken(
+                registration.agentId(),
+                registration.name(),
+                "Auto-generated token for agent: " + registration.agentId(),
+                30,
+                "system"
+            );
+            response = response.withTokenInfo(tokenInfo);
+        }
+
+        return response;
     }
 
     @Override

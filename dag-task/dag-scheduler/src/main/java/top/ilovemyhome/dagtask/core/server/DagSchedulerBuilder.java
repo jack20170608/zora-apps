@@ -14,6 +14,8 @@ import top.ilovemyhome.dagtask.core.service.DagManageServiceImpl;
 import top.ilovemyhome.dagtask.core.service.DagScheduleServiceImpl;
 import top.ilovemyhome.dagtask.core.service.TaskTemplateServiceImpl;
 import top.ilovemyhome.dagtask.core.task.TaskOrderServiceImpl;
+import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
+import top.ilovemyhome.dagtask.scheduler.token.TokenService;
 import top.ilovemyhome.dagtask.si.persistence.AgentWhitelistDao;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.zora.common.date.LocalDateUtils;
@@ -39,6 +41,7 @@ public class DagSchedulerBuilder {
     private DataSource dataSource;
     private Jdbi jdbi;
     private ObjectMapper objectMapper;
+    private JwtConfig jwtConfig;
     //扫描Ready任务的时间间隔
     private int scanIntervalSeconds = DEFAULT_SCAN_INTERVAL_SECONDS;
     //系统最大调度的任务数量
@@ -99,6 +102,11 @@ public class DagSchedulerBuilder {
 
     public DagSchedulerBuilder maxHeartbeatFailedTimes(int maxHeartbeatFailedTimes) {
         this.maxHeartbeatFailedTimes = maxHeartbeatFailedTimes;
+        return this;
+    }
+
+    public DagSchedulerBuilder jwtConfig(JwtConfig jwtConfig) {
+        this.jwtConfig = jwtConfig;
         return this;
     }
 
@@ -167,7 +175,9 @@ public class DagSchedulerBuilder {
         var taskDispatchDao = new TaskDispatchDaoJdbiImpl(jdbiToUse);
 
         var taskOrderService = new TaskOrderServiceImpl(jdbiToUse, taskRecordDao, taskOrderDao);
-        var agentRegistryService = new DefaultAgentRegistryService(jdbi, taskRecordDao, agentDao, agentStatusDao, agentWhitelistDao);
+        Objects.requireNonNull(jwtConfig, "jwtConfig must not be null");
+        TokenService tokenService = new TokenService(agentTokenDao, jwtConfig);
+        var agentRegistryService = new DefaultAgentRegistryService(jdbi, taskRecordDao, agentDao, agentStatusDao, agentWhitelistDao, tokenService);
         var taskTemplateService = new TaskTemplateServiceImpl(taskTemplateDao);
         var taskDispatcher = new DefaultTaskDispatcher(agentStatusDao, taskDispatchDao, new RandomLoadBalance(), objectMapper, null);
         var dagManageService = new DagManageServiceImpl(jdbiToUse, taskOrderDao, taskRecordDao, taskTemplateDao, objectMapper);

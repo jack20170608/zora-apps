@@ -119,12 +119,11 @@ public class PublicRegistrationApi {
         // Generate token bound to the agent
         var tokenResult = tokenService.generateToken(
             agentId, request.name(), request.description(), 365, "system");
-        String jwt = tokenService.generateJwt(tokenResult);
 
         // Push token to callback
         TokenPushRequest pushRequest = new TokenPushRequest(
             null,
-            jwt,
+            tokenResult.token(),
             tokenResult.tokenId(),
             tokenResult.expiresAt(),
             tokenResult.name()

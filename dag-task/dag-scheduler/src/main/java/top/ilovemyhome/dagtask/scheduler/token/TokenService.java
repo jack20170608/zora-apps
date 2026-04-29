@@ -50,7 +50,7 @@ public class TokenService {
 
         agentTokenDao.create(tokenRecord);
 
-        return new TokenInfo(
+        TokenInfo tokenInfo = new TokenInfo(
             null,
             tokenId,
             agentId,
@@ -61,9 +61,11 @@ public class TokenService {
             expiresAt,
             null
         );
+        String jwt = generateJwt(tokenInfo);
+        return tokenInfo.withToken(jwt);
     }
 
-    public String generateJwt(TokenInfo tokenInfo) {
+    private String generateJwt(TokenInfo tokenInfo) {
         return Jwts.builder()
             .issuer(jwtConfig.getIssuer())
             .subject("agent")

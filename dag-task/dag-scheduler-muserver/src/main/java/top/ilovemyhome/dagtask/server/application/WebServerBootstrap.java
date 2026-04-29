@@ -112,7 +112,7 @@ public class WebServerBootstrap {
         JwtConfig jwtConfig = readJwtConfig(config);
         AutoApproveConfig autoApproveConfig = readAutoApproveConfig(config);
         TokenService tokenService = new TokenService(schedulerServer.getAgentTokenDao(), jwtConfig);
-        AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService(), tokenService);
+        AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
         TokenPusher tokenPusher = new DefaultTokenPusher();
         PublicRegistrationApi publicRegistrationApi = new PublicRegistrationApi(tokenService, tokenPusher, autoApproveConfig, schedulerServer.getAgentDao());
         TokenManagementApi tokenManagementApi = new TokenManagementApi(tokenService);

@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.DagSchedulerServer;
 import top.ilovemyhome.dagtask.core.server.DagSchedulerBuilder;
+import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.muserver.security.core.CookieValueType;
@@ -15,7 +16,17 @@ import top.ilovemyhome.zora.rdb.flyway.FlywayMigrationRunner;
 import top.ilovemyhome.zora.rdb.pool.DataSourcePoolBuilder;
 
 import javax.sql.DataSource;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +51,11 @@ public final class AppContext {
         //Init Db
         initRdb(config);
         runFlywayMigration(config);
+        //Init JWT
+        JwtConfig jwtConfig = readJwtConfig(config);
+        registerBean(JwtConfig.class, "jwtConfig", jwtConfig);
 
-        startDagServer();
+        startDagServer(jwtConfig);
 
     }
 

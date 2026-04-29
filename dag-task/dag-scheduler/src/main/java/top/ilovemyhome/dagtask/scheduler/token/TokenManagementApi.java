@@ -78,10 +78,9 @@ public class TokenManagementApi {
             request.expiresInDays(),
             createdBy
         );
-        String jwt = tokenService.generateJwt(tokenInfo);
 
         return Response.ok()
-            .entity(ResEntityHelper.ok("Token generated successfully", tokenInfo.withToken(jwt)))
+            .entity(ResEntityHelper.ok("Token generated successfully", tokenInfo))
             .build();
     }
 
