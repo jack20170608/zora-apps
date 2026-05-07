@@ -27,12 +27,12 @@ Accept: application/json
 
     console.log("=== Response Details ===");
     console.log("Status Code: " + response.status);
-    console.log("Response Body: " + response.body);
+    console.log("Response Body: " ,  response.body);
 
 client.test("Test Case 1.1: Successful Agent Registration", function() {
     client.assert(response.status === 200, "Response status should be 200");
-
-    let json = JSON.parse(response.body);
+    let json = response.body;
+    console.log("Response Body: " + response.body);
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
