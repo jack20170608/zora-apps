@@ -26,13 +26,12 @@ Accept: application/json
 > {%
 
     console.log("=== Response Details ===");
-    console.log("Status Code: " + response.status);
-    console.log("Response Body: " ,  response.body);
+    console.log("Status Code:", response.status);
+    console.log("Response Body:", JSON.stringify(response.body, null, 2));
 
 client.test("Test Case 1.1: Successful Agent Registration", function() {
     client.assert(response.status === 200, "Response status should be 200");
     let json = response.body;
-    console.log("Response Body: " + response.body);
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -55,7 +54,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 1.2: Registration with Minimal Required Fields", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    let json = JSON.parse(response.body);
+    let json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -79,7 +78,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 1.3: Duplicate Registration (Should Reactivate Existing)", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    let json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -100,7 +99,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 1.4: Invalid Registration - Missing agentId", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    let json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -122,7 +121,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 1.5: Invalid Registration - Empty agentId", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -146,7 +145,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 2.1: Successful Agent Unregistration", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    let json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -165,7 +164,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 2.2: Unregister Non-Existent Agent", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    let json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -183,7 +182,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 2.3: Invalid Unregistration - Missing agentId", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    let json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -202,7 +201,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 2.4: Invalid Unregistration - Empty agentId", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    let json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -232,7 +231,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 3.1: Report Single Successful Task Result", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    let json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -257,7 +256,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 3.2: Report Single Failed Task Result", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    let json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -289,7 +288,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 3.3: Report Multiple Task Results", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -314,7 +313,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 3.4: Report Result for Non-Existent Task", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -336,7 +335,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 3.5: Invalid Report - Missing Required Fields", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -360,7 +359,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 3.6: Invalid Report - Empty agentId", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -390,7 +389,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 4.1: Report Agent Status - Running with Tasks", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -415,7 +414,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 4.2: Report Agent Status - Idle State", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -440,7 +439,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 4.3: Report Agent Status - Stopped Agent", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -465,7 +464,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 4.4: Report Status for Non-Existent Agent", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -487,7 +486,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 4.5: Invalid Status Report - Missing agentId", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -510,7 +509,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Test Case 4.6: Invalid Status Report - Empty agentId", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -540,7 +539,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 1 Step 1: Register Agent", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -567,7 +566,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 1 Step 2: Report Status (Heartbeat)", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -594,7 +593,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 1 Step 3: Report Task Result", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -615,7 +614,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 1 Step 4: Unregister Agent", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -643,7 +642,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 2: Register Agent A", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -669,7 +668,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 2: Register Agent B", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -696,7 +695,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 2: Report Status for Agent A", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -722,7 +721,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 2: Report Status for Agent B", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -749,7 +748,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 2: Report Task Result for Agent A", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -775,7 +774,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 2: Report Task Result for Agent B", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -796,7 +795,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 2 Cleanup: Unregister Agent A", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -816,7 +815,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Scenario 2 Cleanup: Unregister Agent B", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -845,7 +844,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Edge Case: Very Long agentId (Boundary Test)", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -870,7 +869,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Edge Case: Special Characters in agentId", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -895,7 +894,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Edge Case: Negative Numbers (Should be validated)", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -920,7 +919,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Edge Case: Zero Concurrent Tasks", function() {
     client.assert(response.status === 400, "Response status should be 400");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 400, "Response code should be 400");
     client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -941,7 +940,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Cleanup: Unregister Very Long agentId", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -961,7 +960,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Cleanup: Unregister Special Char Agent", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -981,7 +980,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Cleanup: Unregister Negative Test Agent", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -1001,7 +1000,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Cleanup: Unregister Zero Concurrent Agent", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -1035,7 +1034,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Performance: Rapid Status Updates", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
@@ -1076,7 +1075,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
 client.test("Performance: Bulk Task Results Report", function() {
     client.assert(response.status === 200, "Response status should be 200");
-    var json = JSON.parse(response.body);
+    var json = response.body;
     client.assert(json.code === 200, "Response code should be 200");
     client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
     client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
