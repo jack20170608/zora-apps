@@ -51,7 +51,7 @@ class DagTaskAgentTest {
     }
 
     @Test
-    void shouldStartBackgroundThread_WhenFirstRegistrationFails() throws InterruptedException {
+    void shouldStartBackgroundExecutor_WhenFirstRegistrationFails() {
         // Given
         when(config.isAutoRegister()).thenReturn(true);
         when(config.getAgentId()).thenReturn("test-agent");
@@ -68,15 +68,13 @@ class DagTaskAgentTest {
 
         // Then
         assertThat(agent.isRegistered()).isFalse();
-        assertThat(agent.getRegistrationRetryThread()).isNotNull();
-        assertThat(agent.getRegistrationRetryThread().isAlive()).isTrue();
+        assertThat(agent.getRegistrationRetryExecutor()).isNotNull();
+        assertThat(agent.getRegistrationRetryExecutor().isShutdown()).isFalse();
 
-        // Cleanup - interrupt the thread
+        // Cleanup - shutdown the executor
         agent.stop(false);
-        // Give the thread a chance to exit
-        agent.getRegistrationRetryThread().join(100);
-        // After stop, the thread should no longer be alive
-        assertThat(agent.getRegistrationRetryThread().isAlive()).isFalse();
+        // After stop, the executor should be shutdown
+        assertThat(agent.getRegistrationRetryExecutor().isShutdown()).isTrue();
     }
 
     @Test

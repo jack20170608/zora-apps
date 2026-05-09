@@ -14,6 +14,8 @@ import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * DAG task agent that manages task execution lifecycle.
@@ -94,14 +96,17 @@ public class DagTaskAgent {
                 LOGGER.info("Agent {} successfully registered with DAG server at {}, supported {} execution keys",
                         registration.agentId(), config.getDagServerUrl(), taskCount);
             } else {
-                LOGGER.warn("Initial auto-registration failed with status {}, starting background retry thread",
+                LOGGER.warn("Initial auto-registration failed with status {}, starting background retry scheduler",
                         response.getStatus());
                 registered = false;
+                registrationRetryExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+                    Thread t = new Thread(r);
+                    t.setDaemon(true);
+                    t.setName("dag-agent-registration-retry");
+                    return t;
+                });
                 RegistrationRetryTask retryTask = new RegistrationRetryTask(registration);
-                registrationRetryThread = new Thread(retryTask);
-                registrationRetryThread.setDaemon(true);
-                registrationRetryThread.setName("dag-agent-registration-retry");
-                registrationRetryThread.start();
+                registrationRetryExecutor.schedule(retryTask, INITIAL_DELAY_MS, TimeUnit.MILLISECONDS);
             }
         } else {
             registered = false;
@@ -123,9 +128,9 @@ public class DagTaskAgent {
     public void stop(boolean unregister) {
         running = false;
         executionEngine.stop();
-        // Interrupt registration retry thread if it's still running
-        if (registrationRetryThread != null && registrationRetryThread.isAlive()) {
-            registrationRetryThread.interrupt();
+        // Shutdown registration retry executor if it's still running
+        if (registrationRetryExecutor != null && !registrationRetryExecutor.isShutdown()) {
+            registrationRetryExecutor.shutdownNow();
         }
         if (unregister) {
             var unregistration = new AgentUnregistration(config.getAgentId());
@@ -172,11 +177,11 @@ public class DagTaskAgent {
     }
 
     /**
-     * Get the registration retry thread.
+     * Get the registration retry executor.
      * Package-private for testing.
      */
-    Thread getRegistrationRetryThread() {
-        return registrationRetryThread;
+    ScheduledExecutorService getRegistrationRetryExecutor() {
+        return registrationRetryExecutor;
     }
 
     // Auto-registration retry constants (simulated annealing / exponential backoff)
@@ -186,10 +191,11 @@ public class DagTaskAgent {
 
     // Fields for registration retry tracking
     private volatile boolean registered;
-    private volatile Thread registrationRetryThread;
+    private volatile ScheduledExecutorService registrationRetryExecutor;
 
     /**
      * Background task that retries registration with exponential backoff (simulated annealing).
+     * Each retry is scheduled only after the previous registration request completes.
      * Retries until successful or until the agent is stopped.
      */
     private class RegistrationRetryTask implements Runnable {
@@ -207,31 +213,38 @@ public class DagTaskAgent {
 
         @Override
         public void run() {
-            while (!registered && isRunning()) {
-                try {
-                    long jitteredDelay = applyJitter(currentDelayMs);
-                    Thread.sleep(jitteredDelay);
+            if (registered || !isRunning()) {
+                return;
+            }
 
-                    var response = agentSchedulerClient.register(registration);
-                    boolean success = response.getStatus() >= 200 && response.getStatus() < 300;
+            try {
+                var response = agentSchedulerClient.register(registration);
+                boolean success = response.getStatus() >= 200 && response.getStatus() < 300;
 
-                    if (success) {
-                        int taskCount = registration.supportedExecutionKeys().size();
-                        LOGGER.info("Agent {} registered successfully after retry, supported {} execution keys",
-                                registration.agentId(), taskCount);
-                        registered = true;
-                        return;
-                    }
-
-                    LOGGER.warn("Registration retry failed with status {}, will retry in {}ms",
-                            response.getStatus(), currentDelayMs);
-
-                    // Exponential backoff, capped at MAX_DELAY_MS
-                    currentDelayMs = Math.min(currentDelayMs * 2, MAX_DELAY_MS);
-                } catch (InterruptedException e) {
-                    LOGGER.info("Registration retry thread interrupted, stopping retry");
-                    Thread.currentThread().interrupt();
+                if (success) {
+                    int taskCount = registration.supportedExecutionKeys().size();
+                    LOGGER.info("Agent {} registered successfully after retry, supported {} execution keys",
+                            registration.agentId(), taskCount);
+                    registered = true;
                     return;
+                }
+
+                LOGGER.warn("Registration retry failed with status {}, will retry in {}ms",
+                        response.getStatus(), currentDelayMs);
+
+                // Exponential backoff, capped at MAX_DELAY_MS
+                currentDelayMs = Math.min(currentDelayMs * 2, MAX_DELAY_MS);
+
+                long jitteredDelay = applyJitter(currentDelayMs);
+                if (registrationRetryExecutor != null && !registrationRetryExecutor.isShutdown()) {
+                    registrationRetryExecutor.schedule(this, jitteredDelay, TimeUnit.MILLISECONDS);
+                }
+            } catch (Exception e) {
+                LOGGER.error("Unexpected error during registration retry", e);
+                currentDelayMs = Math.min(currentDelayMs * 2, MAX_DELAY_MS);
+                long jitteredDelay = applyJitter(currentDelayMs);
+                if (registrationRetryExecutor != null && !registrationRetryExecutor.isShutdown()) {
+                    registrationRetryExecutor.schedule(this, jitteredDelay, TimeUnit.MILLISECONDS);
                 }
             }
         }
