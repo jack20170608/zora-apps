@@ -24,6 +24,7 @@ public class AgentConfiguration {
         deadLetterPersistencePath = ""
         token = ""
         supportedExecutionKeys = []
+        generateToken = true
         autoRegister = true
         maxConcurrentTasks = 4
         maxPendingTasks = 100
