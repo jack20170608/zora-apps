@@ -10,7 +10,7 @@
 ### Test Case 1.1: Successful Agent Registration
 POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
-Authorization: Basic {{username}} {{password}}
+#Authorization: Basic {{username}} {{password}}
 Accept: application/json
 
 {
@@ -41,7 +41,7 @@ client.test("Test Case 1.1: Successful Agent Registration", function() {
 ### Test Case 1.2: Registration with Minimal Required Fields
 POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
-Authorization: Basic {{username}} {{password}}
+#Authorization: Basic {{username}} {{password}}
 
 {
     "agentId": "agent-002",
@@ -64,7 +64,7 @@ client.test("Test Case 1.2: Registration with Minimal Required Fields", function
 ### Test Case 1.3: Duplicate Registration (Should Reactivate Existing)
 POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
-Authorization: Basic {{username}} {{password}}
+#Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-001",
@@ -88,7 +88,7 @@ client.test("Test Case 1.3: Duplicate Registration (Should Reactivate Existing)"
 ### Test Case 1.4: Invalid Registration - Missing agentId
 POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
-Authorization: Basic {{username}} {{password}}
+#Authorization: Basic {{username}} {{password}}
 
 {
   "name": "Invalid Agent",
@@ -109,7 +109,7 @@ client.test("Test Case 1.4: Invalid Registration - Missing agentId", function() 
 ### Test Case 1.5: Invalid Registration - Empty agentId
 POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
-Authorization: Basic {{username}} {{password}}
+#Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "",
@@ -136,7 +136,7 @@ client.test("Test Case 1.5: Invalid Registration - Empty agentId", function() {
 ### Test Case 2.1: Successful Agent Unregistration
 POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
-Authorization: Basic {{username}} {{password}}
+#Authorization: Basic {{username}} {{password}}
 
 {
   "agentId": "agent-002"
@@ -174,7 +174,7 @@ client.test("Test Case 2.2: Unregister Non-Existent Agent", function() {
 ### Test Case 2.3: Invalid Unregistration - Missing agentId
 POST {{baseUrl}}/api/v1/scheduler/unregister
 Content-Type: application/json
-Authorization: Basic {{username}} {{password}}
+#Authorization: Basic {{username}} {{password}}
 
 {
 }
