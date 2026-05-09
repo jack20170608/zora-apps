@@ -34,7 +34,6 @@ class DagTaskAgentTest {
         // Given
         when(config.isAutoRegister()).thenReturn(true);
         when(config.getAgentId()).thenReturn("test-agent");
-        when(config.getBaseUrl()).thenReturn("http://localhost:8080");
         when(config.getMaxConcurrentTasks()).thenReturn(10);
         when(config.getMaxPendingTasks()).thenReturn(100);
         when(config.getSupportedExecutionKeys()).thenReturn(List.of("echo"));
@@ -55,7 +54,6 @@ class DagTaskAgentTest {
         // Given
         when(config.isAutoRegister()).thenReturn(true);
         when(config.getAgentId()).thenReturn("test-agent");
-        when(config.getBaseUrl()).thenReturn("http://localhost:8080");
         when(config.getMaxConcurrentTasks()).thenReturn(10);
         when(config.getMaxPendingTasks()).thenReturn(100);
         when(config.getSupportedExecutionKeys()).thenReturn(List.of("echo"));
