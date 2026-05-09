@@ -41,9 +41,11 @@ class AgentConfigurationLoadTest {
         String configStr = """
                 dag-agent {
                   agentUrl = "http://agent01.example.com:8081"
+                  agentName = "agent-01"
                   dagServerUrl = "http://dag-server:8080"
-                  agentId = "agent-01"
+                  agentId = "test-agent-01"
                   autoRegister = false
+                  generateToken = true
                   maxConcurrentTasks = 8
                   maxPendingTasks = 200
                   deadLetterPersistencePath = "/tmp/dag-agent-dead-letter"
@@ -61,8 +63,10 @@ class AgentConfigurationLoadTest {
 
         assertThat(agentConfig.getAgentUrl()).isEqualTo("http://agent01.example.com:8081");
         assertThat(agentConfig.getDagServerUrl()).isEqualTo("http://dag-server:8080");
-        assertThat(agentConfig.getAgentId()).isEqualTo("agent-01");
+        assertThat(agentConfig.getAgentId()).isEqualTo("test-agent-01");
+        assertThat(agentConfig.getAgentName()).isEqualTo("agent-01");
         assertThat(agentConfig.isAutoRegister()).isFalse();
+        assertThat(agentConfig.isGenerateToken()).isTrue();
         assertThat(agentConfig.getMaxConcurrentTasks()).isEqualTo(8);
         assertThat(agentConfig.getMaxPendingTasks()).isEqualTo(200);
         assertThat(agentConfig.getDeadLetterPersistencePath()).isEqualTo("/tmp/dag-agent-dead-letter");

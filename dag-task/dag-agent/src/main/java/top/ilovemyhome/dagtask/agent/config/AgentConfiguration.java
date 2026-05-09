@@ -21,10 +21,11 @@ public class AgentConfiguration {
         DEFAULT_BASE_DIR, "dead-letter").toString();
 
     private static final Config DEFAULTS = ConfigFactory.parseString("""
+        agentName = ""
         deadLetterPersistencePath = ""
         token = ""
         supportedExecutionKeys = []
-        generateToken = true
+        generateToken = false
         autoRegister = true
         maxConcurrentTasks = 4
         maxPendingTasks = 100
@@ -82,40 +83,81 @@ public class AgentConfiguration {
         return agentUrl;
     }
 
+    public void setAgentUrl(String agentUrl) {
+        this.agentUrl = agentUrl;
+    }
+
     public String getDagServerUrl() {
         return dagServerUrl;
+    }
+
+    public void setDagServerUrl(String dagServerUrl) {
+        this.dagServerUrl = dagServerUrl;
     }
 
     public String getAgentId() {
         return agentId;
     }
 
+    public void setAgentId(String agentId) {
+        this.agentId = agentId;
+    }
+
     public String getAgentName() {
         return agentName;
+    }
+
+    public void setAgentName(String agentName) {
+        this.agentName = agentName;
     }
 
     public boolean isAutoRegister() {
         return autoRegister;
     }
 
+    public void setAutoRegister(boolean autoRegister) {
+        this.autoRegister = autoRegister;
+    }
+
     public boolean isGenerateToken() {
         return generateToken;
+    }
+
+    public void setGenerateToken(boolean generateToken) {
+        this.generateToken = generateToken;
     }
 
     public int getMaxConcurrentTasks() {
         return maxConcurrentTasks;
     }
 
+    public void setMaxConcurrentTasks(int maxConcurrentTasks) {
+        this.maxConcurrentTasks = maxConcurrentTasks;
+    }
+
     public int getMaxPendingTasks() {
         return maxPendingTasks;
+    }
+
+    public void setMaxPendingTasks(int maxPendingTasks) {
+        this.maxPendingTasks = maxPendingTasks;
     }
 
     public List<String> getSupportedExecutionKeys() {
         return new ArrayList<>(supportedExecutionKeys);
     }
 
+    public void setSupportedExecutionKeys(List<String> supportedExecutionKeys) {
+        this.supportedExecutionKeys = supportedExecutionKeys != null
+            ? new ArrayList<>(supportedExecutionKeys) : new ArrayList<>();
+    }
+
     public String getDeadLetterPersistencePath() {
         return deadLetterPersistencePath;
+    }
+
+    public void setDeadLetterPersistencePath(String deadLetterPersistencePath) {
+        this.deadLetterPersistencePath = deadLetterPersistencePath;
     }
 
     public String getToken() {
