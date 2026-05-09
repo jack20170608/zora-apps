@@ -2,7 +2,6 @@ package top.ilovemyhome.dagtask.agent.core;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.ilovemyhome.dagtask.agent.client.DefaultAgentSchedulerClient;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.agent.api.TaskAgentResource;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
