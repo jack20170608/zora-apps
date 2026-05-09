@@ -18,10 +18,6 @@ import top.ilovemyhome.dagtask.core.DagSchedulerServer;
 import top.ilovemyhome.dagtask.core.interfaces.AgentRegistryApi;
 import top.ilovemyhome.dagtask.core.interfaces.TaskOrderApi;
 import top.ilovemyhome.dagtask.core.interfaces.TaskTemplateApi;
-import top.ilovemyhome.dagtask.scheduler.auth.DefaultTokenPusher;
-import top.ilovemyhome.dagtask.scheduler.auth.PublicRegistrationApi;
-import top.ilovemyhome.dagtask.scheduler.auth.TokenPusher;
-import top.ilovemyhome.dagtask.scheduler.config.AutoApproveConfig;
 import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
 import top.ilovemyhome.dagtask.scheduler.token.TokenManagementApi;
 import top.ilovemyhome.dagtask.scheduler.token.TokenService;
@@ -102,11 +98,8 @@ public class WebServerBootstrap {
 
         // Create authentication components
         JwtConfig jwtConfig = appContext.getBean("jwtConfig", JwtConfig.class);
-        AutoApproveConfig autoApproveConfig = readAutoApproveConfig(config);
         TokenService tokenService = new TokenService(schedulerServer.getAgentTokenDao(), jwtConfig);
         AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
-        TokenPusher tokenPusher = new DefaultTokenPusher();
-        PublicRegistrationApi publicRegistrationApi = new PublicRegistrationApi(tokenService, tokenPusher, autoApproveConfig, schedulerServer.getAgentDao());
         TokenManagementApi tokenManagementApi = new TokenManagementApi(tokenService);
 
         return RestHandlerBuilder
@@ -115,7 +108,6 @@ public class WebServerBootstrap {
                 taskOrderApi,
                 taskTemplateApi,
                 agentWhitelistAdminApi,
-                publicRegistrationApi,
                 tokenManagementApi
                 //,
 //                workflowApi,
@@ -157,15 +149,6 @@ public class WebServerBootstrap {
             );
     }
 
-    private static AutoApproveConfig readAutoApproveConfig(Config config) {
-        if (!config.hasPath("dag-task.auth.auto-approve")) {
-            return new AutoApproveConfig(false, java.util.List.of());
-        }
-        Config autoApprove = config.getConfig("dag-task.auth.auto-approve");
-        boolean enabled = autoApprove.getBoolean("enabled");
-        var patterns = autoApprove.getStringList("patterns");
-        return new AutoApproveConfig(enabled, patterns);
-    }
 
     private static final Logger logger = LoggerFactory.getLogger(WebServerBootstrap.class);
 }
