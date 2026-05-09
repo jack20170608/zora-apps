@@ -1,5 +1,6 @@
 package top.ilovemyhome.dagtask.agent.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -8,9 +9,11 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.si.Constants;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
+import top.ilovemyhome.dagtask.si.agent.AgentRegisterResponse;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
+import top.ilovemyhome.dagtask.si.dto.ResEntity;
 import top.ilovemyhome.zora.httpclient.HttpClients;
 import top.ilovemyhome.zora.httpclient.RestClient;
 
@@ -59,6 +62,7 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
                 , headers, json).get(60, TimeUnit.SECONDS);
             boolean success = response.statusCode() >= 200 && response.statusCode() < 300;
             if (success) {
+                extractAndSaveToken(response.body());
                 int taskCount = registration.supportedExecutionKeys().size();
                 LOGGER.info("Agent {} successfully registered with DAG server at {}, supported {} execution keys",
                     registration.agentId(), config.getDagServerUrl(), taskCount);
@@ -152,6 +156,27 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
             return Response.serverError()
                 .entity(e.getMessage())
                 .build();
+        }
+    }
+
+    /**
+     * Parses the registration response body and saves the JWT token to config
+     * if the server returned one (when generateToken=true).
+     *
+     * @param body the raw JSON response body from the server
+     */
+    private void extractAndSaveToken(String body) {
+        try {
+            ResEntity<AgentRegisterResponse> resEntity = objectMapper.readValue(body,
+                new TypeReference<>() {});
+            if (resEntity.data() != null && resEntity.data().tokenInfo() != null
+                    && resEntity.data().tokenInfo().token() != null) {
+                String token = resEntity.data().tokenInfo().token();
+                config.setToken(token);
+                LOGGER.debug("Agent token saved after successful registration");
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to parse registration response for token, body: {}", body, e);
         }
     }
 

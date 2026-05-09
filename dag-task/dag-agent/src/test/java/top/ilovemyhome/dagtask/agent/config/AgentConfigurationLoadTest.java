@@ -20,7 +20,6 @@ class AgentConfigurationLoadTest {
     private static final Path DEFAULT_BASE_DIR = Path.of(
         System.getProperty("user.home"), ".dag-agent");
     private static final Path DEFAULT_DEAD_LETTER_DIR = DEFAULT_BASE_DIR.resolve("dead-letter");
-    private static final Path DEFAULT_TOKEN_DIR = DEFAULT_BASE_DIR.resolve("token");
 
     @AfterEach
     void cleanupDefaultDirs() {
@@ -28,9 +27,6 @@ class AgentConfigurationLoadTest {
         try {
             if (Files.exists(DEFAULT_DEAD_LETTER_DIR)) {
                 Files.deleteIfExists(DEFAULT_DEAD_LETTER_DIR);
-            }
-            if (Files.exists(DEFAULT_TOKEN_DIR)) {
-                Files.deleteIfExists(DEFAULT_TOKEN_DIR);
             }
             if (Files.exists(DEFAULT_BASE_DIR)) {
                 Files.deleteIfExists(DEFAULT_BASE_DIR);
@@ -51,7 +47,6 @@ class AgentConfigurationLoadTest {
                   maxConcurrentTasks = 8
                   maxPendingTasks = 200
                   deadLetterPersistencePath = "/tmp/dag-agent-dead-letter"
-                  tokenFilePath = "/tmp/dag-agent-token"
                   token = "secret-token"
                   supportedExecutionKeys = [
                     "top.ilovemyhome.dagtask.core.TestTaskExecution",
@@ -71,7 +66,6 @@ class AgentConfigurationLoadTest {
         assertThat(agentConfig.getMaxConcurrentTasks()).isEqualTo(8);
         assertThat(agentConfig.getMaxPendingTasks()).isEqualTo(200);
         assertThat(agentConfig.getDeadLetterPersistencePath()).isEqualTo("/tmp/dag-agent-dead-letter");
-        assertThat(agentConfig.getTokenFilePath()).isEqualTo("/tmp/dag-agent-token");
         assertThat(agentConfig.getToken()).isEqualTo("secret-token");
         assertThat(agentConfig.getSupportedExecutionKeys())
                 .containsExactly(
@@ -195,14 +189,10 @@ class AgentConfigurationLoadTest {
         // Verify default paths are used
         assertThat(agentConfig.getDeadLetterPersistencePath())
                 .isEqualTo(DEFAULT_DEAD_LETTER_DIR.toString());
-        assertThat(agentConfig.getTokenFilePath())
-                .isEqualTo(DEFAULT_TOKEN_DIR.toString());
 
         // Verify directories are automatically created
         assertThat(Files.exists(DEFAULT_DEAD_LETTER_DIR)).isTrue();
-        assertThat(Files.exists(DEFAULT_TOKEN_DIR)).isTrue();
         assertThat(Files.isDirectory(DEFAULT_DEAD_LETTER_DIR)).isTrue();
-        assertThat(Files.isDirectory(DEFAULT_TOKEN_DIR)).isTrue();
     }
 
     @Test
@@ -216,7 +206,6 @@ class AgentConfigurationLoadTest {
                   dagServerUrl = "http://localhost:8080"
                   agentId = "blank-path-agent"
                   deadLetterPersistencePath = ""
-                  tokenFilePath = ""
                 }
                 """;
 
@@ -225,10 +214,7 @@ class AgentConfigurationLoadTest {
 
         assertThat(agentConfig.getDeadLetterPersistencePath())
                 .isEqualTo(DEFAULT_DEAD_LETTER_DIR.toString());
-        assertThat(agentConfig.getTokenFilePath())
-                .isEqualTo(DEFAULT_TOKEN_DIR.toString());
         assertThat(Files.exists(DEFAULT_DEAD_LETTER_DIR)).isTrue();
-        assertThat(Files.exists(DEFAULT_TOKEN_DIR)).isTrue();
     }
 
     @Test
@@ -239,7 +225,6 @@ class AgentConfigurationLoadTest {
                   dagServerUrl = "http://localhost:8080"
                   agentId = "custom-path-agent"
                   deadLetterPersistencePath = "/custom/dead-letter"
-                  tokenFilePath = "/custom/token"
                 }
                 """;
 
@@ -247,7 +232,6 @@ class AgentConfigurationLoadTest {
         AgentConfiguration agentConfig = AgentConfiguration.load(config);
 
         assertThat(agentConfig.getDeadLetterPersistencePath()).isEqualTo("/custom/dead-letter");
-        assertThat(agentConfig.getTokenFilePath()).isEqualTo("/custom/token");
     }
 
     @Test
@@ -338,13 +322,9 @@ class AgentConfigurationLoadTest {
 
         assertThat(config.getDeadLetterPersistencePath())
                 .isEqualTo(DEFAULT_DEAD_LETTER_DIR.toString());
-        assertThat(config.getTokenFilePath())
-                .isEqualTo(DEFAULT_TOKEN_DIR.toString());
 
         assertThat(Files.exists(DEFAULT_DEAD_LETTER_DIR)).isTrue();
-        assertThat(Files.exists(DEFAULT_TOKEN_DIR)).isTrue();
         assertThat(Files.isDirectory(DEFAULT_DEAD_LETTER_DIR)).isTrue();
-        assertThat(Files.isDirectory(DEFAULT_TOKEN_DIR)).isTrue();
     }
 
     @Test
@@ -354,11 +334,9 @@ class AgentConfigurationLoadTest {
                 .dagServerUrl("http://localhost:8080")
                 .agentId("builder-custom-paths")
                 .deadLetterPersistencePath("/custom/dead-letter")
-                .tokenFilePath("/custom/token")
                 .build();
 
         assertThat(config.getDeadLetterPersistencePath()).isEqualTo("/custom/dead-letter");
-        assertThat(config.getTokenFilePath()).isEqualTo("/custom/token");
     }
 
     @Test
@@ -392,6 +370,5 @@ class AgentConfigurationLoadTest {
                 );
         assertThat(agentConfig.getDeadLetterPersistencePath()).isEqualTo("/tmp/dag-agent-dead-letter");
         assertThat(agentConfig.getToken()).isEmpty();
-        assertThat(agentConfig.getTokenFilePath()).isEqualTo(DEFAULT_TOKEN_DIR.toString());
     }
 }
