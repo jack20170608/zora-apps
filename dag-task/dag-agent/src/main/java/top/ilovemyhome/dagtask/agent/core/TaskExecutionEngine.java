@@ -456,7 +456,7 @@ public class TaskExecutionEngine {
         // Parse input
         TaskInput input;
         try {
-            input = TaskInput.of(taskId, parseInput(inputJson), null);
+            input = TaskInput.of(taskId, inputJson, null);
         } catch (Exception e) {
             return SubmissionResult.inputParseFailed(e.getMessage());
         }
@@ -700,13 +700,6 @@ public class TaskExecutionEngine {
         logger.debug("Moved task {} from running to finished", taskId);
     }
 
-    private TaskInput parseInput(String inputJson) throws Exception {
-        if (inputJson == null || inputJson.isBlank()) {
-            return new TaskInput(null, null, Map.of());
-        }
-        Map<String, Object> map = objectMapper.readValue(inputJson, Map.class);
-        return new TaskInput(null, map, Map.of());
-    }
 
     private String serializeOutput(TaskOutput output) {
         try {
