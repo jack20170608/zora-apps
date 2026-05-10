@@ -1,0 +1,62 @@
+### ============================================================
+### DAG Task Agent Execution API Test Cases
+### Generated from: http://localhost:20000/agent/openapi.json
+### Base URL: {{agentBaseUrl}}
+### All endpoints accept JSON and return JSON responses
+### ============================================================
+
+
+
+### ============================================================
+### 1. Submit Endpoint - Queue tasks for execution
+### POST /api/v1/agent/submit
+### ============================================================
+
+### Test Case 1.1: Submit a Java class task
+POST {{agent001.baseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+    "taskId": -1000,
+    "taskType": "JAVA_CLASS_NAME",
+    "opsType": "SUBMIT",
+    "priorityType": "NORMAL",
+    "executionClass": "top.ilovemyhome.dagtask.agent.execution.EchoExecution",
+    "input": "{\"message\": \"Hello from Java task\"}",
+    "dealer": "scheduler-001",
+    "requestDt": "2025-05-10T12:00:00Z"
+}
+
+> {%
+    client.test("Test Case 1.1: Submit a Java class task", function() {
+        client.assert(response.status === 202, "Response status should be 202 Accepted");
+        let json = response.body;
+        client.assert(json.success === true, "Response should indicate success");
+        client.assert(json.taskId === 1101, "Response taskId should match submitted taskId");
+        client.assert(json.pendingPosition !== undefined, "Response should have pendingPosition");
+    });
+%}
+
+
+### Test Case 1.5: Submit a long-running task (for kill/force test)
+POST {{agent001.baseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+    "taskId": -1001,
+    "taskType": "JAVA_CLASS_NAME",
+    "opsType": "SUBMIT",
+    "priorityType": "NORMAL",
+    "executionClass": "top.ilovemyhome.dagtask.agent.execution.LongRunningExecution",
+    "input": "{\"durationSeconds\": 60, \"description\": \"Long running test task\"}",
+    "dealer": "scheduler-001"
+}
+
+> {%
+    client.test("Test Case 1.5: Submit a long-running task", function() {
+        client.assert(response.status === 202, "Response status should be 202 Accepted");
+        let json = response.body;
+        client.assert(json.success === true, "Response should indicate success");
+        client.assert(json.taskId === 1105, "Response taskId should match submitted taskId");
+    });
+%}

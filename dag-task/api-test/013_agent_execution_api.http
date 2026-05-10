@@ -1,0 +1,626 @@
+
+
+###
+
+### Test Case 1.2: Submit a Python script task
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 1102,
+  "taskType": "PYTHON_SCRIPTS",
+  "opsType": "SUBMIT",
+  "priorityType": "HIGH",
+  "executionClass": "python_script_runner",
+  "input": "{\"script\": \"print('Hello from Python')\", \"timeout\": 30}",
+  "dealer": "scheduler-001"
+}
+
+> {%
+client.test("Test Case 1.2: Submit a Python script task", function() {
+    client.assert(response.status === 202, "Response status should be 202 Accepted");
+    let json = response.body;
+    client.assert(json.success === true, "Response should indicate success");
+    client.assert(json.taskId === 1102, "Response taskId should match submitted taskId");
+});
+%}
+
+###
+
+### Test Case 1.3: Submit a Bash script task
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 1103,
+  "taskType": "BASH_SCRIPTS",
+  "opsType": "SUBMIT",
+  "priorityType": "LOW",
+  "executionClass": "bash_script_runner",
+  "input": "{\"command\": \"echo 'Hello from Bash'\", \"timeout\": 10}",
+  "dealer": "scheduler-001"
+}
+
+> {%
+client.test("Test Case 1.3: Submit a Bash script task", function() {
+    client.assert(response.status === 202, "Response status should be 202 Accepted");
+    let json = response.body;
+    client.assert(json.success === true, "Response should indicate success");
+    client.assert(json.taskId === 1103, "Response taskId should match submitted taskId");
+});
+%}
+
+###
+
+### Test Case 1.4: Submit a Groovy script task
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 1104,
+  "taskType": "GROOVY_SOURCE_CODE",
+  "opsType": "SUBMIT",
+  "priorityType": "NORMAL",
+  "executionClass": "groovy_script_runner",
+  "input": "{\"script\": \"println 'Hello from Groovy'\"}",
+  "dealer": "scheduler-001"
+}
+
+> {%
+client.test("Test Case 1.4: Submit a Groovy script task", function() {
+    client.assert(response.status === 202, "Response status should be 202 Accepted");
+    let json = response.body;
+    client.assert(json.success === true, "Response should indicate success");
+    client.assert(json.taskId === 1104, "Response taskId should match submitted taskId");
+});
+%}
+
+###
+
+
+
+###
+
+### Test Case 1.6: Invalid submit - Missing taskId
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskType": "JAVA_CLASS_NAME",
+  "opsType": "SUBMIT",
+  "executionClass": "top.ilovemyhome.dagtask.agent.execution.EchoExecution",
+  "input": "{\"message\": \"No taskId\"}",
+  "dealer": "scheduler-001"
+}
+
+> {%
+client.test("Test Case 1.6: Invalid submit - Missing taskId", function() {
+    client.assert(response.status === 400, "Response status should be 400");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+###
+
+### Test Case 1.7: Invalid submit - Missing taskType
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 1199,
+  "opsType": "SUBMIT",
+  "executionClass": "top.ilovemyhome.dagtask.agent.execution.EchoExecution",
+  "input": "{\"message\": \"No taskType\"}",
+  "dealer": "scheduler-001"
+}
+
+> {%
+client.test("Test Case 1.7: Invalid submit - Missing taskType", function() {
+    client.assert(response.status === 400, "Response status should be 400");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+### ============================================================
+### 2. Health check after submissions
+### ============================================================
+
+### Test Case 2.1: Verify health reflects submitted tasks
+GET {{agentBaseUrl}}/api/v1/agent/health
+
+> {%
+client.test("Test Case 2.1: Health reflects submitted tasks", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    let json = response.body;
+    client.assert(json.running === true, "Agent should be running");
+    client.assert(json.pendingSize >= 0, "Pending size should be non-negative");
+    client.assert(json.runningSize >= 0, "Running size should be non-negative");
+});
+%}
+
+### ============================================================
+### 3. Kill Endpoint
+### POST /api/v1/agent/kill
+### ============================================================
+
+### Test Case 3.1: Kill a running/pending task
+POST {{agentBaseUrl}}/api/v1/agent/kill
+Content-Type: application/json
+
+{
+  "taskId": 1105,
+  "opsType": "KILL",
+  "force": true,
+  "reason": "Task taking too long, killing per user request",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 3.1: Kill a running/pending task", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    let json = response.body;
+    client.assert(json.success === true, "Response should indicate success");
+    client.assert(json.message !== undefined, "Response should have a message");
+});
+%}
+
+###
+
+### Test Case 3.2: Kill a non-existent task (should return 404)
+POST {{agentBaseUrl}}/api/v1/agent/kill
+Content-Type: application/json
+
+{
+  "taskId": 99999,
+  "opsType": "KILL",
+  "force": true,
+  "reason": "Test kill non-existent task",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 3.2: Kill non-existent task returns 404", function() {
+    client.assert(response.status === 404, "Response status should be 404");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+###
+
+### Test Case 3.3: Invalid kill - Wrong opsType (should return 400)
+POST {{agentBaseUrl}}/api/v1/agent/kill
+Content-Type: application/json
+
+{
+  "taskId": 1101,
+  "opsType": "SUBMIT",
+  "force": false,
+  "reason": "Wrong operation type",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 3.3: Invalid kill with wrong opsType returns 400", function() {
+    client.assert(response.status === 400, "Response status should be 400");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+### ============================================================
+### 4. Force-Ok Endpoint
+### POST /api/v1/agent/force-ok
+### ============================================================
+
+### Test Case 4.1: Force a task to complete successfully
+POST {{agentBaseUrl}}/api/v1/agent/force-ok
+Content-Type: application/json
+
+{
+  "taskId": 1102,
+  "opsType": "FORCE_OK",
+  "force": true,
+  "reason": "Force complete for testing",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 4.1: Force a task to complete successfully", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    let json = response.body;
+    client.assert(json.success === true, "Response should indicate success");
+    client.assert(json.message !== undefined, "Response should have a message");
+});
+%}
+
+###
+
+### Test Case 4.2: Force-ok a non-existent task (should return 404)
+POST {{agentBaseUrl}}/api/v1/agent/force-ok
+Content-Type: application/json
+
+{
+  "taskId": 99999,
+  "opsType": "FORCE_OK",
+  "force": true,
+  "reason": "Test force-ok non-existent task",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 4.2: Force-ok non-existent task returns 404", function() {
+    client.assert(response.status === 404, "Response status should be 404");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+###
+
+### Test Case 4.3: Invalid force-ok - Wrong opsType (should return 400)
+POST {{agentBaseUrl}}/api/v1/agent/force-ok
+Content-Type: application/json
+
+{
+  "taskId": 1103,
+  "opsType": "KILL",
+  "force": false,
+  "reason": "Wrong operation type",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 4.3: Invalid force-ok with wrong opsType returns 400", function() {
+    client.assert(response.status === 400, "Response status should be 400");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+### ============================================================
+### 5. Force-Nok Endpoint
+### POST /api/v1/agent/force-nok
+### ============================================================
+
+### Test Case 5.1: Force a task to complete as failed
+POST {{agentBaseUrl}}/api/v1/agent/force-nok
+Content-Type: application/json
+
+{
+  "taskId": 1103,
+  "opsType": "FORCE_NOK",
+  "force": true,
+  "reason": "Force fail for testing",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 5.1: Force a task to complete as failed", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    let json = response.body;
+    client.assert(json.success === true, "Response should indicate success");
+    client.assert(json.message !== undefined, "Response should have a message");
+});
+%}
+
+###
+
+### Test Case 5.2: Force-nok a non-existent task (should return 404)
+POST {{agentBaseUrl}}/api/v1/agent/force-nok
+Content-Type: application/json
+
+{
+  "taskId": 99999,
+  "opsType": "FORCE_NOK",
+  "force": true,
+  "reason": "Test force-nok non-existent task",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 5.2: Force-nok non-existent task returns 404", function() {
+    client.assert(response.status === 404, "Response status should be 404");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+###
+
+### Test Case 5.3: Invalid force-nok - Wrong opsType (should return 400)
+POST {{agentBaseUrl}}/api/v1/agent/force-nok
+Content-Type: application/json
+
+{
+  "taskId": 1104,
+  "opsType": "HOLD",
+  "force": false,
+  "reason": "Wrong operation type",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 5.3: Invalid force-nok with wrong opsType returns 400", function() {
+    client.assert(response.status === 400, "Response status should be 400");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+### ============================================================
+### 6. Hold Endpoint
+### POST /api/v1/agent/hold
+### ============================================================
+
+### Test Case 6.1: Hold a pending or running task
+POST {{agentBaseUrl}}/api/v1/agent/hold
+Content-Type: application/json
+
+{
+  "taskId": 1104,
+  "opsType": "HOLD",
+  "force": false,
+  "reason": "Hold task for maintenance window",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 6.1: Hold a pending or running task", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    let json = response.body;
+    client.assert(json.success === true, "Response should indicate success");
+    client.assert(json.message !== undefined, "Response should have a message");
+});
+%}
+
+###
+
+### Test Case 6.2: Hold a non-existent task (should return 404)
+POST {{agentBaseUrl}}/api/v1/agent/hold
+Content-Type: application/json
+
+{
+  "taskId": 99999,
+  "opsType": "HOLD",
+  "force": false,
+  "reason": "Test hold non-existent task",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 6.2: Hold non-existent task returns 404", function() {
+    client.assert(response.status === 404, "Response status should be 404");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+###
+
+### Test Case 6.3: Invalid hold - Wrong opsType (should return 400)
+POST {{agentBaseUrl}}/api/v1/agent/hold
+Content-Type: application/json
+
+{
+  "taskId": 1101,
+  "opsType": "FREE",
+  "force": false,
+  "reason": "Wrong operation type",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 6.3: Invalid hold with wrong opsType returns 400", function() {
+    client.assert(response.status === 400, "Response status should be 400");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+### ============================================================
+### 7. Free Endpoint
+### POST /api/v1/agent/free
+### ============================================================
+
+### Test Case 7.1: Free a previously held task
+POST {{agentBaseUrl}}/api/v1/agent/free
+Content-Type: application/json
+
+{
+  "taskId": 1104,
+  "opsType": "FREE",
+  "force": false,
+  "reason": "Release task after maintenance",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 7.1: Free a previously held task", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    let json = response.body;
+    client.assert(json.success === true, "Response should indicate success");
+    client.assert(json.message !== undefined, "Response should have a message");
+});
+%}
+
+###
+
+### Test Case 7.2: Free a non-existent task (should return 404)
+POST {{agentBaseUrl}}/api/v1/agent/free
+Content-Type: application/json
+
+{
+  "taskId": 99999,
+  "opsType": "FREE",
+  "force": false,
+  "reason": "Test free non-existent task",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 7.2: Free non-existent task returns 404", function() {
+    client.assert(response.status === 404, "Response status should be 404");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+###
+
+### Test Case 7.3: Invalid free - Wrong opsType (should return 400)
+POST {{agentBaseUrl}}/api/v1/agent/free
+Content-Type: application/json
+
+{
+  "taskId": 1101,
+  "opsType": "KILL",
+  "force": false,
+  "reason": "Wrong operation type",
+  "dealer": "admin"
+}
+
+> {%
+client.test("Test Case 7.3: Invalid free with wrong opsType returns 400", function() {
+    client.assert(response.status === 400, "Response status should be 400");
+    let json = response.body;
+    client.assert(json.error !== undefined, "Response should have an error message");
+});
+%}
+
+### ============================================================
+### 8. Backpressure Test - Queue Full Scenario
+### ============================================================
+
+### Test Case 8.1: Submit batch tasks to test queue capacity
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 2101,
+  "taskType": "JAVA_CLASS_NAME",
+  "opsType": "SUBMIT",
+  "priorityType": "NORMAL",
+  "executionClass": "top.ilovemyhome.dagtask.agent.execution.EchoExecution",
+  "input": "{\"message\": \"Batch task 1\"}",
+  "dealer": "scheduler-001"
+}
+
+> {%
+client.test("Test Case 8.1: Submit batch task 1", function() {
+    client.assert(response.status === 202, "Response status should be 202 Accepted");
+});
+%}
+
+###
+
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 2102,
+  "taskType": "JAVA_CLASS_NAME",
+  "opsType": "SUBMIT",
+  "priorityType": "NORMAL",
+  "executionClass": "top.ilovemyhome.dagtask.agent.execution.EchoExecution",
+  "input": "{\"message\": \"Batch task 2\"}",
+  "dealer": "scheduler-001"
+}
+
+> {%
+client.test("Test Case 8.2: Submit batch task 2", function() {
+    client.assert(response.status === 202, "Response status should be 202 Accepted");
+});
+%}
+
+###
+
+POST {{agentBaseUrl}}/api/v1/agent/submit
+Content-Type: application/json
+
+{
+  "taskId": 2103,
+  "taskType": "JAVA_CLASS_NAME",
+  "opsType": "SUBMIT",
+  "priorityType": "NORMAL",
+  "executionClass": "top.ilovemyhome.dagtask.agent.execution.EchoExecution",
+  "input": "{\"message\": \"Batch task 3\"}",
+  "dealer": "scheduler-001"
+}
+
+> {%
+client.test("Test Case 8.3: Submit batch task 3", function() {
+    client.assert(response.status === 202, "Response status should be 202 Accepted");
+});
+%}
+
+### ============================================================
+### 9. Final health check after all operations
+### ============================================================
+
+### Test Case 9.1: Verify final health status
+GET {{agentBaseUrl}}/api/v1/agent/health
+
+> {%
+client.test("Test Case 9.1: Final health check", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    let json = response.body;
+    client.assert(json.running === true, "Agent should still be running");
+    client.assert(json.agentId !== undefined, "Response should have agentId");
+    client.assert(json.pendingSize !== undefined, "Response should have pendingSize");
+    client.assert(json.runningSize !== undefined, "Response should have runningSize");
+});
+%}
+
+###
+
+### Test Case 9.2: Final ping check
+GET {{agentBaseUrl}}/api/v1/agent/ping
+
+> {%
+client.test("Test Case 9.2: Final ping check", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    client.assert(response.body === "pong", "Response body should still be 'pong'");
+});
+%}
+
+### ============================================================
+### Response Format Reference
+### ============================================================
+
+### Success Response (HTTP 200 OK):
+### {
+###   "success": true,
+###   "message": "Operation completed"
+### }
+
+### Accepted Response (HTTP 202 Accepted - submit only):
+### {
+###   "success": true,
+###   "message": "Task accepted",
+###   "taskId": 1101,
+###   "pendingPosition": 0
+### }
+
+### Error Response (HTTP 400 Bad Request):
+### {
+###   "error": "Error description"
+### }
+
+### Not Found Response (HTTP 404 Not Found):
+### {
+###   "error": "Task not found"
+### }
+
+### Too Many Requests Response (HTTP 429):
+### {
+###   "error": "Pending queue is full",
+###   "capacity": 100,
+###   "currentSize": 100
+### }
+
+### ============================================================
+### End of Test Cases
+### ============================================================

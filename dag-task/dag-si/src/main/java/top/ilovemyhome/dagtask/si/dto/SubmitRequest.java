@@ -15,7 +15,8 @@ public record SubmitRequest(
     , String executionClass
     , String input
     , String dealer
-    , Instant requestDt) {
+    , Instant requestDt
+    , boolean reportResult) {
 
     public SubmitRequest{
         Objects.requireNonNull(taskId);
@@ -26,6 +27,6 @@ public record SubmitRequest(
     }
 
     public SubmitRequest(Long taskId, TaskType taskType, String executionClass, String input){
-        this(taskId, taskType, null, PriorityType.NORMAL, executionClass, input, "SYSTEM", Instant.now());
+        this(taskId, taskType, null, PriorityType.NORMAL, executionClass, input, "SYSTEM", Instant.now(), false);
     }
 }

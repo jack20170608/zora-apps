@@ -1,0 +1,32 @@
+### ============================================================
+### 0. Health & Ping - Agent Availability Checks
+### ============================================================
+
+### Test Case 0.1: Ping - Heartbeat check (returns text/plain)
+GET {{agent001.baseUrl}}/api/v1/agent/ping
+
+> {%
+    client.test("Test Case 0.1: Ping - Heartbeat check", function() {
+        client.assert(response.status === 200, "Response status should be 200");
+        client.assert(response.body === "pong", "Response body should be 'pong'");
+        client.assert(response.contentType.mimeType === "text/plain", "Content-Type should be text/plain");
+    });
+%}
+
+###
+
+### Test Case 0.2: Health - Get agent health and queue statistics
+GET {{agent001.baseUrl}}/api/v1/agent/health
+
+> {%
+    client.test("Test Case 0.2: Health - Get agent health status", function() {
+        client.assert(response.status === 200, "Response status should be 200");
+        let json = response.body;
+        client.assert(json.running !== undefined, "Response should have 'running' field");
+        client.assert(json.agentId !== undefined, "Response should have 'agentId' field");
+        client.assert(json.pendingSize !== undefined, "Response should have 'pendingSize' field");
+        client.assert(json.runningSize !== undefined, "Response should have 'runningSize' field");
+        client.assert(json.maxConcurrentTasks !== undefined, "Response should have 'maxConcurrentTasks' field");
+        client.assert(json.maxPendingTasks !== undefined, "Response should have 'maxPendingTasks' field");
+    });
+%}
