@@ -14,7 +14,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "agentId": "agent-001",
+  "agentId": "test-agent-001",
   "name": "Test Agent 001",
   "agentUrl": "http://localhost:9091",
   "maxConcurrentTasks": 5,
