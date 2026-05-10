@@ -15,6 +15,7 @@
         <module>dag-si</module>
         <module>dag-scheduler</module>
         <module>dag-scheduler-muserver</module>
+        <module>dag-admin</module>
         <module>dag-agent</module>
         <module>dag-agent-muserver</module>
         <module>dag-scheduler-web</module>
@@ -55,6 +56,11 @@
             <dependency>
                 <groupId>top.ilovemyhome.dagtask</groupId>
                 <artifactId>dag-scheduler-muserver</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>top.ilovemyhome.dagtask</groupId>
+                <artifactId>dag-admin</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

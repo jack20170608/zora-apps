@@ -20,6 +20,23 @@
             <artifactId>dag-si</artifactId>
         </dependency>
 
+        <!-- zora jdbi and rdb -->
+        <dependency>
+            <groupId>top.ilovemyhome.zora</groupId>
+            <artifactId>zora-jdbi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.zora</groupId>
+            <artifactId>zora-rdb</artifactId>
+        </dependency>
+
+        <!-- Jakarta Inject annotation -->
+        <dependency>
+            <groupId>jakarta.inject</groupId>
+            <artifactId>jakarta.inject-api</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+
         <!-- SLF4J -->
         <dependency>
             <groupId>org.slf4j</groupId>
