@@ -700,16 +700,6 @@ public class TaskExecutionEngine {
         logger.debug("Moved task {} from running to finished", taskId);
     }
 
-    /**
-     * Retries sending all failed reports from the dead letter.
-     * Call this after scheduler server connection is restored.
-     *
-     * @return number of reports successfully retried
-     */
-    public int retryDeadLetter() {
-        return retryPersistedDeadLetterOnce();
-    }
-
     private TaskInput parseInput(String inputJson) throws Exception {
         if (inputJson == null || inputJson.isBlank()) {
             return new TaskInput(null, null, Map.of());
