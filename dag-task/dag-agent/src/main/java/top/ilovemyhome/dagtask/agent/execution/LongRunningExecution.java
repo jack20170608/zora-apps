@@ -6,6 +6,7 @@ import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 
+import java.util.Map;
 import java.util.Objects;
 
 public class LongRunningExecution implements TaskExecution {
@@ -14,8 +15,8 @@ public class LongRunningExecution implements TaskExecution {
     public TaskOutput execute(TaskInput input) {
         Long taskId = input.taskId();
         try {
-            Param p = (Param) input.input();
-            if (Objects.isNull(p) || p.durationSeconds < 0 ) {
+            Map<String, Object> param = (Map<String, Object>)input.input();
+            if (Objects.isNull(param) || !param.containsKey("durationSeconds") || param.get("durationSeconds") == null) {
                 throw new IllegalArgumentException("Input param is not correct!");
             }
             Thread.sleep(p.durationSeconds);
