@@ -16,14 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.core.DagSchedulerServer;
 import top.ilovemyhome.dagtask.core.interfaces.AgentRegistryApi;
-import top.ilovemyhome.dagtask.core.interfaces.TaskOrderApi;
-import top.ilovemyhome.dagtask.core.interfaces.TaskTemplateApi;
 import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
-import top.ilovemyhome.dagtask.scheduler.token.TokenManagementApi;
 import top.ilovemyhome.dagtask.scheduler.token.TokenService;
-import top.ilovemyhome.dagtask.server.interfaces.api.AgentWhitelistAdminApi;
-import top.ilovemyhome.dagtask.server.interfaces.api.FooUserHandler;
-import top.ilovemyhome.dagtask.server.web.security.SecurityHandler;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
 
@@ -63,7 +57,6 @@ public class WebServerBootstrap {
                 .addHandler(ResourceHandlerBuilder.classpathHandler("/swagger-ui"))
                 .addHandler(Method.GET, "/", (req, res, map) -> res.redirect("/" + contextPath + "/swagger-ui/index.html?url=/" + contextPath + "/openapi.json"))
                 .addHandler(Method.GET, "/index.html", (req, res, map) -> res.redirect("/" + contextPath + "/swagger-ui/index.html?url=/" + contextPath + "/openapi.json"))
-                .addHandler(new SecurityHandler(appContext))
                 .addHandler(ResourceHandlerBuilder.classpathHandler("/static"))
                 .addHandler(createRestHandler(appContext))
             );
@@ -86,35 +79,13 @@ public class WebServerBootstrap {
         Config config = appContext.getConfig();
         AppSecurityContext appSecurityContext = appContext.getBean("appSecurityContext", AppSecurityContext.class);
 
-        TaskOrderApi taskOrderApi = new TaskOrderApi(schedulerServer.getTaskOrderDao());
-        TaskTemplateApi taskTemplateApi = new TaskTemplateApi(schedulerServer.getTaskTemplateService());
-        AgentWhitelistAdminApi agentWhitelistAdminApi = new AgentWhitelistAdminApi(schedulerServer.getAgentWhitelistDao());
-
-        // New frontend-friendly APIs
-//        WorkflowApi workflowApi = new WorkflowApi(schedulerServer.getTaskTemplateService(), schedulerServer.getDagManageService());
-//        ExecutionApi executionApi = new ExecutionApi(schedulerServer.getTaskOrderDao(), schedulerServer.getTaskRecordDao());
-//        AgentAdminApi agentAdminApi = new AgentAdminApi(schedulerServer.getAgentDao(), schedulerServer.getAgentStatusDao());
-//        StatsApi statsApi = new StatsApi();
-
-        // Create authentication components
         JwtConfig jwtConfig = appContext.getBean("jwtConfig", JwtConfig.class);
         TokenService tokenService = new TokenService(schedulerServer.getAgentTokenDao(), jwtConfig);
+
         AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
-        TokenManagementApi tokenManagementApi = new TokenManagementApi(tokenService);
 
         return RestHandlerBuilder
-            .restHandler(new FooUserHandler(appContext),
-                agentRegistryApi,
-                taskOrderApi,
-                taskTemplateApi,
-                agentWhitelistAdminApi,
-                tokenManagementApi
-                //,
-//                workflowApi,
-//                executionApi,
-//                agentAdminApi,
-//                statsApi
-            )
+            .restHandler(agentRegistryApi)
             .addRequestFilter(appSecurityContext.getFacetFilter())
             .addCustomReader(createJacksonJsonProvider())
             .addCustomWriter(createJacksonJsonProvider())
@@ -137,8 +108,8 @@ public class WebServerBootstrap {
                 OpenAPIObjectBuilder.openAPIObject()
                     .withInfo(
                         infoObject()
-                            .withTitle("Dag Task Server API")
-                            .withDescription("DAG-based task scheduling system REST API")
+                            .withTitle("Dag Task Agent API")
+                            .withDescription("DAG-based task scheduling system Agent communication API")
                             .withVersion("1.0")
                             .build())
                     .withExternalDocs(
