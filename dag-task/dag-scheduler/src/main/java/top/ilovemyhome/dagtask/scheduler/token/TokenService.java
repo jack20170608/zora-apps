@@ -67,13 +67,13 @@ public class TokenService {
 
     private String generateJwt(TokenInfo tokenInfo) {
         return Jwts.builder()
-            .issuer(jwtConfig.getIssuer())
-            .subject("agent")
+            .issuer(jwtConfig.issuer())
+            .subject(tokenInfo.agentId())
             .id(tokenInfo.tokenId())
             .issuedAt(Date.from(tokenInfo.createdAt()))
             .expiration(Date.from(tokenInfo.expiresAt()))
             .claim("name", tokenInfo.name())
-            .signWith(jwtConfig.getPrivateKey(), SignatureAlgorithm.RS256)
+            .signWith(jwtConfig.privateKey(), SignatureAlgorithm.RS256)
             .compact();
     }
 
@@ -81,7 +81,7 @@ public class TokenService {
         try {
             // Parse and verify signature
             var claims = Jwts.parser()
-                .setSigningKey(jwtConfig.getPublicKey())
+                .setSigningKey(jwtConfig.publicKey())
                 .build()
                 .parseClaimsJws(jwt);
 
