@@ -74,13 +74,8 @@ public class WebServerBootstrap {
     }
 
     private static RestHandlerBuilder createRestHandler(AppContext appContext) {
-
         DagSchedulerServer schedulerServer = appContext.getBean("dagSchedulerServer", DagSchedulerServer.class);
-        Config config = appContext.getConfig();
         AppSecurityContext appSecurityContext = appContext.getBean("appSecurityContext", AppSecurityContext.class);
-
-        JwtConfig jwtConfig = appContext.getBean("jwtConfig", JwtConfig.class);
-        TokenService tokenService = new TokenService(schedulerServer.getAgentTokenDao(), jwtConfig);
 
         AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
 
