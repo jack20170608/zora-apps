@@ -507,9 +507,9 @@ public class App {
         if (StringUtils.isBlank(env)){
             throw new IllegalStateException("Cannot find env property.");
         }
-        App app = new App();
-        app.initAppContext(env);
-        app.initWebServer(app.getAppContext());
+        App schedulerServer = new App();
+        schedulerServer.initAppContext(env);
+        schedulerServer.initWebServer(schedulerServer.getAppContext());
     }
 
     public AppContext getAppContext() {

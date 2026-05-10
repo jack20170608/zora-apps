@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
  * Local application starter that starts an embedded PostgreSQL before the actual application starts.
  * Useful for local development and testing.
  */
-public class AppLocal {
+public class MuSchedulerServerLocal {
 
 //    static EmbeddedPostgres embeddedPostgres = null;
 
@@ -49,12 +49,12 @@ public class AppLocal {
 //        }, "embedded-postgres-shutdown-hook"));
 //
 //        logger.info("Starting main application...");
-        App.main(args);
+        MuSchedulerServer.main(args);
 //        } catch (IOException ioe) {
 //            logger.error("Failed to start embedded PostgreSQL", ioe);
 //            System.exit(1);
 //        }
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(AppLocal.class);
+    private static final Logger logger = LoggerFactory.getLogger(MuSchedulerServerLocal.class);
 }

@@ -388,7 +388,7 @@ dag-task/
 │   ├── src/main/java/
 │   └── pom.xml
 ├── dag-scheduler-web/        # Web管理界面
-│   ├── app/
+│   ├── schedulerServer/
 │   ├── components/
 │   ├── lib/
 │   └── package.json

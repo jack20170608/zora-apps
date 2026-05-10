@@ -70,7 +70,7 @@ NEXT_PUBLIC_WS_URL=ws://localhost:8081/ws
 
 ```
 dag-scheduler-web/
-├── app/                    # Next.js App Router pages
+├── schedulerServer/                    # Next.js App Router pages
 │   ├── overview/          # Dashboard overview
 │   ├── workflows/         # Workflow management
 │   ├── studio/            # DAG builder
@@ -180,7 +180,7 @@ The DAG builder supports the following node types:
 ## Development Guidelines
 
 ### Adding New Pages
-1. Create a new directory under `app/`
+1. Create a new directory under `schedulerServer/`
 2. Add a `page.tsx` file with the page component
 3. Add navigation item in `components/layout/AppLayout.tsx`
 

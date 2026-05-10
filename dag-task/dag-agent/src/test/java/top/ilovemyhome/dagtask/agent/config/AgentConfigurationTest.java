@@ -83,7 +83,7 @@ class AgentConfigurationTest {
         @Test
         void loadWithCustomPrefix_success() {
             String configStr = """
-                app {
+                schedulerServer {
                   agent {
                     agentUrl = "http://localhost:9000"
                     dagServerUrl = "http://localhost:8080"
@@ -92,7 +92,7 @@ class AgentConfigurationTest {
                 }
                 """;
 
-            AgentConfiguration cfg = AgentConfiguration.load("app.agent", ConfigFactory.parseString(configStr));
+            AgentConfiguration cfg = AgentConfiguration.load("schedulerServer.agent", ConfigFactory.parseString(configStr));
 
             assertThat(cfg.getAgentUrl()).isEqualTo("http://localhost:9000");
             assertThat(cfg.getDagServerUrl()).isEqualTo("http://localhost:8080");

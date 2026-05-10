@@ -23,7 +23,7 @@ dag-task/
     ├── tailwind.config.ts
     ├── postcss.config.js
     ├── .eslintrc.json
-    ├── app/
+    ├── schedulerServer/
     │   ├── globals.css
     │   ├── layout.tsx
     │   ├── page.tsx (dashboard)
@@ -227,7 +227,7 @@ const config: Config = {
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
+    './schedulerServer/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
   ],
   theme: {
@@ -417,12 +417,12 @@ git commit -m "feat: scaffold dag-scheduler-web Next.js project"
 
 ---
 
-### Task 2: Configure base app structure and styles
+### Task 2: Configure base schedulerServer structure and styles
 
 **Files:**
-- Create: `dag-scheduler-web/app/globals.css`
-- Create: `dag-scheduler-web/app/layout.tsx`
-- Create: `dag-scheduler-web/app/page.tsx`
+- Create: `dag-scheduler-web/schedulerServer/globals.css`
+- Create: `dag-scheduler-web/schedulerServer/layout.tsx`
+- Create: `dag-scheduler-web/schedulerServer/page.tsx`
 - Create: `dag-scheduler-web/lib/utils.ts`
 
 - [ ] **Step 1: Create globals.css with tailwind directives and CSS variables**
@@ -499,7 +499,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 ```
 
-- [ ] **Step 3: Create app/layout.tsx**
+- [ ] **Step 3: Create schedulerServer/layout.tsx**
 
 ```typescript
 import type { Metadata } from "next";
@@ -549,7 +549,7 @@ export default function RootLayout({
 }
 ```
 
-- [ ] **Step 4: Create app/page.tsx (dashboard home page)**
+- [ ] **Step 4: Create schedulerServer/page.tsx (dashboard home page)**
 
 ```typescript
 import { StatsDashboard } from "@/components/monitoring/StatsDashboard";
@@ -612,8 +612,8 @@ export default function Home() {
 - [ ] **Step 5: Commit**
 
 ```bash
-git add dag-scheduler-web/app/ dag-scheduler-web/lib/
-git commit -m "feat: add base app structure and styles"
+git add dag-scheduler-web/schedulerServer/ dag-scheduler-web/lib/
+git commit -m "feat: add base schedulerServer structure and styles"
 ```
 
 ---
@@ -1334,7 +1334,7 @@ git commit -m "feat: add common layout components and base shadcn components"
 ### Task 6: Create Template Management page
 
 **Files:**
-- Create: `dag-scheduler-web/app/templates/page.tsx`
+- Create: `dag-scheduler-web/schedulerServer/templates/page.tsx`
 - Create: `dag-scheduler-web/components/template-list/TemplateTable.tsx`
 
 - [ ] **Step 1: Create components/template-list/TemplateTable.tsx**
@@ -1447,7 +1447,7 @@ export function TemplateTable() {
 }
 ```
 
-- [ ] **Step 2: Create app/templates/page.tsx**
+- [ ] **Step 2: Create schedulerServer/templates/page.tsx**
 
 ```typescript
 import { TemplateTable } from "@/components/template-list/TemplateTable";
@@ -1470,7 +1470,7 @@ export default function TemplatesPage() {
 - [ ] **Step 3: Commit**
 
 ```bash
-git add dag-scheduler-web/app/templates dag-scheduler-web/components/template-list
+git add dag-scheduler-web/schedulerServer/templates dag-scheduler-web/components/template-list
 git commit -m "feat: add template management page"
 ```
 
@@ -1579,7 +1579,7 @@ git commit -m "feat: add dashboard statistics component"
 ### Task 8: Create Task Monitoring page
 
 **Files:**
-- Create: `dag-scheduler-web/app/monitoring/page.tsx`
+- Create: `dag-scheduler-web/schedulerServer/monitoring/page.tsx`
 - Create: `dag-scheduler-web/components/monitoring/TaskList.tsx`
 
 - [ ] **Step 1: Create components/monitoring/TaskList.tsx**
@@ -1685,7 +1685,7 @@ export function TaskList() {
 }
 ```
 
-- [ ] **Step 2: Create app/monitoring/page.tsx**
+- [ ] **Step 2: Create schedulerServer/monitoring/page.tsx**
 
 ```typescript
 import { TaskList } from "@/components/monitoring/TaskList";
@@ -1708,7 +1708,7 @@ export default function MonitoringPage() {
 - [ ] **Step 3: Commit**
 
 ```bash
-git add dag-scheduler-web/app/monitoring dag-scheduler-web/components/monitoring
+git add dag-scheduler-web/schedulerServer/monitoring dag-scheduler-web/components/monitoring
 git commit -m "feat: add task monitoring page"
 ```
 
@@ -1717,7 +1717,7 @@ git commit -m "feat: add task monitoring page"
 ### Task 9: Create DAG Builder components
 
 **Files:**
-- Create: `dag-scheduler-web/app/builder/[id]/page.tsx`
+- Create: `dag-scheduler-web/schedulerServer/builder/[id]/page.tsx`
 - Create: `dag-scheduler-web/components/dag-builder/DagCanvas.tsx`
 - Create: `dag-scheduler-web/components/dag-builder/NodePanel.tsx`
 - Create: `dag-scheduler-web/components/dag-builder/NodeConfigPanel.tsx`
@@ -2230,7 +2230,7 @@ export function DagCanvas(props: DagCanvasProps) {
 }
 ```
 
-- [ ] **Step 5: Create builder page app/builder/[id]/page.tsx**
+- [ ] **Step 5: Create builder page schedulerServer/builder/[id]/page.tsx**
 
 ```typescript
 'use client';
@@ -2377,7 +2377,7 @@ export default function DagBuilderPage() {
 - [ ] **Step 6: Commit**
 
 ```bash
-git add dag-scheduler-web/app/builder dag-scheduler-web/components/dag-builder
+git add dag-scheduler-web/schedulerServer/builder dag-scheduler-web/components/dag-builder
 git commit -m "feat: add visual DAG builder with drag-and-drop"
 ```
 

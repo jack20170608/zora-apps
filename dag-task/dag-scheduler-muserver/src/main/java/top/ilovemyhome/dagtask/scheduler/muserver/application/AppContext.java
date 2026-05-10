@@ -50,7 +50,6 @@ public final class AppContext {
         initSecurity(jwtConfig);
         //Init Db
         initRdb(config);
-        runFlywayMigration(config);
         registerBean(JwtConfig.class, "jwtConfig", jwtConfig);
 
         startDagServer(jwtConfig);
@@ -67,8 +66,6 @@ public final class AppContext {
                 .jwtTtl(jwtConfig.ttl())
                 .jwtPublicKeyPath(jwtConfig.publicKeyPath())
                 .jwtPrivateKeyPath(jwtConfig.privateKeyPath())
-                .cookieName(config.getString("cookie.name"))
-                .cookieValueType(config.getEnum(CookieValueType.class, "cookie.valueType"))
                 .whiteList(whiteList)
                 .build();
 
@@ -91,20 +88,6 @@ public final class AppContext {
         this.dataSource = DataSourcePoolBuilder.create(rdbConfig).build();
         logger.info("DataSource initialized successfully");
         this.jdbi = Jdbi.create(this.dataSource);
-    }
-
-    private void runFlywayMigration(Config config) {
-        Config flywayConfig = config.getConfig("flyway");
-        FlywayMigrationRunner flywayMigrationRunner = FlywayMigrationRunner.builder(dataSource)
-                .locations(flywayConfig.getStringList("locations").toArray(String[]::new))
-                .baselineOnMigrate(flywayConfig.getBoolean("baselineOnMigrate"))
-                .baselineVersion(flywayConfig.getString("baselineVersion"))
-                .baselineDescription(flywayConfig.getString("baselineDescription"))
-                .table(flywayConfig.getString("table"))
-                .defaultSchema(flywayConfig.getString("defaultSchema"))
-                .build();
-        flywayMigrationRunner.migrate();
-        logger.info("Flyway migration completed successfully");
     }
 
     private void startDagServer(JwtConfig jwtConfig){
@@ -130,7 +113,7 @@ public final class AppContext {
         String audience = jwt.getString("audience");
         String publicKeyPath = jwt.getString("publicKeyLocation");
         String privateKeyPath = jwt.getString("privateKeyLocation");
-        long ttl = jwt.getDuration("jwt.ttl", java.util.concurrent.TimeUnit.MILLISECONDS);
+        long ttl = jwt.getDuration("ttl", java.util.concurrent.TimeUnit.MILLISECONDS);
         try {
             PublicKey publicKey = readPublicKey(publicKeyPath);
             PrivateKey privateKey = readPrivateKey(privateKeyPath);

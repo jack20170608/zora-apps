@@ -8,7 +8,7 @@ import top.ilovemyhome.dagtask.scheduler.muserver.application.AppContext;
 import top.ilovemyhome.dagtask.scheduler.muserver.application.WebServerBootstrap;
 import top.ilovemyhome.zora.config.ConfigLoader;
 
-public class App {
+public class MuSchedulerServer {
 
     public static void main(String[] args) {
         LOGGER.info("Starting application.");
@@ -16,20 +16,20 @@ public class App {
         if (StringUtils.isBlank(env)){
             throw new IllegalStateException("Cannot find env property.");
         }
-        App app = new App();
-        app.initAppContext(env);
-        app.initWebServer(app.getAppContext());
+        MuSchedulerServer schedulerServer = new MuSchedulerServer();
+        schedulerServer.initAppContext(env);
+        schedulerServer.initWebServer(schedulerServer.getAppContext());
     }
 
     public AppContext getAppContext() {
         return appContext;
     }
 
-    public static App getInstance() {
-        return APP;
+    public static MuSchedulerServer getInstance() {
+        return SchedulerServer;
     }
 
-    private App() {
+    private MuSchedulerServer() {
     }
 
     private void initAppContext(String env){
@@ -44,7 +44,7 @@ public class App {
     }
 
     private AppContext appContext;
-    private static App APP;
-    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
+    private static MuSchedulerServer SchedulerServer;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MuSchedulerServer.class);
 
 }

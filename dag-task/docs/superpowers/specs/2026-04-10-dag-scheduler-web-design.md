@@ -31,7 +31,7 @@
 
 ```
 dag-scheduler-web/
-├── app/                          # Next.js App Router pages
+├── schedulerServer/                          # Next.js App Router pages
 │   ├── (dashboard)/             # Main authenticated routes
 │   │   ├── page.tsx             # Dashboard/home
 │   │   ├── templates/           # Template management
