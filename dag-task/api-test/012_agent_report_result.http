@@ -1,0 +1,204 @@
+### ============================================================
+### 3. Task Result Reporting Endpoint
+### POST /api/v1/scheduler/report_result
+### ============================================================
+
+
+### Test Case 3.1: Report Single Successful Task Result
+POST {{baseUrl}}/api/v1/scheduler/report_result
+Content-Type: application/json
+#Authorization: Basic {{username}} {{password}}
+
+[
+    {
+        "agentId": "agent-001",
+        "taskId": 1001,
+        "success": true,
+        "output": "{\"result\": \"Task completed successfully\", \"data\": {\"processed\": 150, \"errors\": 0}}",
+        "endTime": "2025-04-27T10:30:00Z"
+    }
+]
+
+> {%
+    client.test("Test Case 3.1: Report Single Successful Task Result", function() {
+        client.assert(response.status === 200, "Response status should be 200");
+        let json = response.body;
+        client.assert(json.code === 200, "Response code should be 200");
+        client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+        client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+    });
+%}
+
+### Test Case 3.2: Report Single Failed Task Result
+POST {{baseUrl}}/api/v1/scheduler/report_result
+Content-Type: application/json
+#Authorization: Basic {{username}} {{password}}
+
+[
+    {
+        "agentId": "agent-001",
+        "taskId": 1002,
+        "success": false,
+        "output": "{\"error\": \"NullPointerException\", \"stackTrace\": \"at com.example.Task.execute(Task.java:42)\"}",
+        "endTime": "2025-04-27T10:35:00Z"
+    }
+]
+
+> {%
+    client.test("Test Case 3.2: Report Single Failed Task Result", function() {
+        client.assert(response.status === 200, "Response status should be 200");
+        let json = response.body;
+        client.assert(json.code === 200, "Response code should be 200");
+        client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+        client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+    });
+%}
+
+### Test Case 3.3: Report Multiple Task Results
+POST {{baseUrl}}/api/v1/scheduler/report_result
+Content-Type: application/json
+#Authorization: Basic {{username}} {{password}}
+
+[
+    {
+        "agentId": "agent-001",
+        "taskId": 1003,
+        "success": true,
+        "output": "{\"result\": \"Batch job completed\"}",
+        "endTime": "2025-04-27T10:40:00Z"
+    },
+    {
+        "agentId": "agent-001",
+        "taskId": 1004,
+        "success": true,
+        "output": "{\"result\": \"Data processing finished\"}",
+        "endTime": "2025-04-27T10:41:00Z"
+    }
+]
+
+> {%
+    client.test("Test Case 3.3: Report Multiple Task Results", function() {
+        client.assert(response.status === 200, "Response status should be 200");
+        var json = response.body;
+        client.assert(json.code === 200, "Response code should be 200");
+        client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+        client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+    });
+%}
+
+### Test Case 3.4: Report Result for Non-Existent Task
+POST {{baseUrl}}/api/v1/scheduler/report_result
+Content-Type: application/json
+#Authorization: Basic {{username}} {{password}}
+
+[
+    {
+        "agentId": "agent-001",
+        "taskId": 999999,
+        "success": true,
+        "output": "{\"result\": \"Unknown task\"}",
+        "endTime": "2025-04-27T10:45:00Z"
+    }
+]
+
+> {%
+    client.test("Test Case 3.4: Report Result for Non-Existent Task", function() {
+        client.assert(response.status === 400, "Response status should be 400");
+        var json = response.body;
+        client.assert(json.code === 400, "Response code should be 400");
+        client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
+        client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+    });
+%}
+
+### Test Case 3.5: Invalid Report - Missing Required Fields
+POST {{baseUrl}}/api/v1/scheduler/report_result
+Content-Type: application/json
+#Authorization: Basic {{username}} {{password}}
+
+[
+    {
+        "agentId": "agent-001",
+        "success": true
+    }
+]
+
+> {%
+    client.test("Test Case 3.5: Invalid Report - Missing Required Fields", function() {
+        client.assert(response.status === 400, "Response status should be 400");
+        var json = response.body;
+        client.assert(json.code === 400, "Response code should be 400");
+        client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
+        client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+    });
+%}
+
+### Test Case 3.6: Invalid Report - Empty agentId
+POST {{baseUrl}}/api/v1/scheduler/report_result
+Content-Type: application/json
+#Authorization: Basic {{username}} {{password}}
+
+[
+    {
+        "agentId": "",
+        "taskId": 1005,
+        "success": true,
+        "output": "Test result"
+    }
+]
+
+> {%
+    client.test("Test Case 3.6: Invalid Report - Empty agentId", function() {
+        client.assert(response.status === 400, "Response status should be 400");
+        var json = response.body;
+        client.assert(json.code === 400, "Response code should be 400");
+        client.assert(json.message !== undefined && json.message !== "", "Response should have an error message");
+        client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+    });
+%}
+
+### ============================================================
+### Performance and Load Testing Scenarios
+### ============================================================
+
+### Note: These tests are designed for load testing tools like k6 or JMeter
+### Below are example requests that can be used as templates
+
+### Bulk Task Results Report
+POST {{baseUrl}}/api/v1/scheduler/report_result
+Content-Type: application/json
+#Authorization: Basic {{username}} {{password}}
+
+[
+    {
+        "agentId": "load-test-agent",
+        "taskId": 10001,
+        "success": true,
+        "output": "{\"batch\": 1, \"item\": 1}",
+        "endTime": "2025-04-27T13:00:00Z"
+    },
+    {
+        "agentId": "load-test-agent",
+        "taskId": 10002,
+        "success": true,
+        "output": "{\"batch\": 1, \"item\": 2}",
+        "endTime": "2025-04-27T13:00:01Z"
+    },
+    {
+        "agentId": "load-test-agent",
+        "taskId": 10003,
+        "success": true,
+        "output": "{\"batch\": 1, \"item\": 3}",
+        "endTime": "2025-04-27T13:00:02Z"
+    }
+]
+
+> {%
+    client.test("Performance: Bulk Task Results Report", function() {
+        client.assert(response.status === 200, "Response status should be 200");
+        var json = response.body;
+        client.assert(json.code === 200, "Response code should be 200");
+        client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+        client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+    });
+%}
