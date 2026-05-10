@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.server.application;
+package top.ilovemyhome.dagtask.scheduler.muserver.application;
 
 import com.typesafe.config.Config;
 import org.jdbi.v3.core.Jdbi;
@@ -10,7 +10,6 @@ import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.muserver.security.core.CookieValueType;
-import top.ilovemyhome.zora.muserver.security.core.User;
 import top.ilovemyhome.zora.rdb.config.RdbConfig;
 import top.ilovemyhome.zora.rdb.flyway.FlywayMigrationRunner;
 import top.ilovemyhome.zora.rdb.pool.DataSourcePoolBuilder;
@@ -30,7 +29,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public final class AppContext {
 

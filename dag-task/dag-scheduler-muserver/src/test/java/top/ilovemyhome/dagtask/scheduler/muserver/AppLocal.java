@@ -1,10 +1,7 @@
-package top.ilovemyhome.dagtask.server;
+package top.ilovemyhome.dagtask.scheduler.muserver;
 
-import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 
 /**
  * Local application starter that starts an embedded PostgreSQL before the actual application starts.

@@ -1,11 +1,11 @@
-package top.ilovemyhome.dagtask.server;
+package top.ilovemyhome.dagtask.scheduler.muserver;
 
 import com.typesafe.config.Config;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.ilovemyhome.dagtask.server.application.AppContext;
-import top.ilovemyhome.dagtask.server.application.WebServerBootstrap;
+import top.ilovemyhome.dagtask.scheduler.muserver.application.AppContext;
+import top.ilovemyhome.dagtask.scheduler.muserver.application.WebServerBootstrap;
 import top.ilovemyhome.zora.config.ConfigLoader;
 
 public class App {

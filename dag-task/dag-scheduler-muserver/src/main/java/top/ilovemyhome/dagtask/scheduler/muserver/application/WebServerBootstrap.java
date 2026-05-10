@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.server.application;
+package top.ilovemyhome.dagtask.scheduler.muserver.application;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;

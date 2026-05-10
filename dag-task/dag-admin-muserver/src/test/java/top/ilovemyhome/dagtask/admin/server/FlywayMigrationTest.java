@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.server.application;
+package top.ilovemyhome.dagtask.admin.server;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -7,6 +7,7 @@ import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import top.ilovemyhome.dagtask.admin.server.application.AppContext;
 
 import javax.sql.DataSource;
 import java.io.IOException;

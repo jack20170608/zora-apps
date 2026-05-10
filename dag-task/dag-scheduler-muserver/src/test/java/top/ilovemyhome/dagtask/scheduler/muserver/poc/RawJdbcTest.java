@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.server.poc;
+package top.ilovemyhome.dagtask.scheduler.muserver.poc;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

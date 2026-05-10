@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.server.poc;
+package top.ilovemyhome.dagtask.scheduler.muserver.poc;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
