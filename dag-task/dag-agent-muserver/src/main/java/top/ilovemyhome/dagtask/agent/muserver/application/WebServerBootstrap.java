@@ -41,14 +41,10 @@ public class WebServerBootstrap {
         Config muserverConfig = config.getConfig("muserver");
         String contextPath = muserverConfig.getString("contextPath");
         int port = muserverConfig.getInt("port");
-        String host = muserverConfig.getString("host");
         int idleTimeout = muserverConfig.getInt("idleTimeout");
-
-        logger.info("Starting MuServer for DAG Task Agent on {}:{}", host, port);
         long start = System.currentTimeMillis();
         MuServerBuilder muServerBuilder = MuServerBuilder.httpServer()
                 .withHttpPort(port)
-                .withInterface(host)
                 .addResponseCompleteListener(info -> {
                     logger.info("Response completed: success={}, remoteAddr={}, clientAddress={}, req={}, status={}, duration={}",
                             info.completedSuccessfully(), info.request().remoteAddress(), info.request().clientIP(),
