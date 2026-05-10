@@ -8,7 +8,7 @@ import top.ilovemyhome.dagtask.admin.server.application.AppContext;
 import top.ilovemyhome.dagtask.admin.server.application.WebServerBootstrap;
 import top.ilovemyhome.zora.config.ConfigLoader;
 
-public class App {
+public class DagTaskAdminServer {
 
     public static void main(String[] args) {
         LOGGER.info("Starting dag-admin application.");
@@ -16,7 +16,7 @@ public class App {
         if (StringUtils.isBlank(env)){
             throw new IllegalStateException("Cannot find env property.");
         }
-        App app = new App();
+        DagTaskAdminServer app = new DagTaskAdminServer();
         app.initAppContext(env);
         app.initWebServer(app.getAppContext());
     }
@@ -25,11 +25,11 @@ public class App {
         return appContext;
     }
 
-    public static App getInstance() {
+    public static DagTaskAdminServer getInstance() {
         return APP;
     }
 
-    private App() {
+    private DagTaskAdminServer() {
     }
 
     private void initAppContext(String env){
@@ -44,7 +44,7 @@ public class App {
     }
 
     private AppContext appContext;
-    private static App APP;
-    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
+    private static DagTaskAdminServer APP;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DagTaskAdminServer.class);
 
 }

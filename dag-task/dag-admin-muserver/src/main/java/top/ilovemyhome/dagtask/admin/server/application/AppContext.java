@@ -60,7 +60,7 @@ public final class AppContext {
     }
 
     private void initSecurity(JwtConfig jwtConfig) {
-        List<User> users = config.getConfigList("users")
+        List<User> users = config.getConfigList("security.users")
                 .stream()
                 .map(item -> {
                     String id = item.getString("id");
@@ -85,12 +85,12 @@ public final class AppContext {
         var appSecurityContext = AppSecurityContext.builder()
                 .inMemoryUser(users)
                 .jwtIssuer(jwtConfig.issuer())
-                .jwtSubject("access")
+                .jwtAudience(jwtConfig.audience())
                 .jwtTtl(jwtConfig.ttl())
-                .jwtPublicKeyPath(config.getString("jwt.publicKeyLocation"))
-                .jwtPrivateKeyPath(config.getString("jwt.privateKeyLocation"))
-                .cookieName(config.getString("cookie.name"))
-                .cookieValueType(config.getEnum(CookieValueType.class, "cookie.valueType"))
+                .jwtPublicKeyPath(jwtConfig.publicKeyPath())
+                .jwtPrivateKeyPath(jwtConfig.privateKeyPath())
+                .cookieName(config.getString("security.cookie.name"))
+                .cookieValueType(config.getEnum(CookieValueType.class, "security.cookie.valueType"))
                 .whiteList(whiteList)
                 .build();
 
@@ -147,15 +147,16 @@ public final class AppContext {
     }
 
     private static JwtConfig readJwtConfig(Config config) {
-        Config jwt = config.getConfig("jwt");
+        Config jwt = config.getConfig("security.jwt");
         String issuer = jwt.getString("issuer");
+        String audience = jwt.getString("audience");
         String publicKeyPath = jwt.getString("publicKeyLocation");
         String privateKeyPath = jwt.getString("privateKeyLocation");
-        long ttl = jwt.getDuration("jwt.ttl", java.util.concurrent.TimeUnit.MILLISECONDS);
+        long ttl = jwt.getDuration("ttl", java.util.concurrent.TimeUnit.MILLISECONDS);
         try {
             PublicKey publicKey = readPublicKey(publicKeyPath);
             PrivateKey privateKey = readPrivateKey(privateKeyPath);
-            return new JwtConfig(issuer, publicKey, privateKey, ttl);
+            return new JwtConfig(issuer, audience, publicKeyPath, privateKeyPath, publicKey, privateKey, ttl);
         } catch (Exception e) {
             throw new RuntimeException("Failed to load JWT keys", e);
         }
