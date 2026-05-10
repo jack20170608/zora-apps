@@ -19,7 +19,7 @@
         <module>dag-admin-muserver</module>
         <module>dag-agent</module>
         <module>dag-agent-muserver</module>
-        <module>dag-scheduler-web</module>
+        <module>dag-admin-web</module>
     </modules>
 
     <properties>
@@ -76,7 +76,7 @@
             </dependency>
             <dependency>
                 <groupId>top.ilovemyhome.dagtask</groupId>
-                <artifactId>dag-scheduler-web</artifactId>
+                <artifactId>dag-admin-web</artifactId>
                 <version>${revision}</version>
             </dependency>
         </dependencies>
