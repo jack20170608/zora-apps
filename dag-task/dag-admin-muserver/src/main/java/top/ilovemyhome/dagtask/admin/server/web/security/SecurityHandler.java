@@ -25,8 +25,8 @@ public class SecurityHandler implements MuHandler {
 
     public SecurityHandler(AppContext appContext) {
         this.contextPath = appContext.getConfig().getString("server.contextPath");
-        this.cookieName = appContext.getConfig().getString("cookie.name");
-        this.cookieValueType = appContext.getConfig().getEnum(CookieValueType.class, "cookie.valueType");
+        this.cookieName = appContext.getConfig().getString("security.cookie.name");
+        this.cookieValueType = appContext.getConfig().getEnum(CookieValueType.class, "security.cookie.valueType");
         this.appSecurityContext = appContext.getBean("appSecurityContext", AppSecurityContext.class);
         Function<String, List<String>> FUN_RESTRICTED_STATIC_URIS = (contextPath) -> List.of(
             "/" + contextPath + "/index.html"
