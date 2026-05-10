@@ -25,8 +25,8 @@ public class LoginHandler implements RouteHandler {
         AppSecurityContext appSecurityContext = appContext.getBean("appSecurityContext", AppSecurityContext.class);
         this.userPassAuthenticators = appSecurityContext.getUserPassAuthenticators();
         this.jwtAuthenticator = appSecurityContext.getJwtAuthenticator();
-        this.domains = appContext.getConfig().getStringList("cookie.domain");
-        this.cookieName = appContext.getConfig().getString("cookie.name");
+        this.domains = appContext.getConfig().getStringList("security.cookie.domain");
+        this.cookieName = appContext.getConfig().getString("security.cookie.name");
         Objects.requireNonNull(cookieName);
     }
 
