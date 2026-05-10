@@ -60,35 +60,15 @@ public final class AppContext {
     }
 
     private void initSecurity(JwtConfig jwtConfig) {
-        List<User> users = config.getConfigList("users")
-                .stream()
-                .map(item -> {
-                    String id = item.getString("id");
-                    String name = item.getString("name");
-                    String displayName = item.getString("displayName");
-                    List<String> roles = item.getStringList("roles");
-                    String passwordHashVal = item.getString("passwordHashVal");
-                    Map<String, Object> unwrapped = (Map<String, Object>) item.getConfig("attributes").root().unwrapped();
-                    Map<String, Object> attributes = unwrapped.entrySet()
-                            .stream()
-                            .collect(Collectors.toMap(
-                                    Map.Entry::getKey,
-                                    entry -> (Object) String.valueOf(entry.getValue())
-                            ));
-                    return new User(id, name, displayName, roles, passwordHashVal, attributes);
-                })
-                .toList();
-
         List<String> whiteList = config.hasPath("security.whiteList")
                 ? config.getStringList("security.whiteList")
                 : new ArrayList<>();
         var appSecurityContext = AppSecurityContext.builder()
-                .inMemoryUser(users)
                 .jwtIssuer(jwtConfig.issuer())
-                .jwtSubject("access")
+                .jwtAudience(jwtConfig.audience())
                 .jwtTtl(jwtConfig.ttl())
-                .jwtPublicKeyPath(config.getString("jwt.publicKeyLocation"))
-                .jwtPrivateKeyPath(config.getString("jwt.privateKeyLocation"))
+                .jwtPublicKeyPath(jwtConfig.publicKeyPath())
+                .jwtPrivateKeyPath(jwtConfig.privateKeyPath())
                 .cookieName(config.getString("cookie.name"))
                 .cookieValueType(config.getEnum(CookieValueType.class, "cookie.valueType"))
                 .whiteList(whiteList)
@@ -149,13 +129,14 @@ public final class AppContext {
     private static JwtConfig readJwtConfig(Config config) {
         Config jwt = config.getConfig("jwt");
         String issuer = jwt.getString("issuer");
+        String audience = jwt.getString("audience");
         String publicKeyPath = jwt.getString("publicKeyLocation");
         String privateKeyPath = jwt.getString("privateKeyLocation");
         long ttl = jwt.getDuration("jwt.ttl", java.util.concurrent.TimeUnit.MILLISECONDS);
         try {
             PublicKey publicKey = readPublicKey(publicKeyPath);
             PrivateKey privateKey = readPrivateKey(privateKeyPath);
-            return new JwtConfig(issuer, publicKey, privateKey, ttl);
+            return new JwtConfig(issuer, audience, publicKeyPath, privateKeyPath, publicKey, privateKey, ttl);
         } catch (Exception e) {
             throw new RuntimeException("Failed to load JWT keys", e);
         }
