@@ -29,4 +29,5 @@ public class Constants {
     //Control the max query result
     public static final int MAX_QUERY_SIZE = 5000;
 
+
 }

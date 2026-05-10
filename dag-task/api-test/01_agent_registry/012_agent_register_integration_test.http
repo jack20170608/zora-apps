@@ -1,0 +1,60 @@
+@end2endTestAgentId=end2endTestAgent
+
+### ============================================================
+### Integration Test Scenarios
+### ============================================================
+
+### Scenario 012: Complete Agent Lifecycle
+### Step 1: Register Agent
+POST {{baseUrl}}/api/v1/scheduler/register
+Content-Type: application/json
+
+{
+    "agentId": "{{end2endTestAgentId}}",
+    "name": "Lifecycle Test Agent",
+    "agentUrl": "http://localhost:9099",
+    "maxConcurrentTasks": 5,
+    "maxPendingTasks": 10,
+    "generateToken": true,
+    "supportedExecutionKeys": ["shell", "python"]
+}
+
+> {%
+    client.test("Scenario 1 Step 1: Register Agent", function() {
+        client.assert(response.status === 200, "Response status should be 200");
+        let json = response.body;
+        console.log(json);
+
+        client.assert(json.code === 200, "Response code should be 200");
+        client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+        client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+
+        client.global.set("end2endTestAgentToken", json.data.tokenInfo.token);
+    });
+%}
+
+
+### Step 2: Report Task Result
+POST {{baseUrl}}/api/v1/scheduler/report_result
+Content-Type: application/json
+Authorization: Bearer {{end2endTestAgentToken}}
+
+[
+    {
+        "agentId": "{{end2endTestAgentId}}",
+        "taskId": 2001,
+        "success": true,
+        "output": "{\"result\": \"Task completed successfully\"}",
+        "endTime": "2025-04-27T11:00:00Z"
+    }
+]
+
+> {%
+    client.test("Scenario 1 Step 2: Report Task Result", function() {
+        client.assert(response.status === 200, "Response status should be 200");
+        var json = response.body;
+        client.assert(json.code === 200, "Response code should be 200");
+        client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
+        client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
+    });
+%}

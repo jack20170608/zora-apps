@@ -1,6 +1,8 @@
 ### AgentRegistryApi HTTP Test Cases
 ### Base URL: http://localhost:8080
 ### All endpoints accept JSON and return JSON responses
+@testAgent001="test-agent-001"
+@testAgent002="test-agent-002"
 
 ### ============================================================
 ### 1. Agent Registration Endpoint
@@ -14,7 +16,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "agentId": "test-agent-001",
+  "agentId": "{{testAgent001}}",
   "name": "Test Agent 001",
   "agentUrl": "http://localhost:9091",
   "maxConcurrentTasks": 5,
@@ -41,10 +43,9 @@ client.test("Test Case 1.1: Successful Agent Registration", function() {
 ### Test Case 1.2: Registration with Minimal Required Fields
 POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
-##Authorization: Basic {{username}} {{password}}
 
 {
-    "agentId": "agent-002",
+    "agentId": "{{testAgent002}}",
     "name": "Test Agent 002",
     "agentUrl": "http://localhost:9092",
     "maxConcurrentTasks": 3,
@@ -64,10 +65,9 @@ client.test("Test Case 1.2: Registration with Minimal Required Fields", function
 ### Test Case 1.3: Duplicate Registration (Should Reactivate Existing)
 POST {{baseUrl}}/api/v1/scheduler/register
 Content-Type: application/json
-##Authorization: Basic {{username}} {{password}}
 
 {
-  "agentId": "agent-001",
+  "agentId": "{{testAgent001}}",
   "name": "Test Agent 001 - Updated",
   "agentUrl": "http://localhost:9091",
   "maxConcurrentTasks": 8,
@@ -139,7 +139,7 @@ Content-Type: application/json
 ##Authorization: Basic {{username}} {{password}}
 
 {
-  "agentId": "agent-002"
+  "agentId": "{{testAgent002}}"
 }
 
 > {%
@@ -210,62 +210,11 @@ client.test("Test Case 2.4: Invalid Unregistration - Empty agentId", function() 
 
 
 
-### ============================================================
-### Integration Test Scenarios
-### ============================================================
 
-### Scenario 1: Complete Agent Lifecycle
-### Step 1: Register Agent
-POST {{baseUrl}}/api/v1/scheduler/register
-Content-Type: application/json
-#Authorization: Basic {{username}} {{password}}
-
-
-{
-  "agentId": "lifecycle-test-agent",
-  "name": "Lifecycle Test Agent",
-  "agentUrl": "http://localhost:9099",
-  "maxConcurrentTasks": 5,
-  "maxPendingTasks": 10,
-  "supportedExecutionKeys": ["shell", "python"]
-}
-
-> {%
-client.test("Scenario 1 Step 1: Register Agent", function() {
-    client.assert(response.status === 200, "Response status should be 200");
-    var json = response.body;
-    client.assert(json.code === 200, "Response code should be 200");
-    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
-    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
-});
-%}
 
 ###
 
-### Step 2: Report Task Result
-POST {{baseUrl}}/api/v1/scheduler/report_result
-Content-Type: application/json
-#Authorization: Basic {{username}} {{password}}
 
-[
-  {
-    "agentId": "lifecycle-test-agent",
-    "taskId": 2001,
-    "success": true,
-    "output": "{\"result\": \"Task completed successfully\"}",
-    "endTime": "2025-04-27T11:00:00Z"
-  }
-]
-
-> {%
-client.test("Scenario 1 Step 2: Report Task Result", function() {
-    client.assert(response.status === 200, "Response status should be 200");
-    var json = response.body;
-    client.assert(json.code === 200, "Response code should be 200");
-    client.assert(json.message !== undefined && json.message !== "", "Response should have a message");
-    client.assert(json.timestamp !== undefined && json.timestamp > 0, "Response should have a valid timestamp");
-});
-%}
 
 ###
 

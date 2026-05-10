@@ -73,6 +73,8 @@ public class TokenService {
             .issuedAt(Date.from(tokenInfo.createdAt()))
             .expiration(Date.from(tokenInfo.expiresAt()))
             .claim("name", tokenInfo.name())
+            .claim("id", tokenInfo.agentId())
+            .claim("roles", "agent")
             .signWith(jwtConfig.privateKey(), SignatureAlgorithm.RS256)
             .compact();
     }
