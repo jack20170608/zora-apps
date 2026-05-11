@@ -24,7 +24,8 @@ Content-Type: application/json
     "executionClass": "top.ilovemyhome.dagtask.agent.execution.EchoExecution",
     "input": "{\"message\": \"Hello from Java task\"}",
     "dealer": "scheduler-001",
-    "requestDt": "2025-05-10T12:00:00Z"
+    "requestDt": "2025-05-10T12:00:00Z",
+    "reportResult": false
 }
 
 > {%
