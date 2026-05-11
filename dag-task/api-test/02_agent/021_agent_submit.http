@@ -57,7 +57,7 @@ Content-Type: application/json
 
 > {%
     client.test("Test Case 1.5: Submit a long-running task", function() {
-        client.assert(response.status === 202, "Response status should be 202 Accepted");
+        client.assert(response.status === 200, "Response status should be 200 OK");
         let json = response.body;
         client.assert(json.success === true, "Response should indicate success");
         client.assert(json.taskId === 1105, "Response taskId should match submitted taskId");
