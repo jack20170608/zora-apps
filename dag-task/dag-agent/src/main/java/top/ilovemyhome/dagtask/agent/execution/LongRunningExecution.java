@@ -17,10 +17,12 @@ public class LongRunningExecution implements TaskExecution {
         Long taskId = input.taskId();
         try {
             Param param = input.getInputAs(Param.class);
+            logger.info("Start execute taskId={}, param={}", taskId, param);
             if (Objects.isNull(param) || param.durationSeconds() <= 0) {
                 throw new IllegalArgumentException("Input param is not correct! Required: durationSeconds > 0");
             }
             Thread.sleep(param.durationSeconds() * 1000L);
+            logger.info("Executed successfully!");
             return TaskOutput.success(taskId, "OK");
         } catch (Throwable t) {
             logger.warn(t.getMessage(), t);
