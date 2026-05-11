@@ -6,13 +6,12 @@
 ### ============================================================
 
 
-
 ### ============================================================
-### 1. Submit Endpoint - Queue tasks for execution
+### 2. Submit Endpoint - Queue tasks for execution
 ### POST /api/v1/agent/submit
 ### ============================================================
 
-### Test Case 1.1: Submit a Java class task
+### Test Case 2.1: Submit a Java class task
 POST {{agent001.baseUrl}}/api/v1/agent/submit
 Content-Type: application/json
 
@@ -39,7 +38,7 @@ Content-Type: application/json
 %}
 
 
-### Test Case 1.5: Submit a long-running task (for kill/force test)
+### Test Case 2.2: Submit a long-running task (for kill/force test)
 POST {{agent001.baseUrl}}/api/v1/agent/submit
 Content-Type: application/json
 
