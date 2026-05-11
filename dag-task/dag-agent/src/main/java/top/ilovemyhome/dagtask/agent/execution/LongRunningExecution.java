@@ -22,9 +22,10 @@ public class LongRunningExecution implements TaskExecution {
                 throw new IllegalArgumentException("Input param is not correct! Required: durationSeconds > 0");
             }
             Thread.sleep(param.durationSeconds() * 1000L);
-            logger.info("Executed successfully!");
+            logger.info("TaskId={} executed successfully!", taskId);
             return TaskOutput.success(taskId, "OK");
         } catch (Throwable t) {
+            logger.info("TaskId={} executed failure!", taskId);
             logger.warn(t.getMessage(), t);
             return TaskOutput.fail(taskId, null, t.getMessage());
         }
