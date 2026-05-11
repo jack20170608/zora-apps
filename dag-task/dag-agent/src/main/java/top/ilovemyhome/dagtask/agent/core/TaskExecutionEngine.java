@@ -74,7 +74,7 @@ public class TaskExecutionEngine {
     /**
      * Record representing a task waiting in the pending queue.
      */
-    public record PendingTask(Long taskId, TaskExecution execution, TaskInput input) {
+    public record PendingTask(Long taskId, TaskExecution execution, TaskInput input, boolean reportResult) {
     }
 
     /**
@@ -303,9 +303,13 @@ public class TaskExecutionEngine {
 
             List<TaskExecuteResult> results = null;
             try {
-                results = remainingPending.stream().map(p -> TaskExecuteResult.of(config.getAgentId(), p.taskId, false, "Task was pending when agent shutdown, never executed"))
+                results = remainingPending.stream()
+                    .filter(p -> p.reportResult())
+                    .map(p -> TaskExecuteResult.of(config.getAgentId(), p.taskId, false, "Task was pending when agent shutdown, never executed"))
                     .toList();
-                agentSchedulerClient.reportTaskResult(results);
+                if (!results.isEmpty()) {
+                    agentSchedulerClient.reportTaskResult(results);
+                }
                 pendingTaskIds.clear();
             } catch (Exception e) {
                 logger.error("Failed to report pending task {} as failed during shutdown", results, e);
@@ -441,7 +445,7 @@ public class TaskExecutionEngine {
      * @param inputJson      the input JSON (can be null)
      * @return submission result indicating if accepted and why
      */
-    public SubmissionResult submit(Long taskId, String executionClass, String inputJson) {
+    public SubmissionResult submit(Long taskId, String executionClass, String inputJson, boolean reportResult) {
         // Check for duplicate task ID - O(1) check using indexes
         if (runningTasks.containsKey(taskId) || pendingTaskIds.contains(taskId)) {
             return SubmissionResult.duplicate(taskId);
@@ -462,7 +466,7 @@ public class TaskExecutionEngine {
         }
 
         // Try to add to pending queue
-        PendingTask pendingTask = new PendingTask(taskId, execution, input);
+        PendingTask pendingTask = new PendingTask(taskId, execution, input, reportResult);
         boolean added = pendingQueue.offer(pendingTask);
         if (!added) {
             return SubmissionResult.queueFull(config.getMaxPendingTasks(), pendingQueue.size());
@@ -518,10 +522,25 @@ public class TaskExecutionEngine {
     public ForceOkResult forceOk(Long taskId) {
         // Remove from pending
         if (pendingTaskIds.contains(taskId)) {
-            boolean removed = pendingQueue.removeIf(p -> p.taskId().equals(taskId));
-            if (removed) {
+            PendingTask removed = null;
+            Iterator<PendingTask> it = pendingQueue.iterator();
+            while (it.hasNext()) {
+                PendingTask p = it.next();
+                if (p.taskId().equals(taskId)) {
+                    it.remove();
+                    removed = p;
+                    break;
+                }
+            }
+            if (removed != null) {
                 pendingTaskIds.remove(taskId);
                 logger.info("Task {} force-ok from pending queue", taskId);
+                if (removed.reportResult()) {
+                    var report = new TaskExecuteResult(
+                        config.getAgentId(), taskId, true, "{\"forced\":true}", java.time.Instant.now()
+                    );
+                    reportResult(report);
+                }
                 finishInterrupted(taskId, true);
                 return ForceOkResult.successFromPending(taskId);
             }
@@ -533,6 +552,12 @@ public class TaskExecutionEngine {
         if (runningTask != null) {
             runningTask.future().cancel(true);
             logger.info("Task {} force-ok from running", taskId);
+            if (runningTask.pendingTask().reportResult()) {
+                var report = new TaskExecuteResult(
+                    config.getAgentId(), taskId, true, "{\"forced\":true}", java.time.Instant.now()
+                );
+                reportResult(report);
+            }
             finishInterrupted(taskId, true);
             return ForceOkResult.successFromRunning(taskId);
         }
@@ -549,10 +574,25 @@ public class TaskExecutionEngine {
     public ForceNokResult forceNok(Long taskId) {
         // Remove from pending
         if (pendingTaskIds.contains(taskId)) {
-            boolean removed = pendingQueue.removeIf(p -> p.taskId().equals(taskId));
-            if (removed) {
+            PendingTask removed = null;
+            Iterator<PendingTask> it = pendingQueue.iterator();
+            while (it.hasNext()) {
+                PendingTask p = it.next();
+                if (p.taskId().equals(taskId)) {
+                    it.remove();
+                    removed = p;
+                    break;
+                }
+            }
+            if (removed != null) {
                 pendingTaskIds.remove(taskId);
                 logger.info("Task {} force-nok from pending queue", taskId);
+                if (removed.reportResult()) {
+                    var report = new TaskExecuteResult(
+                        config.getAgentId(), taskId, false, "{\"forced\":false}", java.time.Instant.now()
+                    );
+                    reportResult(report);
+                }
                 finishInterrupted(taskId, false);
                 return ForceNokResult.successFromPending(taskId);
             }
@@ -564,6 +604,12 @@ public class TaskExecutionEngine {
         if (runningTask != null) {
             runningTask.future().cancel(true);
             logger.info("Task {} force-nok from running", taskId);
+            if (runningTask.pendingTask().reportResult()) {
+                var report = new TaskExecuteResult(
+                    config.getAgentId(), taskId, false, "{\"forced\":false}", java.time.Instant.now()
+                );
+                reportResult(report);
+            }
             finishInterrupted(taskId, false);
             return ForceNokResult.successFromRunning(taskId);
         }
@@ -663,6 +709,7 @@ public class TaskExecutionEngine {
         Long taskId = pendingTask.taskId();
         TaskExecution execution = pendingTask.execution();
         TaskInput input = pendingTask.input();
+        boolean reportResult = pendingTask.reportResult();
         long startTime = System.currentTimeMillis();
 
         try {
@@ -670,23 +717,27 @@ public class TaskExecutionEngine {
             TaskOutput output = execution.execute(input);
             long duration = System.currentTimeMillis() - startTime;
             logger.info("Completed execution of task {} in {}ms", taskId, duration);
-            var report = new TaskExecuteResult(
-                config.getAgentId(), taskId, output.isSuccess(), serializeOutput(output), null
-            );
-            // Offer to report queue, if queue full persist directly to dead letter (don't drop)
-            if (!resultReportQueue.offer(report)) {
-                logger.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
-                persistToDeadLetterFile(List.of(report));
+            if (reportResult) {
+                var report = new TaskExecuteResult(
+                    config.getAgentId(), taskId, output.isSuccess(), serializeOutput(output), null
+                );
+                // Offer to report queue, if queue full persist directly to dead letter (don't drop)
+                if (!resultReportQueue.offer(report)) {
+                    logger.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
+                    persistToDeadLetterFile(List.of(report));
+                }
             }
             finishTask(taskId, true, output.isSuccess(), duration);
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
             logger.error("Task {} execution failed after {}ms", taskId, duration, e);
-            var report = new TaskExecuteResult(config.getAgentId(), taskId, false, e.getMessage());
-            // Offer to report queue, if queue full persist directly to dead letter (don't drop)
-            if (!resultReportQueue.offer(report)) {
-                logger.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
-                persistToDeadLetterFile(List.of(report));
+            if (reportResult) {
+                var report = new TaskExecuteResult(config.getAgentId(), taskId, false, e.getMessage());
+                // Offer to report queue, if queue full persist directly to dead letter (don't drop)
+                if (!resultReportQueue.offer(report)) {
+                    logger.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
+                    persistToDeadLetterFile(List.of(report));
+                }
             }
             finishTask(taskId, false, false, duration);
         }

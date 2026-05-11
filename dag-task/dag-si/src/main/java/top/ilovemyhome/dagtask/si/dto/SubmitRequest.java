@@ -27,6 +27,6 @@ public record SubmitRequest(
     }
 
     public SubmitRequest(Long taskId, TaskType taskType, String executionClass, String input){
-        this(taskId, taskType, null, PriorityType.NORMAL, executionClass, input, "SYSTEM", Instant.now(), false);
+        this(taskId, taskType, null, PriorityType.NORMAL, executionClass, input, "SYSTEM", Instant.now(), true);
     }
 }
