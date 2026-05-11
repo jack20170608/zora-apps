@@ -50,7 +50,9 @@ Content-Type: application/json
     "priorityType": "NORMAL",
     "executionClass": "top.ilovemyhome.dagtask.agent.execution.LongRunningExecution",
     "input": "{\"durationSeconds\": 60, \"description\": \"Long running test task\"}",
-    "dealer": "scheduler-001"
+    "dealer": "scheduler-001",
+    "requestDt": "2025-05-10T12:01:00Z",
+    "reportResult": false
 }
 
 > {%
