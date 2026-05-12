@@ -19,6 +19,8 @@ public class AgentConfiguration {
         System.getProperty("user.home"), ".dag-agent").toString();
     private static final String DEFAULT_DEAD_LETTER_DIR = Path.of(
         DEFAULT_BASE_DIR, "dead-letter").toString();
+    private static final String DEFAULT_TASK_LOG_DIR = Path.of(
+        DEFAULT_BASE_DIR, "logs").toString();
 
     private static final Config DEFAULTS = ConfigFactory.parseString("""
         agentName = ""
@@ -54,6 +56,10 @@ public class AgentConfiguration {
             config.deadLetterPersistencePath = DEFAULT_DEAD_LETTER_DIR;
         }
         createDirectory(config.deadLetterPersistencePath);
+        if (config.taskLogDir == null || config.taskLogDir.isBlank()) {
+            config.taskLogDir = DEFAULT_TASK_LOG_DIR;
+        }
+        createDirectory(config.taskLogDir);
     }
 
     private static void createDirectory(String path) {

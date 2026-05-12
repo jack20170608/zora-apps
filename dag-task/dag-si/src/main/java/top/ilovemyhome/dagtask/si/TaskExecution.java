@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
  * Each implementation receives a {@link TaskInput} containing the task parameters
  * and a {@link TaskLogWriter} for per-task logging.
  */
+@FunctionalInterface
 public interface TaskExecution {
 
     Logger logger = LoggerFactory.getLogger(TaskExecution.class);
