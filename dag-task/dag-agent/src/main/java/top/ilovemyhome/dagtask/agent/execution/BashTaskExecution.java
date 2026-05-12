@@ -41,11 +41,6 @@ public class BashTaskExecution implements TaskExecution {
     private static final int DESTROY_GRACE_PERIOD_SECONDS = 5;
 
     @Override
-    public TaskOutput execute(TaskInput input) {
-        return execute(input, null);
-    }
-
-    @Override
     public TaskOutput execute(TaskInput input, TaskLogWriter logWriter) {
         Long taskId = input.taskId();
         try {

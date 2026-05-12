@@ -3,19 +3,21 @@ package top.ilovemyhome.dagtask.si;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@FunctionalInterface
+/**
+ * Functional interface for task execution.
+ * Each implementation receives a {@link TaskInput} containing the task parameters
+ * and a {@link TaskLogWriter} for per-task logging.
+ */
 public interface TaskExecution {
 
     Logger logger = LoggerFactory.getLogger(TaskExecution.class);
 
-    TaskOutput execute(TaskInput input);
-
     /**
-     * Execute a task with a {@link TaskLogWriter} for per-task logging.
-     * Implementations that support per-task logging should override this method.
-     * Default implementation delegates to {@link #execute(TaskInput)} for backward compatibility.
+     * Execute a task with the given input and log writer.
+     *
+     * @param input     the task input containing parameters
+     * @param logWriter the per-task log writer; may be null if per-task logging is disabled
+     * @return the task execution output
      */
-    default TaskOutput execute(TaskInput input, TaskLogWriter logWriter) {
-        return execute(input);
-    }
+    TaskOutput execute(TaskInput input, TaskLogWriter logWriter);
 }

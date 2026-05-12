@@ -15,7 +15,7 @@ class BashTaskExecutionTest {
         String inputJson = "{\"script\":\"echo hello\"}";
         TaskInput input = TaskInput.of(1L, inputJson, null);
 
-        TaskOutput output = execution.execute(input);
+        TaskOutput output = execution.execute(input, null);
 
         assertThat(output.isSuccess()).isTrue();
         assertThat(output.output()).isInstanceOf(BashTaskExecution.Result.class);
@@ -30,7 +30,7 @@ class BashTaskExecutionTest {
         String inputJson = "{\"script\":\"sleep 10\",\"timeoutSeconds\":1}";
         TaskInput input = TaskInput.of(2L, inputJson, null);
 
-        TaskOutput output = execution.execute(input);
+        TaskOutput output = execution.execute(input, null);
 
         assertThat(output.isSuccess()).isFalse();
         BashTaskExecution.Result result = (BashTaskExecution.Result) output.output();
@@ -42,7 +42,7 @@ class BashTaskExecutionTest {
         String inputJson = "{\"script\":\"exit 1\"}";
         TaskInput input = TaskInput.of(3L, inputJson, null);
 
-        TaskOutput output = execution.execute(input);
+        TaskOutput output = execution.execute(input, null);
 
         assertThat(output.isSuccess()).isFalse();
         BashTaskExecution.Result result = (BashTaskExecution.Result) output.output();
@@ -55,7 +55,7 @@ class BashTaskExecutionTest {
         String inputJson = "{\"script\":\"pwd\",\"workingDirectory\":\"/tmp\"}";
         TaskInput input = TaskInput.of(4L, inputJson, null);
 
-        TaskOutput output = execution.execute(input);
+        TaskOutput output = execution.execute(input, null);
 
         assertThat(output.isSuccess()).isTrue();
         BashTaskExecution.Result result = (BashTaskExecution.Result) output.output();
@@ -74,7 +74,7 @@ class BashTaskExecutionTest {
         String inputJson = "{\"script\":\"echo $MY_VAR\",\"env\":{\"MY_VAR\":\"hello\"}}";
         TaskInput input = TaskInput.of(5L, inputJson, null);
 
-        TaskOutput output = execution.execute(input);
+        TaskOutput output = execution.execute(input, null);
 
         assertThat(output.isSuccess()).isTrue();
         BashTaskExecution.Result result = (BashTaskExecution.Result) output.output();
@@ -87,7 +87,7 @@ class BashTaskExecutionTest {
         String inputJson = "{\"script\":\"\"}";
         TaskInput input = TaskInput.of(6L, inputJson, null);
 
-        TaskOutput output = execution.execute(input);
+        TaskOutput output = execution.execute(input, null);
 
         assertThat(output.isSuccess()).isFalse();
         assertThat(output.message()).contains("script");
@@ -98,7 +98,7 @@ class BashTaskExecutionTest {
         String inputJson = "{\"script\":\"echo hello\",\"timeoutSeconds\":-1}";
         TaskInput input = TaskInput.of(7L, inputJson, null);
 
-        TaskOutput output = execution.execute(input);
+        TaskOutput output = execution.execute(input, null);
 
         assertThat(output.isSuccess()).isFalse();
         assertThat(output.message()).contains("timeoutSeconds");
@@ -109,7 +109,7 @@ class BashTaskExecutionTest {
         String inputJson = "{\"script\":\"echo error >&2\"}";
         TaskInput input = TaskInput.of(8L, inputJson, null);
 
-        TaskOutput output = execution.execute(input);
+        TaskOutput output = execution.execute(input, null);
 
         assertThat(output.isSuccess()).isTrue();
         BashTaskExecution.Result result = (BashTaskExecution.Result) output.output();

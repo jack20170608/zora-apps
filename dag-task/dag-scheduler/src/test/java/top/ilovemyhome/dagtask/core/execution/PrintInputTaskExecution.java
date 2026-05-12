@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
+import top.ilovemyhome.dagtask.si.TaskLogWriter;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 
 public class PrintInputTaskExecution implements TaskExecution {
@@ -11,11 +12,10 @@ public class PrintInputTaskExecution implements TaskExecution {
     private static final Logger logger = LoggerFactory.getLogger(PrintInputTaskExecution.class);
 
     @Override
-    public TaskOutput execute(TaskInput input) {
+    public TaskOutput execute(TaskInput input, TaskLogWriter logWriter) {
         logger.info("Input is [{}].", input);
         String in = (String) input.input();
         return TaskOutput.success(input.taskId(), in + "->" + getClass().getSimpleName());
     }
-
 
 }

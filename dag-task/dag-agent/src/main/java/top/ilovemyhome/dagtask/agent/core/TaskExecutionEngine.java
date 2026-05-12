@@ -726,12 +726,7 @@ public class TaskExecutionEngine {
 
         try {
             logger.info("Starting execution of task {}", taskId);
-            TaskOutput output;
-            if (logWriter != null) {
-                output = execution.execute(input, logWriter);
-            } else {
-                output = execution.execute(input);
-            }
+            TaskOutput output = execution.execute(input, logWriter);
             long duration = System.currentTimeMillis() - startTime;
             logger.info("Completed execution of task {} in {}ms", taskId, duration);
             if (reportResult) {
