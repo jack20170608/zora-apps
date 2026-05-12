@@ -24,6 +24,7 @@ public class AgentConfiguration {
         agentName = ""
         deadLetterPersistencePath = ""
         token = ""
+        taskLogDir = ""
         supportedExecutionKeys = []
         generateToken = false
         autoRegister = true
@@ -41,6 +42,7 @@ public class AgentConfiguration {
     private int maxPendingTasks = 100;
     private String deadLetterPersistencePath;
     private String token = null;
+    private String taskLogDir = "";
     private List<String> supportedExecutionKeys = new ArrayList<>();
 
     // Required for Typesafe Config bean reflection
@@ -73,6 +75,7 @@ public class AgentConfiguration {
         this.maxPendingTasks = builder.maxPendingTasks;
         this.deadLetterPersistencePath = builder.deadLetterPersistencePath;
         this.token = builder.token;
+        this.taskLogDir = builder.taskLogDir;
         if (builder.supportedExecutionKeys != null) {
             this.supportedExecutionKeys = new ArrayList<>(builder.supportedExecutionKeys);
         }
@@ -168,6 +171,14 @@ public class AgentConfiguration {
         this.token = token;
     }
 
+    public String getTaskLogDir() {
+        return taskLogDir;
+    }
+
+    public void setTaskLogDir(String taskLogDir) {
+        this.taskLogDir = taskLogDir;
+    }
+
     public String getBaseUrl() {
         return agentUrl;
     }
@@ -218,6 +229,7 @@ public class AgentConfiguration {
                 ", maxPendingTasks=" + maxPendingTasks +
                 ", deadLetterPersistencePath='" + deadLetterPersistencePath + '\'' +
                 ", hasToken=" + (token != null && !token.isEmpty()) +
+                ", taskLogDir='" + taskLogDir + '\'' +
                 ", supportedExecutionKeysCount=" + supportedExecutionKeys.size() +
                 '}';
     }
@@ -234,6 +246,7 @@ public class AgentConfiguration {
         private int maxPendingTasks = 100;
         private String deadLetterPersistencePath;
         private String token;
+        private String taskLogDir;
         private List<String> supportedExecutionKeys;
 
         public Builder agentUrl(String agentUrl) {
@@ -283,6 +296,11 @@ public class AgentConfiguration {
 
         public Builder token(String token) {
             this.token = token;
+            return this;
+        }
+
+        public Builder taskLogDir(String taskLogDir) {
+            this.taskLogDir = taskLogDir;
             return this;
         }
 

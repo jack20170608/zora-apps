@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.agent.dto.*;
+import top.ilovemyhome.dagtask.agent.log.FileTaskLogWriter;
+import top.ilovemyhome.dagtask.si.TaskLogWriter;
 import top.ilovemyhome.dagtask.si.TaskResultReportFailException;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.TaskExecution;
@@ -712,9 +714,24 @@ public class TaskExecutionEngine {
         boolean reportResult = pendingTask.reportResult();
         long startTime = System.currentTimeMillis();
 
+        TaskLogWriter logWriter = null;
+        String taskLogDir = config.getTaskLogDir();
+        if (taskLogDir != null && !taskLogDir.isBlank()) {
+            try {
+                logWriter = new FileTaskLogWriter(taskId, taskLogDir);
+            } catch (Exception e) {
+                logger.warn("Failed to create task log writer for taskId={}, taskLogDir={}, continuing without per-task log", taskId, taskLogDir, e);
+            }
+        }
+
         try {
             logger.info("Starting execution of task {}", taskId);
-            TaskOutput output = execution.execute(input);
+            TaskOutput output;
+            if (logWriter != null) {
+                output = execution.execute(input, logWriter);
+            } else {
+                output = execution.execute(input);
+            }
             long duration = System.currentTimeMillis() - startTime;
             logger.info("Completed execution of task {} in {}ms", taskId, duration);
             if (reportResult) {
@@ -740,6 +757,10 @@ public class TaskExecutionEngine {
                 }
             }
             finishTask(taskId, false, false, duration);
+        } finally {
+            if (logWriter != null) {
+                logWriter.close();
+            }
         }
     }
 

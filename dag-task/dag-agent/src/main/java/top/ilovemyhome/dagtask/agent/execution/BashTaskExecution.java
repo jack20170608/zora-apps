@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
+import top.ilovemyhome.dagtask.si.TaskLogWriter;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 
 import java.io.BufferedReader;
@@ -41,21 +42,35 @@ public class BashTaskExecution implements TaskExecution {
 
     @Override
     public TaskOutput execute(TaskInput input) {
+        return execute(input, null);
+    }
+
+    @Override
+    public TaskOutput execute(TaskInput input, TaskLogWriter logWriter) {
         Long taskId = input.taskId();
         try {
             Param param = input.getInputAs(Param.class);
+            if (logWriter != null) {
+                logWriter.info("Starting bash execution for taskId=" + taskId + ", scriptLength=" + param.script().length());
+            }
             logger.info("Starting bash execution for taskId={}, scriptLength={}", taskId, param.script().length());
-            return doExecute(taskId, param);
+            return doExecute(taskId, param, logWriter);
         } catch (IllegalArgumentException e) {
+            if (logWriter != null) {
+                logWriter.error("Invalid input: " + e.getMessage());
+            }
             logger.warn("Invalid input for taskId={}: {}", taskId, e.getMessage());
             return TaskOutput.fail(taskId, null, e.getMessage());
         } catch (Exception e) {
+            if (logWriter != null) {
+                logWriter.error("Unexpected error: " + e.getMessage());
+            }
             logger.error("Unexpected error during bash execution for taskId={}", taskId, e);
             return TaskOutput.createErrorOutput(taskId, e);
         }
     }
 
-    private TaskOutput doExecute(Long taskId, Param param) throws IOException, InterruptedException {
+    private TaskOutput doExecute(Long taskId, Param param, TaskLogWriter logWriter) throws IOException, InterruptedException {
         validate(param);
 
         String shell = param.shell() != null && !param.shell().isBlank() ? param.shell() : "bash";
@@ -72,8 +87,8 @@ public class BashTaskExecution implements TaskExecution {
 
         Process process = pb.start();
 
-        StreamGobbler stdoutGobbler = new StreamGobbler(process.getInputStream());
-        StreamGobbler stderrGobbler = new StreamGobbler(process.getErrorStream());
+        StreamGobbler stdoutGobbler = new StreamGobbler(process.getInputStream(), logWriter, true);
+        StreamGobbler stderrGobbler = new StreamGobbler(process.getErrorStream(), logWriter, false);
         Thread stdoutThread = new Thread(stdoutGobbler, "bash-stdout-" + taskId);
         Thread stderrThread = new Thread(stderrGobbler, "bash-stderr-" + taskId);
         stdoutThread.setDaemon(true);
@@ -86,12 +101,20 @@ public class BashTaskExecution implements TaskExecution {
 
         boolean timedOut = false;
         if (!finishedInTime) {
-            logger.warn("TaskId={} timed out after {} seconds, attempting graceful termination", taskId, timeoutSeconds);
+            String timeoutMsg = "TaskId=" + taskId + " timed out after " + timeoutSeconds + " seconds, attempting graceful termination";
+            if (logWriter != null) {
+                logWriter.warn(timeoutMsg);
+            }
+            logger.warn(timeoutMsg);
             timedOut = true;
             process.destroy();
             boolean destroyed = process.waitFor(DESTROY_GRACE_PERIOD_SECONDS, TimeUnit.SECONDS);
             if (!destroyed) {
-                logger.warn("TaskId={} did not terminate gracefully, forcing termination", taskId);
+                String forceMsg = "TaskId=" + taskId + " did not terminate gracefully, forcing termination";
+                if (logWriter != null) {
+                    logWriter.warn(forceMsg);
+                }
+                logger.warn(forceMsg);
                 process.destroyForcibly();
                 process.waitFor();
             }
@@ -110,9 +133,15 @@ public class BashTaskExecution implements TaskExecution {
             String message = timedOut
                 ? "Task timed out after " + timeoutSeconds + " seconds"
                 : "Task exited with code " + exitCode;
+            if (logWriter != null) {
+                logWriter.error(message);
+            }
             return TaskOutput.fail(taskId, result, message);
         }
 
+        if (logWriter != null) {
+            logWriter.info("Task completed successfully, exitCode=" + exitCode);
+        }
         return TaskOutput.success(taskId, result);
     }
 
@@ -153,13 +182,18 @@ public class BashTaskExecution implements TaskExecution {
 
     /**
      * Consumes an InputStream in a separate thread to prevent pipe buffer deadlock.
+     * Optionally writes each line to a {@link TaskLogWriter}.
      */
     private static class StreamGobbler implements Runnable {
         private final InputStream inputStream;
+        private final TaskLogWriter logWriter;
+        private final boolean isStdout;
         private final StringBuilder output = new StringBuilder();
 
-        StreamGobbler(InputStream inputStream) {
+        StreamGobbler(InputStream inputStream, TaskLogWriter logWriter, boolean isStdout) {
             this.inputStream = inputStream;
+            this.logWriter = logWriter;
+            this.isStdout = isStdout;
         }
 
         @Override
@@ -168,9 +202,19 @@ public class BashTaskExecution implements TaskExecution {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     output.append(line).append(System.lineSeparator());
+                    if (logWriter != null) {
+                        if (isStdout) {
+                            logWriter.stdout(line);
+                        } else {
+                            logWriter.stderr(line);
+                        }
+                    }
                 }
             } catch (IOException e) {
                 output.append("[READ ERROR: ").append(e.getMessage()).append("]");
+                if (logWriter != null) {
+                    logWriter.error("Failed to read stream: " + e.getMessage());
+                }
             }
         }
 
