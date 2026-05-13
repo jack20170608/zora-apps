@@ -3,7 +3,6 @@ package top.ilovemyhome.dagtask.agent.log;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
-import ch.qos.logback.classic.spi.ThrowableProxyUtil;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import top.ilovemyhome.dagtask.si.TaskLogWriter;
 
