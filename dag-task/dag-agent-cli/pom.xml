@@ -10,16 +10,28 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>dag-agent</artifactId>
-    <name>dag-task-agent - DAG Task Executor</name>
-    <description>MuServer-based task executor that executes tasks assigned by the scheduling center and reports execution results back</description>
+    <artifactId>dag-agent-cli</artifactId>
+    <name>dag-agent-cli - DAG Task Agent CLI</name>
+    <description>Command-line tool for triggering single task execution to quickly verify TaskExecution implementations</description>
 
     <dependencies>
-        <!-- DAG Core -->
+        <!-- DAG Agent Core -->
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-agent</artifactId>
+        </dependency>
+        <!-- DAG SI -->
         <dependency>
             <groupId>top.ilovemyhome.dagtask</groupId>
             <artifactId>dag-si</artifactId>
         </dependency>
+
+        <!-- picocli for CLI argument parsing -->
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+        </dependency>
+
         <!-- zora common -->
         <dependency>
             <groupId>top.ilovemyhome.zora</groupId>
@@ -27,35 +39,15 @@
         </dependency>
         <dependency>
             <groupId>top.ilovemyhome.zora</groupId>
-            <artifactId>zora-rdb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>top.ilovemyhome.zora</groupId>
-            <artifactId>zora-httpclient</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>top.ilovemyhome.zora</groupId>
-            <artifactId>zora-static</artifactId>
-        </dependency>
-        <!-- zora json -->
-        <dependency>
-            <groupId>top.ilovemyhome.zora</groupId>
             <artifactId>zora-json</artifactId>
         </dependency>
 
-        <!-- jackson support -->
+        <!-- Jackson -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.jakarta.rs</groupId>
-            <artifactId>jackson-jakarta-rs-json-provider</artifactId>
-        </dependency>
+
         <!-- SLF4J -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -65,7 +57,13 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
+
         <!-- Testing -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -91,14 +89,8 @@
             <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Jakarta RS Runtime Delegate for testing -->
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-client</artifactId>
-            <version>6.2.5.Final</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
+
     <build>
         <resources>
             <resource>
@@ -114,5 +106,15 @@
                 <directory>src/test/resources</directory>
             </testResource>
         </testResources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+        </plugins>
     </build>
 </project>

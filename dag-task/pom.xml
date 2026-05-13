@@ -19,6 +19,7 @@
         <module>dag-admin-muserver</module>
         <module>dag-agent</module>
         <module>dag-agent-muserver</module>
+        <module>dag-agent-cli</module>
         <module>dag-admin-web</module>
     </modules>
 
@@ -77,6 +78,11 @@
             <dependency>
                 <groupId>top.ilovemyhome.dagtask</groupId>
                 <artifactId>dag-admin-web</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>top.ilovemyhome.dagtask</groupId>
+                <artifactId>dag-agent-cli</artifactId>
                 <version>${revision}</version>
             </dependency>
         </dependencies>

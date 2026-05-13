@@ -22,13 +22,14 @@ public class AgentStarter {
 
     public static void start(AgentConfiguration agentConfig, ObjectMapper objectMapper) {
         Objects.requireNonNull(agentConfig, "agentConfig is required");
-        AgentSchedulerClient agentSchedulerClient = new DefaultAgentSchedulerClient(agentConfig, objectMapper);
+        ObjectMapper mapper = Objects.nonNull(objectMapper) ? objectMapper : new ObjectMapper();
+        AgentSchedulerClient agentSchedulerClient = new DefaultAgentSchedulerClient(agentConfig, mapper);
         var executor = Executors.newFixedThreadPool(agentConfig.getMaxConcurrentTasks());
 
         // Create and start agent
         DagTaskAgent agent = new DagTaskAgentBuilder()
                 .config(agentConfig)
-                .objectMapper(Objects.nonNull(objectMapper) ? objectMapper : new ObjectMapper())
+                .objectMapper(mapper)
                 .agentSchedulerClient(agentSchedulerClient)
                 .taskExecutor(executor)
                 .build();

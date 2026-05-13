@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.agent.dto.*;
 import top.ilovemyhome.dagtask.agent.log.FileTaskLogWriter;
+import top.ilovemyhome.dagtask.agent.log.TaskLogContext;
 import top.ilovemyhome.dagtask.si.TaskLogWriter;
 import top.ilovemyhome.dagtask.si.TaskResultReportFailException;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
@@ -460,8 +461,10 @@ public class TaskExecutionEngine {
         }
 
         // Create execution instance
-        TaskExecution execution = TaskFactory.createTaskForExecution(executionClass);
-        if (execution == null) {
+        TaskExecution execution;
+        try {
+            execution = TaskFactory.createTaskForExecution(executionClass);
+        } catch (Exception e) {
             return SubmissionResult.executionCreationFailed(executionClass);
         }
 
@@ -770,6 +773,9 @@ public class TaskExecutionEngine {
 
         TaskExecuteResult result = null;
         try {
+            if (logWriter != null) {
+                TaskLogContext.set(logWriter);
+            }
             logger.info("Starting execution of task {}", taskId);
             TaskOutput output = execution.execute(input, logWriter);
             long duration = System.currentTimeMillis() - startTime;
@@ -798,6 +804,7 @@ public class TaskExecutionEngine {
             }
             finishTask(taskId, false, false, duration);
         } finally {
+            TaskLogContext.clear();
             if (logWriter != null) {
                 logWriter.close();
             }
