@@ -21,12 +21,15 @@ import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.util.*;
+import java.time.Instant;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -67,6 +70,9 @@ public class TaskExecutionEngine {
     private Thread deadLetterRetryThread;
     // Dead letter persistence - directory mode, each failed batch is a separate file
     private File deadLetterPersistenceDir;
+
+    // Futures for submitAndWait() method
+    private final ConcurrentHashMap<Long, CompletableFuture<TaskExecuteResult>> waitFutures = new ConcurrentHashMap<>();
 
     private static final Logger logger = LoggerFactory.getLogger(TaskExecutionEngine.class);
     private static final int DEFAULT_REPORT_QUEUE_CAPACITY = 100;
@@ -480,6 +486,44 @@ public class TaskExecutionEngine {
     }
 
     /**
+     * Submits a task and waits for its completion.
+     *
+     * @param taskId         the task ID
+     * @param executionClass the execution class name to instantiate
+     * @param inputJson      the input JSON (can be null)
+     * @param reportResult   whether to report result to scheduler
+     * @param timeoutMs      timeout in milliseconds
+     * @return the task execution result
+     * @throws TimeoutException     if the task times out
+     * @throws InterruptedException if the wait is interrupted
+     */
+    public TaskExecuteResult submitAndWait(Long taskId, String executionClass, String inputJson,
+                                           boolean reportResult, long timeoutMs)
+            throws TimeoutException, InterruptedException {
+        CompletableFuture<TaskExecuteResult> future = new CompletableFuture<>();
+        waitFutures.put(taskId, future);
+        try {
+            SubmissionResult submissionResult = submit(taskId, executionClass, inputJson, reportResult);
+            if (!submissionResult.accepted()) {
+                TaskExecuteResult failedResult = new TaskExecuteResult(
+                    config.getAgentId(), taskId, false,
+                    "Submission rejected: " + submissionResult.message(), Instant.now()
+                );
+                future.complete(failedResult);
+                return future.get();
+            }
+            return future.get(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (java.util.concurrent.ExecutionException e) {
+            throw new RuntimeException("Unexpected error during task execution wait", e.getCause());
+        } catch (java.util.concurrent.TimeoutException e) {
+            kill(taskId);
+            throw new TimeoutException("Task " + taskId + " timed out after " + timeoutMs + "ms");
+        } finally {
+            waitFutures.remove(taskId);
+        }
+    }
+
+    /**
      * Kills a task (can be in pending or running).
      *
      * @param taskId the task ID to kill
@@ -724,31 +768,32 @@ public class TaskExecutionEngine {
             }
         }
 
+        TaskExecuteResult result = null;
         try {
             logger.info("Starting execution of task {}", taskId);
             TaskOutput output = execution.execute(input, logWriter);
             long duration = System.currentTimeMillis() - startTime;
             logger.info("Completed execution of task {} in {}ms", taskId, duration);
+            result = new TaskExecuteResult(
+                config.getAgentId(), taskId, output.isSuccess(), serializeOutput(output), Instant.now()
+            );
             if (reportResult) {
-                var report = new TaskExecuteResult(
-                    config.getAgentId(), taskId, output.isSuccess(), serializeOutput(output), null
-                );
                 // Offer to report queue, if queue full persist directly to dead letter (don't drop)
-                if (!resultReportQueue.offer(report)) {
+                if (!resultReportQueue.offer(result)) {
                     logger.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
-                    persistToDeadLetterFile(List.of(report));
+                    persistToDeadLetterFile(List.of(result));
                 }
             }
             finishTask(taskId, true, output.isSuccess(), duration);
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
             logger.error("Task {} execution failed after {}ms", taskId, duration, e);
+            result = new TaskExecuteResult(config.getAgentId(), taskId, false, e.getMessage(), Instant.now());
             if (reportResult) {
-                var report = new TaskExecuteResult(config.getAgentId(), taskId, false, e.getMessage());
                 // Offer to report queue, if queue full persist directly to dead letter (don't drop)
-                if (!resultReportQueue.offer(report)) {
+                if (!resultReportQueue.offer(result)) {
                     logger.warn("Result report queue full, persisting report for task {} directly to dead letter", taskId);
-                    persistToDeadLetterFile(List.of(report));
+                    persistToDeadLetterFile(List.of(result));
                 }
             }
             finishTask(taskId, false, false, duration);
@@ -756,6 +801,20 @@ public class TaskExecutionEngine {
             if (logWriter != null) {
                 logWriter.close();
             }
+            notifyWaitFuture(taskId, result);
+        }
+    }
+
+    /**
+     * Notifies the wait future for a task with the execution result.
+     *
+     * @param taskId the task ID
+     * @param result the execution result
+     */
+    private void notifyWaitFuture(Long taskId, TaskExecuteResult result) {
+        CompletableFuture<TaskExecuteResult> future = waitFutures.remove(taskId);
+        if (future != null && !future.isDone()) {
+            future.complete(result);
         }
     }
 

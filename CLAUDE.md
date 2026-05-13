@@ -15,6 +15,7 @@
 - 初始化子模块的时候，同步创建`main/resource`和`test/resource`目录，方便后续存放配置文件和测试资源。
 - 这里的项目都基于zora这个开发框架，开发过程中请参考zora的相关文档和示例代码，确保遵循zora的最佳实践和设计原则。
 - 为每一个子模块都生成`metadata/metadata.json`文件，包含模块的基本信息、功能描述等内容，并把metadata放到resource里面，enable filter，方便后续的维护和管理,metadata文件的格式可以参考以下示例.
+- 所有生成的代码，请不要直接commit 以及push到远程代码仓库，所有代码的提交都由人工完成
 ```json
 {
   "groupId": "@project.groupId@",
