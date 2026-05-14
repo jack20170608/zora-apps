@@ -14,8 +14,8 @@ Execute a task locally without connecting to a scheduler server:
 
 ```bash
 java -jar dag-agent-cli.jar \
-  -e top.ilovemyhome.dagtask.agent.execution.BashTaskExecution \
-  -i '{"script":"echo hello"}'
+  -e top.ilovemyhome.dagtask.agent.execution.ShellTaskExecution \
+  -i '{"command":"echo hello"}'
 ```
 
 ### Scheduler Server Mode
@@ -24,8 +24,8 @@ Execute a task and report the result to a scheduler server:
 
 ```bash
 java -jar dag-agent-cli.jar \
-  -e top.ilovemyhome.dagtask.agent.execution.BashTaskExecution \
-  -i '{"script":"echo hello"}' \
+  -e top.ilovemyhome.dagtask.agent.execution.ShellTaskExecution \
+  -i '{"command":"echo hello"}' \
   -s http://localhost:8080
 ```
 

@@ -1,7 +1,6 @@
 package top.ilovemyhome.dagtask.agent.execution;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import top.ilovemyhome.dagtask.agent.utils.ShellDetector;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 
@@ -15,39 +14,65 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * TaskExecution implementation that executes bash scripts.
+ * TaskExecution implementation that executes shell scripts across multiple platforms.
+ *
+ * <p>
+ * This executor supports bash, sh, cmd.exe, and PowerShell, automatically selecting
+ * the appropriate shell based on the operating system if not explicitly specified.
+ * </p>
  *
  * <p>
  * Input is provided as JSON via {@link TaskInput#input()} with the following structure:
  * <pre>
  * {
- *   "script": "echo hello",
+ *   "command": "echo hello",
  *   "timeoutSeconds": 300,
  *   "workingDirectory": "/tmp",
  *   "env": {"VAR": "value"},
- *   "shell": "bash"
+ *   "shell": "bash"           // Optional: auto-selected if not specified
  * }
  * </pre>
+ *
+ * <p>Shell selection priority:
+ * <ul>
+ *   <li>If "shell" is explicitly provided in input, it will be used</li>
+ *   <li>Otherwise, OS-appropriate shell is auto-selected: bash/sh on Linux/Mac, cmd.exe on Windows</li>
+ * </ul>
+ *
+ * <p>Cross-platform compatibility:
+ * <ul>
+ *   <li>Windows: cmd.exe or PowerShell</li>
+ *   <li>Linux/Mac: bash or sh</li>
+ *   <li>Script syntax should match the target shell</li>
+ * </ul>
  */
-public class BashTaskExecution extends AbstractTaskExecution {
+public class ShellTaskExecution extends AbstractTaskExecution {
 
-    /** Default timeout in seconds if not specified in input. */
+    /**
+     * Default timeout in seconds if not specified in input.
+     */
     private static final int DEFAULT_TIMEOUT_SECONDS = 300;
-    /** Grace period in seconds after destroy() before destroyForcibly(). */
+    /**
+     * Grace period in seconds after destroy() before destroyForcibly().
+     */
     private static final int DESTROY_GRACE_PERIOD_SECONDS = 5;
 
     @Override
     protected TaskOutput doExecute(TaskInput input) {
         Long taskId = input.taskId();
+        var name = input.name();
         try {
             Param param = input.getInputAs(Param.class);
-            logger.info("Starting bash execution for taskId={}, scriptLength={}", taskId, param.script().length());
+            logger.info("Starting shell execution for taskId={}, name={}, OS={}",
+                taskId, name, ShellDetector.getOsName());
+            assert param != null;
+            logger.info("Command: {}", param.command());
             return doExecute(taskId, param);
         } catch (IllegalArgumentException e) {
             logger.error("Invalid input: {}", e.getMessage());
             return TaskOutput.fail(taskId, null, e.getMessage());
         } catch (Exception e) {
-            logger.error("Unexpected error during bash execution for taskId={}", taskId, e);
+            logger.error("Unexpected error during shell execution for taskId={}", taskId, e);
             return TaskOutput.createErrorOutput(taskId, e);
         }
     }
@@ -55,8 +80,14 @@ public class BashTaskExecution extends AbstractTaskExecution {
     private TaskOutput doExecute(Long taskId, Param param) throws IOException, InterruptedException {
         validate(param);
 
-        String shell = param.shell() != null && !param.shell().isBlank() ? param.shell() : "bash";
-        ProcessBuilder pb = new ProcessBuilder(shell, "-c", param.script());
+        // Determine shell: explicit input or auto-detect based on OS
+        String shell = ShellDetector.getDefaultShell();
+
+        logger.info("Using shell: {}", shell);
+
+        // Build command array appropriate for the shell
+        String[] commandArray = ShellDetector.buildCommandArray(shell, param.command());
+        ProcessBuilder pb = new ProcessBuilder(commandArray);
 
         if (param.workingDirectory() != null && !param.workingDirectory().isBlank()) {
             pb.directory(new File(param.workingDirectory()));
@@ -118,8 +149,8 @@ public class BashTaskExecution extends AbstractTaskExecution {
         if (param == null) {
             throw new IllegalArgumentException("Input param is required");
         }
-        if (param.script() == null || param.script().isBlank()) {
-            throw new IllegalArgumentException("script is required and must not be blank");
+        if (param.command() == null || param.command().isBlank()) {
+            throw new IllegalArgumentException("command is required and must not be blank");
         }
         if (param.timeoutSeconds() != null && param.timeoutSeconds() <= 0) {
             throw new IllegalArgumentException("timeoutSeconds must be > 0");
@@ -130,16 +161,15 @@ public class BashTaskExecution extends AbstractTaskExecution {
      * Input parameter DTO for BashTaskExecution.
      */
     public record Param(
-        String script,
+        String command,
         Integer timeoutSeconds,
         String workingDirectory,
-        Map<String, String> env,
-        String shell
+        Map<String, String> env
     ) {
     }
 
     /**
-     * Result record containing the output of the bash script execution.
+     * Result record containing the output of the bash command execution.
      */
     public record Result(
         int exitCode,

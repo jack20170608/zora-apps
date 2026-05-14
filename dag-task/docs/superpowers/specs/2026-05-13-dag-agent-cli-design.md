@@ -137,14 +137,14 @@ Task execution failed:
 **本地验证 BashTaskExecution：**
 ```bash
 java -jar dag-agent-cli.jar \
-  -e top.ilovemyhome.dagtask.agent.execution.BashTaskExecution \
+  -e top.ilovemyhome.dagtask.agent.execution.ShellTaskExecution \
   -i '{"script":"echo hello"}'
 ```
 
 **带 server 上报验证：**
 ```bash
 java -jar dag-agent-cli.jar \
-  -e top.ilovemyhome.dagtask.agent.execution.BashTaskExecution \
+  -e top.ilovemyhome.dagtask.agent.execution.ShellTaskExecution \
   -i '{"script":"echo hello"}' \
   -s http://localhost:8080
 ```
