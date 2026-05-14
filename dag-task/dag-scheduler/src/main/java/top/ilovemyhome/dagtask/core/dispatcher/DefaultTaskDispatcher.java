@@ -338,6 +338,7 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
         // The executionClass is the executionKey - agent uses this to instantiate the correct executor
         SubmitRequest submitRequest = new SubmitRequest(
             task.getId(),
+            task.getName(),
             TaskType.JAVA_CLASS_NAME,
             task.getExecutionKey(),
             task.getInput()
