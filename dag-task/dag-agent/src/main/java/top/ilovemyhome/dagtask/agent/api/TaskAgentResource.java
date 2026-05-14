@@ -110,9 +110,10 @@ public class TaskAgentResource {
         Long taskId = request.taskId();
         String executionClass = request.executionClass();
         String inputJson = request.input();
-        LOGGER.info("Received task submission: taskId={}, executionClass={}, input={}",
-            taskId, executionClass, inputJson);
-        SubmissionResult result = executionEngine.submit(taskId, executionClass, inputJson, request.reportResult());
+        String name = request.name();
+        LOGGER.info("Received task submission: taskId={}, name={}, executionClass={}, input={}",
+            taskId, name, executionClass, inputJson);
+        SubmissionResult result = executionEngine.submit(taskId, name, executionClass, inputJson, request.reportResult());
         if (!result.accepted()) {
             if (result.queueFull()) {
                 return Response.status(Response.Status.TOO_MANY_REQUESTS)

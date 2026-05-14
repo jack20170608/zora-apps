@@ -7,11 +7,7 @@
         </encoder>
     </appender>
 
-    <appender name="TASK_LOG" class="top.ilovemyhome.dagtask.agent.log.TaskLogAppender">
-    </appender>
-
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="TASK_LOG"/>
     </root>
 </configuration>

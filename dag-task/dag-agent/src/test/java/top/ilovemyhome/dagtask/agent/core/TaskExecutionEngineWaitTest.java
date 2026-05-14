@@ -59,7 +59,7 @@ class TaskExecutionEngineWaitTest {
         engine.start();
 
         // When
-        TaskExecuteResult result = engine.submitAndWait(1L, "nonexistent.ExecutionClass", "{}", false, 1000);
+        TaskExecuteResult result = engine.submitAndWait(1L, null, "nonexistent.ExecutionClass", "{}", false, 1000);
 
         // Then
         assertThat(result).isNotNull();
@@ -78,7 +78,7 @@ class TaskExecutionEngineWaitTest {
         String input = "{\"message\": \"Hello World\"}";
 
         // When
-        TaskExecuteResult result = engine.submitAndWait(1L, "top.ilovemyhome.dagtask.agent.execution.EchoExecution", input, false, 1000);
+        TaskExecuteResult result = engine.submitAndWait(1L, null, "top.ilovemyhome.dagtask.agent.execution.EchoExecution", input, false, 1000);
 
         // Then
         assertThat(result).isNotNull();
@@ -98,7 +98,7 @@ class TaskExecutionEngineWaitTest {
 
         // When & Then
         assertThatThrownBy(() ->
-                engine.submitAndWait(1L, "top.ilovemyhome.dagtask.agent.execution.LongRunningExecution", input, false, 100)
+                engine.submitAndWait(1L, null, "top.ilovemyhome.dagtask.agent.execution.LongRunningExecution", input, false, 100)
         ).isInstanceOf(TimeoutException.class)
                 .hasMessageContaining("timed out");
 

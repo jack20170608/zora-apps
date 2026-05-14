@@ -24,7 +24,7 @@ class SubmitRequestTest {
         Instant requestDt = Instant.now().minusSeconds(60);
 
         // When - even though we pass different opsType, it should be forced to SUBMIT
-        SubmitRequest request = new SubmitRequest(taskId, taskType, OpsType.KILL, priority, executionClass, input, dealer, requestDt, true);
+        SubmitRequest request = new SubmitRequest(taskId, null, taskType, OpsType.KILL, priority, executionClass, input, dealer, requestDt, true);
 
         // Then
         assertThat(request.taskId()).isEqualTo(123L);
@@ -47,7 +47,7 @@ class SubmitRequestTest {
         String dealer = "system";
 
         // When
-        SubmitRequest request = new SubmitRequest(taskId, taskType, null, null, executionClass, null, dealer, null, false);
+        SubmitRequest request = new SubmitRequest(taskId, null, taskType, null, null, executionClass, null, dealer, null, false);
 
         // Then
         assertThat(request.taskId()).isEqualTo(456L);
@@ -68,9 +68,9 @@ class SubmitRequestTest {
         TaskType taskType = TaskType.PYTHON_SCRIPTS;
 
         // When passing different ops types
-        SubmitRequest request2 = new SubmitRequest(taskId, taskType, OpsType.KILL, null, "print('hello')", null, "tester", null, false);
-        SubmitRequest request3 = new SubmitRequest(taskId, taskType, OpsType.FORCE_OK, null, "print('hello')", null, "tester", null, false);
-        SubmitRequest request4 = new SubmitRequest(taskId, taskType, OpsType.FORCE_NOK, null, "print('hello')", null, "tester", null, false);
+        SubmitRequest request2 = new SubmitRequest(taskId, null, taskType, OpsType.KILL, null, "print('hello')", null, "tester", null, false);
+        SubmitRequest request3 = new SubmitRequest(taskId, null, taskType, OpsType.FORCE_OK, null, "print('hello')", null, "tester", null, false);
+        SubmitRequest request4 = new SubmitRequest(taskId, null, taskType, OpsType.FORCE_NOK, null, "print('hello')", null, "tester", null, false);
 
         // Then all should be forced to SUBMIT
         assertThat(request2.opsType()).isEqualTo(OpsType.SUBMIT);
@@ -85,7 +85,7 @@ class SubmitRequestTest {
         TaskType taskType = TaskType.GROOVY_SOURCE_CODE;
 
         // When requestDt is null
-        SubmitRequest request = new SubmitRequest(taskId, taskType, null, null, "def execute() { return true }", "{}", "tester", null, false);
+        SubmitRequest request = new SubmitRequest(taskId, null, taskType, null, null, "def execute() { return true }", "{}", "tester", null, false);
 
         // Then
         assertThat(request.requestDt()).isNotNull();
@@ -95,14 +95,14 @@ class SubmitRequestTest {
     @Test
     void testConstructor_withNullTaskId_throwsNpe() {
         // When taskId is null
-        assertThatThrownBy(() -> new SubmitRequest(null, TaskType.JAVA_CLASS_NAME, null, null, "test.Test", null, "tester", null, false))
+        assertThatThrownBy(() -> new SubmitRequest(null, null, TaskType.JAVA_CLASS_NAME, null, null, "test.Test", null, "tester", null, false))
             .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void testConstructor_withNullTaskType_throwsNpe() {
         // When taskType is null
-        assertThatThrownBy(() -> new SubmitRequest(123L, null, null, null, "test.Test", null, "tester", null, false))
+        assertThatThrownBy(() -> new SubmitRequest(123L, null, null, null, null, "test.Test", null, "tester", null, false))
             .isInstanceOf(NullPointerException.class);
     }
 }

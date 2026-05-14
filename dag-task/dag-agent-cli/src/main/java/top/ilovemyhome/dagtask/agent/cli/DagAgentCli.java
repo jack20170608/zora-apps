@@ -60,6 +60,7 @@ public class DagAgentCli {
             engine.start();
             TaskExecuteResult result = engine.submitAndWait(
                 taskId,
+                null,
                 args.getExecutionClass(),
                 args.getInputJson(),
                 reportResult,

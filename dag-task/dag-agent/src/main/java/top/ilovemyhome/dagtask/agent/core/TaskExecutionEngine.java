@@ -7,9 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.agent.dto.*;
-import top.ilovemyhome.dagtask.agent.log.FileTaskLogWriter;
-import top.ilovemyhome.dagtask.agent.log.TaskLogContext;
-import top.ilovemyhome.dagtask.si.TaskLogWriter;
 import top.ilovemyhome.dagtask.si.TaskResultReportFailException;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.TaskExecution;
@@ -454,7 +451,7 @@ public class TaskExecutionEngine {
      * @param inputJson      the input JSON (can be null)
      * @return submission result indicating if accepted and why
      */
-    public SubmissionResult submit(Long taskId, String executionClass, String inputJson, boolean reportResult) {
+    public SubmissionResult submit(Long taskId, String name, String executionClass, String inputJson, boolean reportResult) {
         // Check for duplicate task ID - O(1) check using indexes
         if (runningTasks.containsKey(taskId) || pendingTaskIds.contains(taskId)) {
             return SubmissionResult.duplicate(taskId);
@@ -471,7 +468,7 @@ public class TaskExecutionEngine {
         // Parse input
         TaskInput input;
         try {
-            input = TaskInput.of(taskId, inputJson, null);
+            input = TaskInput.of(taskId, name, inputJson, null);
         } catch (Exception e) {
             return SubmissionResult.inputParseFailed(e.getMessage());
         }
@@ -500,13 +497,13 @@ public class TaskExecutionEngine {
      * @throws TimeoutException     if the task times out
      * @throws InterruptedException if the wait is interrupted
      */
-    public TaskExecuteResult submitAndWait(Long taskId, String executionClass, String inputJson,
+    public TaskExecuteResult submitAndWait(Long taskId, String name, String executionClass, String inputJson,
                                            boolean reportResult, long timeoutMs)
             throws TimeoutException, InterruptedException {
         CompletableFuture<TaskExecuteResult> future = new CompletableFuture<>();
         waitFutures.put(taskId, future);
         try {
-            SubmissionResult submissionResult = submit(taskId, executionClass, inputJson, reportResult);
+            SubmissionResult submissionResult = submit(taskId, name, executionClass, inputJson, reportResult);
             if (!submissionResult.accepted()) {
                 TaskExecuteResult failedResult = new TaskExecuteResult(
                     config.getAgentId(), taskId, false,
@@ -757,27 +754,14 @@ public class TaskExecutionEngine {
     private void executeTask(PendingTask pendingTask) {
         Long taskId = pendingTask.taskId();
         TaskExecution execution = pendingTask.execution();
-        TaskInput input = pendingTask.input();
+        TaskInput input = enrichInputWithLogDir(pendingTask.input());
         boolean reportResult = pendingTask.reportResult();
         long startTime = System.currentTimeMillis();
 
-        TaskLogWriter logWriter = null;
-        String taskLogDir = config.getTaskLogDir();
-        if (taskLogDir != null && !taskLogDir.isBlank()) {
-            try {
-                logWriter = new FileTaskLogWriter(taskId, taskLogDir);
-            } catch (Exception e) {
-                logger.warn("Failed to create task log writer for taskId={}, taskLogDir={}, continuing without per-task log", taskId, taskLogDir, e);
-            }
-        }
-
         TaskExecuteResult result = null;
         try {
-            if (logWriter != null) {
-                TaskLogContext.set(logWriter);
-            }
             logger.info("Starting execution of task {}", taskId);
-            TaskOutput output = execution.execute(input, logWriter);
+            TaskOutput output = execution.execute(input);
             long duration = System.currentTimeMillis() - startTime;
             logger.info("Completed execution of task {} in {}ms", taskId, duration);
             result = new TaskExecuteResult(
@@ -804,12 +788,21 @@ public class TaskExecutionEngine {
             }
             finishTask(taskId, false, false, duration);
         } finally {
-            TaskLogContext.clear();
-            if (logWriter != null) {
-                logWriter.close();
-            }
             notifyWaitFuture(taskId, result);
         }
+    }
+
+    private TaskInput enrichInputWithLogDir(TaskInput input) {
+        String taskLogDir = config.getTaskLogDir();
+        if (taskLogDir == null || taskLogDir.isBlank()) {
+            return input;
+        }
+        java.util.Map<String, String> attrs = new java.util.HashMap<>();
+        if (input.attributes() != null) {
+            attrs.putAll(input.attributes());
+        }
+        attrs.put("taskLogDir", taskLogDir);
+        return TaskInput.of(input.taskId(), input.name(), input.input(), attrs);
     }
 
     /**

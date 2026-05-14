@@ -7,10 +7,10 @@ import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import java.util.Map;
 import java.util.Objects;
 
-public record TaskInput(Long taskId, String input, Map<String, String> attributes) {
+public record TaskInput(Long taskId, String name, String input, Map<String, String> attributes) {
 
-    public static TaskInput of(Long taskId, String input, Map<String, String> attributes) {
-        return new TaskInput(taskId, input, attributes);
+    public static TaskInput of(Long taskId, String name, String input, Map<String, String> attributes) {
+        return new TaskInput(taskId, name, input, attributes);
     }
 
     public <T> T getInputAs(Class<T> type) {

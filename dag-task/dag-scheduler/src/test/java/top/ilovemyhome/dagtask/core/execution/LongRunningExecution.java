@@ -3,7 +3,6 @@ package top.ilovemyhome.dagtask.core.execution;
 import org.apache.commons.lang3.ThreadUtils;
 import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
-import top.ilovemyhome.dagtask.si.TaskLogWriter;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 
 import java.time.Duration;
@@ -11,7 +10,7 @@ import java.time.Duration;
 public class LongRunningExecution implements TaskExecution {
 
     @Override
-    public TaskOutput execute(TaskInput input, TaskLogWriter logWriter) {
+    public TaskOutput execute(TaskInput input) {
         String in = (String) input.input();
         Long taskId = input.taskId();
         ThreadUtils.sleepQuietly(Duration.ofSeconds(2));

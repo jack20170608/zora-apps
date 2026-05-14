@@ -9,6 +9,7 @@ import java.util.Objects;
 
 public record SubmitRequest(
     Long taskId
+    , String name
     , TaskType taskType
     , OpsType opsType
     , PriorityType priorityType
@@ -26,7 +27,7 @@ public record SubmitRequest(
         requestDt = requestDt == null ? Instant.now()  : requestDt;
     }
 
-    public SubmitRequest(Long taskId, TaskType taskType, String executionClass, String input){
-        this(taskId, taskType, null, PriorityType.NORMAL, executionClass, input, "SYSTEM", Instant.now(), true);
+    public SubmitRequest(Long taskId, String name, TaskType taskType, String executionClass, String input){
+        this(taskId, name, taskType, null, PriorityType.NORMAL, executionClass, input, "SYSTEM", Instant.now(), true);
     }
 }
