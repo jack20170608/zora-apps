@@ -1,6 +1,7 @@
 package top.ilovemyhome.dagtask.agent.cli;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -11,6 +12,7 @@ import top.ilovemyhome.dagtask.agent.core.TaskExecutionEngine;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
@@ -46,6 +48,7 @@ public class DagAgentCli {
         String serverUrl = args.getServerUrl();
         boolean reportResult = serverUrl != null && !serverUrl.isBlank();
 
+        long now = System.currentTimeMillis();
         AgentConfiguration config = buildConfiguration(agentId, serverUrl, args.getTaskLogDir());
         AgentSchedulerClient client = buildClient(config, serverUrl);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -53,14 +56,15 @@ public class DagAgentCli {
         var executor = Executors.newFixedThreadPool(1);
         TaskExecutionEngine engine = new TaskExecutionEngine(config, client, executor, objectMapper);
 
-        long taskId = 1L;
-        long startTime = System.currentTimeMillis();
+        var taskId = Objects.isNull(args.getId()) ? now : args.getId();
+        var startTime = now;
+        var taskName = StringUtils.isNotBlank(args.getName()) ? args.getName() : "cli-task";
 
         try {
             engine.start();
             TaskExecuteResult result = engine.submitAndWait(
                 taskId,
-                null,
+                taskName,
                 args.getExecutionClass(),
                 args.getInputJson(),
                 reportResult,

@@ -2,6 +2,7 @@ package top.ilovemyhome.dagtask.agent.cli;
 
 import org.junit.jupiter.api.Test;
 import top.ilovemyhome.dagtask.agent.execution.EchoExecution;
+import top.ilovemyhome.dagtask.agent.execution.SimpleCounterExecution;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,37 +10,54 @@ class DagAgentCliTest {
 
     @Test
     void shouldExecuteSuccessfully_WithLocalMode() {
-        CliArguments args = new CliArguments();
-        setField(args, "executionClass", EchoExecution.class.getName());
-        setField(args, "inputJson", "{\"message\":\"hello\"}");
-        setField(args, "agentId", "test-cli-agent");
-        setField(args, "timeoutMs", 30000L);
-
+        CliArguments args = CliArguments.builder()
+            .withId(1000L)
+            .withName("EchoTask")
+            .withAgentId("test-cli-agent")
+            .withInputJson("""
+                {
+                    "message": "hello"
+                }
+                """)
+            .withExecutionClass(EchoExecution.class.getCanonicalName())
+            .withTimeoutMs(30 * 1000L)
+            .build();
         int exitCode = DagAgentCli.execute(args);
+        assertThat(exitCode).isEqualTo(0);
+    }
 
+
+    @Test
+    void shouldExecuteSuccessfully_WithRemoteMode() {
+        CliArguments args = CliArguments.builder()
+            .withId(1000L)
+            .withName("CounterTask")
+            .withInputJson("""
+                {
+                "from" : 1,
+                "to": 100,
+                "intervalMillisecond" : 10
+                }
+                """)
+            .withExecutionClass(SimpleCounterExecution.class.getCanonicalName())
+            .withTimeoutMs(30 * 1000L)
+            .build();
+        int exitCode = DagAgentCli.execute(args);
         assertThat(exitCode).isEqualTo(0);
     }
 
     @Test
     void shouldReturnNonZero_WhenExecutionFails() {
-        CliArguments args = new CliArguments();
-        setField(args, "executionClass", "nonexistent.Class");
-        setField(args, "inputJson", "{}");
-        setField(args, "agentId", "test-cli-agent");
-        setField(args, "timeoutMs", 30000L);
-
+        CliArguments args = CliArguments.builder()
+            .withAgentId("test-cli-agent")
+            .withInputJson("""
+                {}
+                """)
+            .withExecutionClass("NotExistsClass.class")
+            .withTimeoutMs(30 * 1000L)
+            .build();
         int exitCode = DagAgentCli.execute(args);
-
         assertThat(exitCode).isEqualTo(1);
     }
 
-    private void setField(Object target, String fieldName, Object value) {
-        try {
-            java.lang.reflect.Field field = CliArguments.class.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

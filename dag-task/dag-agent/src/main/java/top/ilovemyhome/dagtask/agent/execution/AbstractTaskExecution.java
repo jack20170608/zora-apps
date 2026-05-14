@@ -68,7 +68,7 @@ public abstract class AbstractTaskExecution implements TaskExecution {
         }
 
         LoggerContext ctx = (LoggerContext) LoggerFactory.getILoggerFactory();
-        String loggerName = "task." + taskId;
+        String loggerName = String.format("%s_%s_%s.log", input.name(), taskId, TS_FMT.format(LocalDateTime.now()));
         ch.qos.logback.classic.Logger taskLogger = ctx.getLogger(loggerName);
 
         taskLogger.detachAndStopAllAppenders();
