@@ -28,7 +28,7 @@ class DagAgentCliTest {
 
 
     @Test
-    void shouldExecuteSuccessfully_WithRemoteMode() {
+    void shouldExecuteSuccessfullyForSimpleCounterExecution() {
         CliArguments args = CliArguments.builder()
             .withId(1000L)
             .withName("CounterTask")
@@ -44,6 +44,31 @@ class DagAgentCliTest {
             .build();
         int exitCode = DagAgentCli.execute(args);
         assertThat(exitCode).isEqualTo(0);
+    }
+
+    @Test
+    void shouldExecuteFailureForSimpleCounterExecution() {
+        CliArguments args = CliArguments.builder()
+            .withId(1000L)
+            .withName("CounterTask")
+            .withInputJson("""
+                {
+                "from" : 200,
+                "to": 100,
+                "intervalMillisecond" : 10
+                }
+                """)
+            .withExecutionClass(SimpleCounterExecution.class.getCanonicalName())
+            .withTimeoutMs(30 * 1000L)
+            .build();
+        int exitCode = DagAgentCli.execute(args);
+        assertThat(exitCode).isEqualTo(1);
+    }
+
+
+    @Test
+    void testLongRunningTask(){
+
     }
 
     @Test
