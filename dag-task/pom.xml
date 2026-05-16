@@ -20,7 +20,6 @@
         <module>dag-agent</module>
         <module>dag-agent-muserver</module>
         <module>dag-agent-cli</module>
-        <module>dag-admin-web</module>
     </modules>
 
     <properties>
