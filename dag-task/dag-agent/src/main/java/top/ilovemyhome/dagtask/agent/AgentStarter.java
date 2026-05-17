@@ -22,6 +22,7 @@ public class AgentStarter {
 
     public static void start(AgentConfiguration agentConfig, ObjectMapper objectMapper) {
         Objects.requireNonNull(agentConfig, "agentConfig is required");
+        syncLogDirToSystemProperty(agentConfig);
         ObjectMapper mapper = Objects.nonNull(objectMapper) ? objectMapper : new ObjectMapper();
         AgentSchedulerClient agentSchedulerClient = new DefaultAgentSchedulerClient(agentConfig, mapper);
         var executor = Executors.newFixedThreadPool(agentConfig.getMaxConcurrentTasks());
@@ -37,5 +38,16 @@ public class AgentStarter {
 
         // Add shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(agent::stop));
+    }
+
+    /**
+     * Exposes the configured task log directory to logback via system property.
+     * Must run before logback initializes its appenders.
+     */
+    private static void syncLogDirToSystemProperty(AgentConfiguration agentConfig) {
+        String logDir = agentConfig.getTaskLogDir();
+        if (logDir != null && !logDir.isBlank()) {
+            System.setProperty("LOG_DIR", logDir);
+        }
     }
 }

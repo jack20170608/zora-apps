@@ -1,5 +1,9 @@
 <configuration>
 
+    <!-- Log directory: override via -DLOG_DIR=/var/log/dag-agent or env var LOG_DIR -->
+    <property name="LOG_DIR" value="${LOG_DIR:-./logs}"/>
+
+    <!-- Console appender for development / container environments -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <charset>UTF-8</charset>
@@ -7,7 +11,61 @@
         </encoder>
     </appender>
 
+    <!-- Main rolling file appender: INFO and above -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/agent.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/agent.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{56} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Error-only rolling file appender: ERROR and above -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/agent-error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/agent-error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{56} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Async wrapper for main file appender: prevents log IO from blocking task execution -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>5000</queueSize>
+        <discardingThreshold>20</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <maxFlushTime>5000</maxFlushTime>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <!-- Async wrapper for error file appender -->
+    <appender name="ASYNC_ERROR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>1000</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <maxFlushTime>5000</maxFlushTime>
+        <appender-ref ref="ERROR_FILE"/>
+    </appender>
+
+    <!-- Root logger: INFO to console + async files -->
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="ASYNC_ERROR_FILE"/>
     </root>
 </configuration>
