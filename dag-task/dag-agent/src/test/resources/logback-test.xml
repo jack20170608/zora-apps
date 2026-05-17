@@ -1,5 +1,7 @@
 <configuration>
 
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+
     <conversionRule conversionWord="taskMdc" converterClass="top.ilovemyhome.dagtask.agent.log.TaskMdcConverter"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">

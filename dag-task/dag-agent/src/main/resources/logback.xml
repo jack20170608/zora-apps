@@ -1,5 +1,8 @@
 <configuration>
 
+    <!-- Suppress logback's own internal status messages during initialization -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+
     <!-- Register custom converter for task MDC display -->
     <conversionRule conversionWord="taskMdc" converterClass="top.ilovemyhome.dagtask.agent.log.TaskMdcConverter"/>
 
