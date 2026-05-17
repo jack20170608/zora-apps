@@ -55,9 +55,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class ShellTaskExecution implements TaskExecution {
 
-    private static final String MDC_TASK_ID = "taskId";
-    private static final String MDC_TASK_NAME = "taskName";
-
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
@@ -70,16 +67,10 @@ public class ShellTaskExecution implements TaskExecution {
     private static final int DESTROY_GRACE_PERIOD_SECONDS = 5;
 
     @Override
-    public TaskOutput execute(TaskInput input) {
+    public TaskOutput doExecute(TaskInput input) {
         Long taskId = input.taskId();
         String taskName = input.name();
         try {
-            if (taskId != null) {
-                MDC.put(MDC_TASK_ID, taskId.toString());
-            }
-            if (taskName != null) {
-                MDC.put(MDC_TASK_NAME, taskName);
-            }
             Param param = input.getInputAs(Param.class);
             logger.info("Starting shell execution for taskId={}, name={}, OS={}",
                 taskId, taskName, ShellDetector.getOsName());
@@ -92,9 +83,6 @@ public class ShellTaskExecution implements TaskExecution {
         } catch (Exception e) {
             logger.error("Unexpected error during shell execution for taskId={}", taskId, e);
             return TaskOutput.createErrorOutput(taskId, e);
-        } finally {
-            MDC.remove(MDC_TASK_ID);
-            MDC.remove(MDC_TASK_NAME);
         }
     }
 
@@ -150,10 +138,15 @@ public class ShellTaskExecution implements TaskExecution {
                 process.destroyForcibly();
                 process.waitFor();
             }
+            // Forcibly close streams to unblock StreamGobbler threads.
+            // On some platforms destroy() does not immediately close the pipes,
+            // leaving readLine() blocked indefinitely.
+            closeQuietly(process.getInputStream());
+            closeQuietly(process.getErrorStream());
         }
 
-        awaitStreamConsumer(stdoutThread, "stdout", taskId);
-        awaitStreamConsumer(stderrThread, "stderr", taskId);
+        awaitStreamConsumer(stdoutThread, "stdout", taskId, process.getInputStream());
+        awaitStreamConsumer(stderrThread, "stderr", taskId, process.getErrorStream());
 
         String stdout = stdoutGobbler.getOutput();
         String stderr = stderrGobbler.getOutput();
@@ -202,20 +195,40 @@ public class ShellTaskExecution implements TaskExecution {
     }
 
     /**
-     * Waits for a stream consumer thread to finish draining remaining output.
+     * Waits for a stream consumer thread to finish.
      *
-     * <p>The process has already exited, so remaining buffered data is finite.
-     * A generous timeout is used to avoid truncating large final bursts of output.</p>
+     * <p>For normal process exit the pipe closes naturally and the thread exits
+     * quickly after reading EOF. For timeout exit the caller has already closed
+     * the stream, so readLine() is unblocked by IOException.</p>
+     *
+     * <p>A short timeout is sufficient because the stream is either naturally
+     * closed or forcibly closed. If the thread is still stuck (extremely rare),
+     * we close the stream again and interrupt as a last resort.</p>
      */
-    private void awaitStreamConsumer(Thread thread, String name, Long taskId) {
+    private void awaitStreamConsumer(Thread thread, String name, Long taskId, java.io.InputStream stream) {
         try {
-            thread.join(30000);
+            thread.join(10000);
             if (thread.isAlive()) {
-                logger.warn("TaskId={}: {} consumer did not finish within 30s; output may be truncated", taskId, name);
+                logger.warn("TaskId={}: {} consumer still alive after 10s, closing stream to force exit", taskId, name);
+                closeQuietly(stream);
+                thread.join(5000);
+                if (thread.isAlive()) {
+                    logger.warn("TaskId={}: {} consumer still alive after stream close, interrupting", taskId, name);
+                    thread.interrupt();
+                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.warn("TaskId={}: Interrupted while waiting for {} consumer", taskId, name);
+        }
+    }
+
+    private static void closeQuietly(java.io.Closeable closeable) {
+        try {
+            if (closeable != null) {
+                closeable.close();
+            }
+        } catch (IOException ignored) {
         }
     }
 

@@ -60,7 +60,7 @@ class ShellTaskExecutionTest {
     @EnabledOnOs(OS.WINDOWS)
     void testTimeoutWindows() {
         String inputJson = """
-            {"command":"ping -n 11 127.0.0.1","timeoutSeconds": 1}
+            {"command":"ping -n 5 127.0.0.1","timeoutSeconds": 1}
             """;
         TaskInput input = TaskInput.of(2L, "NetworkPingTask", inputJson, null);
 
