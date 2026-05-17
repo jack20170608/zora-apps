@@ -1,0 +1,16 @@
+<configuration>
+
+    <conversionRule conversionWord="taskMdc" converterClass="top.ilovemyhome.dagtask.agent.log.TaskMdcConverter"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %taskMdc %logger{56} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
