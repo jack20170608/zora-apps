@@ -1,8 +1,10 @@
 package top.ilovemyhome.dagtask.agent.execution;
 
+import org.apache.commons.lang3.StringUtils;
 import top.ilovemyhome.dagtask.agent.utils.ShellDetector;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
+import top.ilovemyhome.dagtask.si.enums.ShellType;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -81,8 +83,10 @@ public class ShellTaskExecution extends AbstractTaskExecution {
         validate(param);
 
         // Determine shell: explicit input or auto-detect based on OS
-        String shell = ShellDetector.getDefaultShell();
-
+        String shell = StringUtils.isNotBlank(param.shell()) ? param.shell() : ShellDetector.getDefaultShell();
+        if (StringUtils.isNotBlank(param.shell()) && !isShellAvailable(shell)) {
+            return TaskOutput.fail(taskId, null, "Shell not available on this system: " + shell);
+        }
         logger.info("Using shell: {}", shell);
 
         // Build command array appropriate for the shell
@@ -145,6 +149,39 @@ public class ShellTaskExecution extends AbstractTaskExecution {
         return TaskOutput.success(taskId, result);
     }
 
+    /**
+     * Checks whether the specified shell executable is available on the current system.
+     *
+     * @param shell the shell identifier to test
+     * @return true if the shell can be started and executes a trivial command successfully
+     */
+    private boolean isShellAvailable(String shell) {
+        ShellType shellType = ShellType.fromString(shell);
+        if (shellType == null) {
+            return false;
+        }
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                shellType.getExecutable(),
+                shellType.getFlag(),
+                "echo ok"
+            );
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            boolean finished = process.waitFor(5, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                return false;
+            }
+            return process.exitValue() == 0;
+        } catch (IOException e) {
+            return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
     private void validate(Param param) {
         if (param == null) {
             throw new IllegalArgumentException("Input param is required");
@@ -155,12 +192,19 @@ public class ShellTaskExecution extends AbstractTaskExecution {
         if (param.timeoutSeconds() != null && param.timeoutSeconds() <= 0) {
             throw new IllegalArgumentException("timeoutSeconds must be > 0");
         }
+        if (StringUtils.isNotBlank(param.shell())){
+            var shellType = ShellType.fromString(param.shell());
+            if (shellType == null) {
+                throw new IllegalArgumentException("Invalid shell type");
+            }
+        }
     }
 
     /**
      * Input parameter DTO for BashTaskExecution.
      */
     public record Param(
+        String shell,
         String command,
         Integer timeoutSeconds,
         String workingDirectory,

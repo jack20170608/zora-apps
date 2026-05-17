@@ -1,6 +1,7 @@
 package top.ilovemyhome.dagtask.agent.utils;
 
 import java.util.Locale;
+import top.ilovemyhome.dagtask.si.enums.ShellType;
 
 /**
  * Utility class for detecting the operating system and providing appropriate shell commands.
@@ -25,12 +26,7 @@ public final class ShellDetector {
      * @return shell command (e.g., "bash", "cmd.exe", "powershell.exe")
      */
     public static String getDefaultShell() {
-        if (IS_WINDOWS) {
-            return "cmd.exe";
-        } else if (IS_MAC || IS_LINUX) {
-            return "bash";
-        }
-        return "bash";  // Default fallback
+        return ShellType.getDefaultForCurrentOs().getExecutable();
     }
 
     /**
@@ -40,9 +36,9 @@ public final class ShellDetector {
      */
     public static String[] getAlternativeShells() {
         if (IS_WINDOWS) {
-            return new String[]{"powershell.exe", "pwsh.exe"};
+            return new String[]{ShellType.POWERSHELL.getExecutable(), ShellType.PWSH.getExecutable()};
         }
-        return new String[]{"sh", "zsh"};
+        return new String[]{ShellType.SH.getExecutable(), ShellType.ZSH.getExecutable()};
     }
 
     /**
@@ -53,20 +49,11 @@ public final class ShellDetector {
      * @return command array suitable for ProcessBuilder
      */
     public static String[] buildCommandArray(String shell, String script) {
-        if (shell == null || shell.isBlank()) {
-            shell = getDefaultShell();
+        var shellType = ShellType.fromString(shell);
+        if (shellType == null) {
+            shellType = ShellType.getDefaultForCurrentOs();
         }
-
-        if (isWindowsCmd(shell)) {
-            // For cmd.exe, use /c flag
-            return new String[]{shell, "/c", script};
-        } else if (isPowerShell(shell)) {
-            // For PowerShell, use -Command flag
-            return new String[]{shell, "-Command", script};
-        } else {
-            // For bash, sh, zsh, etc., use -c flag
-            return new String[]{shell, "-c", script};
-        }
+        return shellType.buildCommandArray(script);
     }
 
     /**
@@ -76,7 +63,7 @@ public final class ShellDetector {
      * @return true if it's Windows cmd.exe
      */
     public static boolean isWindowsCmd(String shell) {
-        return shell != null && (shell.equalsIgnoreCase("cmd.exe") || shell.equalsIgnoreCase("cmd"));
+        return ShellType.CMD == ShellType.fromString(shell);
     }
 
     /**
@@ -86,11 +73,8 @@ public final class ShellDetector {
      * @return true if it's PowerShell
      */
     public static boolean isPowerShell(String shell) {
-        if (shell == null) {
-            return false;
-        }
-        String lower = shell.toLowerCase(Locale.ENGLISH);
-        return lower.contains("powershell") || lower.equals("pwsh") || lower.equals("pwsh.exe");
+        ShellType type = ShellType.fromString(shell);
+        return type == ShellType.POWERSHELL || type == ShellType.PWSH;
     }
 
     /**
@@ -175,12 +159,8 @@ public final class ShellDetector {
             return ShellValidationResult.valid("Using default shell: " + getDefaultShell());
         }
 
-        String normalizedShell = shell.toLowerCase(Locale.ENGLISH);
-
-        // Check for common shells
-        if (normalizedShell.equals("bash") || normalizedShell.equals("sh") ||
-            normalizedShell.equals("zsh") || normalizedShell.equals("cmd.exe") ||
-            normalizedShell.equals("cmd") || normalizedShell.contains("powershell")) {
+        ShellType type = ShellType.fromString(shell);
+        if (type != null) {
             return ShellValidationResult.valid("Shell is recognized: " + shell);
         }
 

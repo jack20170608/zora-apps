@@ -74,10 +74,11 @@ class DagAgentCliTest {
     void testLongRunningTask(){
         CliArguments args = CliArguments.builder()
             .withId(1000L)
-            .withName("WindowsPowerShellTask")
+            .withName("WindowsBashTask")
             .withInputJson("""
                 {
-                "command" : "Write-Output $p1 $p2 ",
+                "shell": "bash",
+                "command" : "ls -al && echo $p1 $p2 ",
                 "timeoutSeconds": 10,
                 "env": {
                     "p1": "v1",
@@ -89,7 +90,7 @@ class DagAgentCliTest {
             .withTimeoutMs(30 * 1000L)
             .build();
         int exitCode = DagAgentCli.execute(args);
-        assertThat(exitCode).isEqualTo(1);
+        assertThat(exitCode).isEqualTo(0);
     }
 
     @Test
