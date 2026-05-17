@@ -11,6 +11,8 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 
+import static top.ilovemyhome.dagtask.si.TaskDispatchRecord.Field.taskId;
+
 /**
  * CPU-intensive task that computes prime numbers up to a given bound.
  *
@@ -46,14 +48,10 @@ public class CpuIntensiveExecution implements TaskExecution {
         long startTime = System.currentTimeMillis();
 
         for (int i = 1; i <= param.iterations(); i++) {
-            if (Thread.currentThread().isInterrupted()) {
-                logger.warn("TaskId={} interrupted at iteration {}/{}",
-                    taskId, i, param.iterations());
-                throw new IllegalStateException("Task interrupted");
-            }
+            checkInterruption(taskId);
             List<Integer> primes = switch (param.algorithm()) {
-                case "sieve" -> sieveOfEratosthenes(param.upperBound());
-                case "trial" -> trialDivisionPrimes(param.upperBound());
+                case "sieve" -> sieveOfEratosthenes(taskId, param.upperBound());
+                case "trial" -> trialDivisionPrimes(taskId, param.upperBound());
                 default -> throw new IllegalArgumentException(
                     "Unknown algorithm: " + param.algorithm() + ". Use 'sieve' or 'trial'.");
             };
@@ -77,14 +75,12 @@ public class CpuIntensiveExecution implements TaskExecution {
      * @param n upper bound (inclusive)
      * @return list of primes up to n
      */
-    private List<Integer> sieveOfEratosthenes(int n) {
+    private List<Integer> sieveOfEratosthenes(long taskId, int n) {
         BitSet isComposite = new BitSet(n + 1);
         List<Integer> primes = new ArrayList<>();
 
         for (int i = 2; i <= n; i++) {
-            if (Thread.currentThread().isInterrupted()) {
-                throw new IllegalStateException("Task interrupted during sieve computation");
-            }
+            checkInterruption(taskId);
             if (!isComposite.get(i)) {
                 primes.add(i);
                 if ((long) i * i <= n) {
@@ -97,18 +93,11 @@ public class CpuIntensiveExecution implements TaskExecution {
         return primes;
     }
 
-    /**
-     * Trial division — intentionally less efficient, higher CPU load.
-     *
-     * @param n upper bound (inclusive)
-     * @return list of primes up to n
-     */
-    private List<Integer> trialDivisionPrimes(int n) {
+
+    private List<Integer> trialDivisionPrimes(long taskId, int n) {
         List<Integer> primes = new ArrayList<>();
         for (int candidate = 2; candidate <= n; candidate++) {
-            if (Thread.currentThread().isInterrupted()) {
-                throw new IllegalStateException("Task interrupted during trial division computation");
-            }
+            checkInterruption(taskId);
             boolean isPrime = true;
             int limit = (int) Math.sqrt(candidate);
             for (int divisor = 2; divisor <= limit; divisor++) {

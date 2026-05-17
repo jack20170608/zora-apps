@@ -548,6 +548,7 @@ public class TaskExecutionEngine {
             return KillResult.notFound(taskId);
         }
 
+        TaskExecution.cancel(taskId);
         boolean cancelled = runningTask.future().cancel(true);
         if (cancelled) {
             logger.info("Task {} killed successfully from running", taskId);
@@ -596,6 +597,7 @@ public class TaskExecutionEngine {
         // Remove from running
         RunningTask runningTask = runningTasks.remove(taskId);
         if (runningTask != null) {
+            TaskExecution.cancel(taskId);
             runningTask.future().cancel(true);
             logger.info("Task {} force-ok from running", taskId);
             if (runningTask.pendingTask().reportResult()) {
@@ -648,6 +650,7 @@ public class TaskExecutionEngine {
         // Remove from running
         RunningTask runningTask = runningTasks.remove(taskId);
         if (runningTask != null) {
+            TaskExecution.cancel(taskId);
             runningTask.future().cancel(true);
             logger.info("Task {} force-nok from running", taskId);
             if (runningTask.pendingTask().reportResult()) {
@@ -685,6 +688,7 @@ public class TaskExecutionEngine {
         // Remove from running - cancel the running task
         RunningTask runningTask = runningTasks.remove(taskId);
         if (runningTask != null) {
+            TaskExecution.cancel(taskId);
             runningTask.future().cancel(true);
             logger.info("Task {} cancelled from running and held", taskId);
             return HoldResult.successFromRunning(taskId);
@@ -788,6 +792,7 @@ public class TaskExecutionEngine {
             }
             finishTask(taskId, false, false, duration);
         } finally {
+            TaskExecution.clearCancellation(taskId);
             notifyWaitFuture(taskId, result);
         }
     }
