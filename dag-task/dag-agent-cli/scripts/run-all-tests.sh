@@ -8,14 +8,26 @@ PASS=0
 FAIL=0
 
 TESTS=(
+    # Normal cases
     "test-shell-echo.sh"
     "test-shell-env.sh"
     "test-shell-utf8.sh"
     "test-simple-counter.sh"
     "test-long-running.sh"
     "test-echo.sh"
+    "test-shell-multi-line.sh"
+    "test-shell-stderr.sh"
+    # Edge / error cases (expected to fail)
     "test-shell-timeout.sh"
     "test-shell-exit-code.sh"
+    "test-invalid-class.sh"
+    "test-invalid-json.sh"
+    "test-empty-command.sh"
+    "test-invalid-timeout.sh"
+    "test-invalid-shell.sh"
+    "test-nonexistent-workdir.sh"
+    "test-invalid-counter-param.sh"
+    "test-long-running-timeout.sh"
 )
 
 echo "========================================"
