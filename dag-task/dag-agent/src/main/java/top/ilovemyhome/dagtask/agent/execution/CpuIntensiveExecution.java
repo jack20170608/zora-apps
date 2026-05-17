@@ -54,10 +54,8 @@ public class CpuIntensiveExecution implements TaskExecution {
             };
             totalPrimes += primes.size();
 
-            if (i == 1 || i == param.iterations()) {
-                logger.info("Iteration {}/{} completed, primes found: {}",
-                    i, param.iterations(), primes.size());
-            }
+            logger.info("Iteration {}/{} completed, primes found: {}",
+                i, param.iterations(), primes.size());
         }
 
         long duration = System.currentTimeMillis() - startTime;
