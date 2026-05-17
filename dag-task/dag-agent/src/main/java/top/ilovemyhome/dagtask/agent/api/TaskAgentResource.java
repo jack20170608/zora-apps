@@ -411,7 +411,7 @@ public class TaskAgentResource {
 
     @GET
     @Path(Constants.API_PING)
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.WILDCARD)
     @Operation(summary = "Ping heartbeat check",
                description = "Simple heartbeat check to verify the agent is running and responding. " +
                              "Always returns the string 'pong' with 200 OK status.")
