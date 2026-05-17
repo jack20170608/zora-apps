@@ -46,6 +46,11 @@ public class CpuIntensiveExecution implements TaskExecution {
         long startTime = System.currentTimeMillis();
 
         for (int i = 1; i <= param.iterations(); i++) {
+            if (Thread.currentThread().isInterrupted()) {
+                logger.warn("TaskId={} interrupted at iteration {}/{}",
+                    taskId, i, param.iterations());
+                throw new IllegalStateException("Task interrupted");
+            }
             List<Integer> primes = switch (param.algorithm()) {
                 case "sieve" -> sieveOfEratosthenes(param.upperBound());
                 case "trial" -> trialDivisionPrimes(param.upperBound());
@@ -77,6 +82,9 @@ public class CpuIntensiveExecution implements TaskExecution {
         List<Integer> primes = new ArrayList<>();
 
         for (int i = 2; i <= n; i++) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new IllegalStateException("Task interrupted during sieve computation");
+            }
             if (!isComposite.get(i)) {
                 primes.add(i);
                 if ((long) i * i <= n) {
@@ -98,6 +106,9 @@ public class CpuIntensiveExecution implements TaskExecution {
     private List<Integer> trialDivisionPrimes(int n) {
         List<Integer> primes = new ArrayList<>();
         for (int candidate = 2; candidate <= n; candidate++) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new IllegalStateException("Task interrupted during trial division computation");
+            }
             boolean isPrime = true;
             int limit = (int) Math.sqrt(candidate);
             for (int divisor = 2; divisor <= limit; divisor++) {
