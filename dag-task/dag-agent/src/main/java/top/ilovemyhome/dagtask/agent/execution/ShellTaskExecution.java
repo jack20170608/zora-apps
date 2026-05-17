@@ -10,10 +10,11 @@ import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.enums.ShellType;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -84,7 +85,7 @@ public class ShellTaskExecution implements TaskExecution {
                 taskId, taskName, ShellDetector.getOsName());
             assert param != null;
             logger.info("Command: {}", param.command());
-            return executeShell(taskId, param);
+            return executeShell(taskId, taskName, param);
         } catch (IllegalArgumentException e) {
             logger.error("Invalid input: {}", e.getMessage());
             return TaskOutput.fail(taskId, null, e.getMessage());
@@ -97,7 +98,7 @@ public class ShellTaskExecution implements TaskExecution {
         }
     }
 
-    private TaskOutput executeShell(Long taskId, Param param) throws IOException, InterruptedException {
+    private TaskOutput executeShell(Long taskId, String taskName, Param param) throws IOException, InterruptedException {
         validate(param);
 
         // Determine shell: explicit input or auto-detect based on OS
@@ -124,8 +125,9 @@ public class ShellTaskExecution implements TaskExecution {
 
         Process process = pb.start();
 
-        StreamGobbler stdoutGobbler = new StreamGobbler(process.getInputStream(), true);
-        StreamGobbler stderrGobbler = new StreamGobbler(process.getErrorStream(), false);
+        String currentTaskId = taskId != null ? taskId.toString() : null;
+        StreamGobbler stdoutGobbler = new StreamGobbler(process.getInputStream(), true, currentTaskId, taskName);
+        StreamGobbler stderrGobbler = new StreamGobbler(process.getErrorStream(), false, currentTaskId, taskName);
         String shellBase = new File(shell).getName();
         Thread stdoutThread = new Thread(stdoutGobbler, shellBase + "-stdout-" + taskId);
         Thread stderrThread = new Thread(stderrGobbler, shellBase + "-stderr-" + taskId);
@@ -262,59 +264,70 @@ public class ShellTaskExecution implements TaskExecution {
 
     /**
      * Consumes an InputStream in a separate thread to prevent pipe buffer deadlock.
-     * Stores raw bytes and decodes them on demand with UTF-8 / platform-default fallback.
+     * Reads line-by-line using the OS native encoding and prints each line to the logger
+     * in real time, while also buffering the full output for the final result.
      */
     private class StreamGobbler implements Runnable {
         private final InputStream inputStream;
         private final boolean isStdout;
-        private final ByteArrayOutputStream rawBuffer = new ByteArrayOutputStream();
+        private final String mdcTaskId;
+        private final String mdcTaskName;
+        private final StringBuilder output = new StringBuilder();
 
-        StreamGobbler(InputStream inputStream, boolean isStdout) {
+        StreamGobbler(InputStream inputStream, boolean isStdout,
+                      String mdcTaskId, String mdcTaskName) {
             this.inputStream = inputStream;
             this.isStdout = isStdout;
+            this.mdcTaskId = mdcTaskId;
+            this.mdcTaskName = mdcTaskName;
         }
 
         @Override
         public void run() {
+            if (mdcTaskId != null) {
+                MDC.put(MDC_TASK_ID, mdcTaskId);
+            }
+            if (mdcTaskName != null) {
+                MDC.put(MDC_TASK_NAME, mdcTaskName);
+            }
             try {
-                byte[] buf = new byte[4096];
-                int n;
-                while ((n = inputStream.read(buf)) != -1) {
-                    rawBuffer.write(buf, 0, n);
+                Charset charset = resolveStreamCharset();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        output.append(line).append(System.lineSeparator());
+                        if (isStdout) {
+                            logger.info("[STDOUT] {}", line);
+                        } else {
+                            logger.error("[STDERR] {}", line);
+                        }
+                    }
+                } catch (IOException e) {
+                    logger.error("Failed to read stream: {}", e.getMessage());
                 }
-            } catch (IOException e) {
-                logger.error("Failed to read stream: {}", e.getMessage());
+            } finally {
+                if (mdcTaskId != null) {
+                    MDC.remove(MDC_TASK_ID);
+                }
+                if (mdcTaskName != null) {
+                    MDC.remove(MDC_TASK_NAME);
+                }
             }
         }
 
         String getOutput() {
-            byte[] bytes = rawBuffer.toByteArray();
-            String text = decodeWithFallback(bytes);
-            text.lines().forEach(line -> {
-                if (isStdout) {
-                    logger.info("[STDOUT] {}", line);
-                } else {
-                    logger.error("[STDERR] {}", line);
-                }
-            });
-            return text;
+            return output.toString();
         }
+    }
 
-        private String decodeWithFallback(byte[] bytes) {
-            String utf8 = new String(bytes, StandardCharsets.UTF_8);
-            if (!utf8.contains("�")) {
-                return utf8;
-            }
-            // -Dfile.encoding overrides Charset.defaultCharset(); use the OS native encoding instead.
-            String nativeEncoding = System.getProperty("sun.jnu.encoding", "UTF-8");
+    private static Charset resolveStreamCharset() {
+        String nativeEncoding = System.getProperty("sun.jnu.encoding");
+        if (nativeEncoding != null) {
             try {
-                String fallback = new String(bytes, Charset.forName(nativeEncoding));
-                logger.warn("UTF-8 decoding produced replacement characters; falling back to native encoding {}", nativeEncoding);
-                return fallback;
-            } catch (Exception e) {
-                logger.warn("Failed to decode with native encoding {}; returning UTF-8 with replacements", nativeEncoding);
-                return utf8;
+                return Charset.forName(nativeEncoding);
+            } catch (Exception ignored) {
             }
         }
+        return StandardCharsets.UTF_8;
     }
 }
