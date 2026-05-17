@@ -9,11 +9,9 @@ import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Integration tests for BashTaskExecution with cross-platform support.
+ * Integration tests for ShellTaskExecution with cross-platform support.
  *
  * Tests automatically skip based on OS when necessary to ensure compatibility.
  */
@@ -32,11 +30,8 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        assertThat(output.output()).isInstanceOf(ShellTaskExecution.Result.class);
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.exitCode()).isEqualTo(0);
-        assertThat(result.stdout()).contains("hello");
-        assertThat(result.timedOut()).isFalse();
+        assertThat(output.output()).isInstanceOf(String.class);
+        assertThat((String) output.output()).contains("hello");
     }
 
     /**
@@ -51,8 +46,7 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isFalse();
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.timedOut()).isTrue();
+        assertThat(output.message()).contains("timed out");
     }
 
     /**
@@ -61,14 +55,13 @@ class ShellTaskExecutionTest {
     @Test
     @EnabledOnOs(OS.WINDOWS)
     void testTimeoutWindows() {
-        String inputJson = "{\"command\":\"timeout /t 10\",\"timeoutSeconds\":1}";
+        String inputJson = "{\"command\":\"ping -n 11 127.0.0.1 > nul\",\"timeoutSeconds\":1}";
         TaskInput input = TaskInput.of(2L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isFalse();
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.timedOut()).isTrue();
+        assertThat(output.message()).contains("timed out");
     }
 
     /**
@@ -82,9 +75,7 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isFalse();
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.exitCode()).isEqualTo(1);
-        assertThat(result.timedOut()).isFalse();
+        assertThat(output.message()).contains("exited with code 1");
     }
 
     /**
@@ -99,10 +90,8 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.exitCode()).isEqualTo(0);
         if (new java.io.File("/tmp").exists()) {
-            assertThat(result.stdout()).contains("/tmp");
+            assertThat((String) output.output()).contains("/tmp");
         }
     }
 
@@ -118,9 +107,7 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.exitCode()).isEqualTo(0);
-        assertThat(result.stdout()).contains("hello");
+        assertThat((String) output.output()).contains("hello");
     }
 
     /**
@@ -135,9 +122,7 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.exitCode()).isEqualTo(0);
-        assertThat(result.stdout()).contains("hello");
+        assertThat((String) output.output()).contains("hello");
     }
 
     /**
@@ -169,19 +154,18 @@ class ShellTaskExecutionTest {
     }
 
     /**
-     * Test stderr capture on Unix
+     * Test stderr is included in failure message
      */
     @Test
     @DisabledOnOs(OS.WINDOWS)
-    void testStderrCapturedUnix() {
-        String inputJson = "{\"command\":\"echo error >&2\"}";
+    void testStderrInFailureMessage() {
+        String inputJson = "{\"command\":\"echo error >&2; exit 1\"}";
         TaskInput input = TaskInput.of(8L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
 
-        assertThat(output.isSuccess()).isTrue();
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.stdout() + result.stderr()).contains("error");
+        assertThat(output.isSuccess()).isFalse();
+        assertThat(output.message()).contains("error");
     }
 
     /**
@@ -196,8 +180,6 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.exitCode()).isEqualTo(0);
     }
 
     /**
@@ -212,9 +194,7 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.exitCode()).isEqualTo(0);
-        assertThat(result.stdout()).contains("test");
+        assertThat((String) output.output()).contains("test");
     }
 
     /**
@@ -230,9 +210,7 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.exitCode()).isEqualTo(0);
-        assertThat(result.stdout()).contains("hello").contains("world");
+        assertThat((String) output.output()).contains("hello").contains("world");
     }
 
     /**
@@ -240,15 +218,12 @@ class ShellTaskExecutionTest {
      */
     @Test
     void testAutoDetectShell() {
-        // This test verifies that the auto-detected shell works
-        String expectedShell = ShellDetector.getDefaultShell();
         String inputJson = "{\"command\":\"echo auto-detect-test\"}";
         TaskInput input = TaskInput.of(12L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        ShellTaskExecution.Result result = (ShellTaskExecution.Result) output.output();
-        assertThat(result.stdout()).contains("auto-detect-test");
+        assertThat((String) output.output()).contains("auto-detect-test");
     }
 }

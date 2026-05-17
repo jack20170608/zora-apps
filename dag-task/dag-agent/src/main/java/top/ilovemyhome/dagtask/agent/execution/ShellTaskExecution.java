@@ -106,8 +106,9 @@ public class ShellTaskExecution extends AbstractTaskExecution {
 
         StreamGobbler stdoutGobbler = new StreamGobbler(process.getInputStream(), true);
         StreamGobbler stderrGobbler = new StreamGobbler(process.getErrorStream(), false);
-        Thread stdoutThread = new Thread(stdoutGobbler, "bash-stdout-" + taskId);
-        Thread stderrThread = new Thread(stderrGobbler, "bash-stderr-" + taskId);
+        String shellBase = new File(shell).getName();
+        Thread stdoutThread = new Thread(stdoutGobbler, shellBase + "-stdout-" + taskId);
+        Thread stderrThread = new Thread(stderrGobbler, shellBase + "-stderr-" + taskId);
         stdoutThread.setDaemon(true);
         stderrThread.setDaemon(true);
         stdoutThread.start();
@@ -136,17 +137,13 @@ public class ShellTaskExecution extends AbstractTaskExecution {
         String stderr = stderrGobbler.getOutput();
         int exitCode = process.exitValue();
 
-        Result result = new Result(exitCode, stdout, stderr, timedOut);
-
         if (timedOut || exitCode != 0) {
-            String message = timedOut
-                ? "Task timed out after " + timeoutSeconds + " seconds"
-                : "Task exited with code " + exitCode;
-            return TaskOutput.fail(taskId, result, message);
+            String message = buildFailureMessage(timedOut, exitCode, timeoutSeconds, stderr);
+            return TaskOutput.fail(taskId, stdout, message);
         }
 
         logger.info("Task completed successfully, exitCode={}", exitCode);
-        return TaskOutput.success(taskId, result);
+        return TaskOutput.success(taskId, stdout);
     }
 
     /**
@@ -182,6 +179,19 @@ public class ShellTaskExecution extends AbstractTaskExecution {
         }
     }
 
+    private static String buildFailureMessage(boolean timedOut, int exitCode, int timeoutSeconds, String stderr) {
+        StringBuilder sb = new StringBuilder();
+        if (timedOut) {
+            sb.append("Task timed out after ").append(timeoutSeconds).append(" seconds");
+        } else {
+            sb.append("Task exited with code ").append(exitCode);
+        }
+        if (StringUtils.isNotBlank(stderr)) {
+            sb.append(". stderr: ").append(stderr);
+        }
+        return sb.toString();
+    }
+
     private void validate(Param param) {
         if (param == null) {
             throw new IllegalArgumentException("Input param is required");
@@ -209,17 +219,6 @@ public class ShellTaskExecution extends AbstractTaskExecution {
         Integer timeoutSeconds,
         String workingDirectory,
         Map<String, String> env
-    ) {
-    }
-
-    /**
-     * Result record containing the output of the bash command execution.
-     */
-    public record Result(
-        int exitCode,
-        String stdout,
-        String stderr,
-        boolean timedOut
     ) {
     }
 
