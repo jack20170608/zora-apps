@@ -1,5 +1,8 @@
 <configuration>
 
+    <!-- Register custom converter for task MDC display -->
+    <conversionRule conversionWord="taskMdc" converterClass="top.ilovemyhome.dagtask.agent.log.TaskMdcConverter"/>
+
     <!-- Log directory: override via -DLOG_DIR=/var/log/dag-agent or env var LOG_DIR -->
     <property name="LOG_DIR" value="${LOG_DIR:-./logs}"/>
 
@@ -7,7 +10,7 @@
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <charset>UTF-8</charset>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{56} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %taskMdc %logger{56} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -22,7 +25,7 @@
         </rollingPolicy>
         <encoder>
             <charset>UTF-8</charset>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{56} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %taskMdc %logger{56} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -40,7 +43,7 @@
         </filter>
         <encoder>
             <charset>UTF-8</charset>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{56} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %taskMdc %logger{56} - %msg%n</pattern>
         </encoder>
     </appender>
 

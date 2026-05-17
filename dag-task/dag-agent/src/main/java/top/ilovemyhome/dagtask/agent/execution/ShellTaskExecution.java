@@ -1,7 +1,11 @@
 package top.ilovemyhome.dagtask.agent.execution;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import top.ilovemyhome.dagtask.agent.utils.ShellDetector;
+import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.enums.ShellType;
@@ -48,7 +52,12 @@ import java.util.concurrent.TimeUnit;
  *   <li>Script syntax should match the target shell</li>
  * </ul>
  */
-public class ShellTaskExecution extends AbstractTaskExecution {
+public class ShellTaskExecution implements TaskExecution {
+
+    private static final String MDC_TASK_ID = "taskId";
+    private static final String MDC_TASK_NAME = "taskName";
+
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * Default timeout in seconds if not specified in input.
@@ -60,26 +69,35 @@ public class ShellTaskExecution extends AbstractTaskExecution {
     private static final int DESTROY_GRACE_PERIOD_SECONDS = 5;
 
     @Override
-    protected TaskOutput doExecute(TaskInput input) {
+    public TaskOutput execute(TaskInput input) {
         Long taskId = input.taskId();
-        var name = input.name();
+        String taskName = input.name();
         try {
+            if (taskId != null) {
+                MDC.put(MDC_TASK_ID, taskId.toString());
+            }
+            if (taskName != null) {
+                MDC.put(MDC_TASK_NAME, taskName);
+            }
             Param param = input.getInputAs(Param.class);
             logger.info("Starting shell execution for taskId={}, name={}, OS={}",
-                taskId, name, ShellDetector.getOsName());
+                taskId, taskName, ShellDetector.getOsName());
             assert param != null;
             logger.info("Command: {}", param.command());
-            return doExecute(taskId, param);
+            return executeShell(taskId, param);
         } catch (IllegalArgumentException e) {
             logger.error("Invalid input: {}", e.getMessage());
             return TaskOutput.fail(taskId, null, e.getMessage());
         } catch (Exception e) {
             logger.error("Unexpected error during shell execution for taskId={}", taskId, e);
             return TaskOutput.createErrorOutput(taskId, e);
+        } finally {
+            MDC.remove(MDC_TASK_ID);
+            MDC.remove(MDC_TASK_NAME);
         }
     }
 
-    private TaskOutput doExecute(Long taskId, Param param) throws IOException, InterruptedException {
+    private TaskOutput executeShell(Long taskId, Param param) throws IOException, InterruptedException {
         validate(param);
 
         // Determine shell: explicit input or auto-detect based on OS
