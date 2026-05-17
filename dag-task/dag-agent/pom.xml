@@ -91,13 +91,6 @@
             <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Jakarta RS Runtime Delegate for testing -->
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-client</artifactId>
-            <version>6.2.5.Final</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
     <build>
         <resources>
