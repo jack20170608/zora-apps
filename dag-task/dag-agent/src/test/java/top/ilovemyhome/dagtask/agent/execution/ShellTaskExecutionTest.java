@@ -226,4 +226,20 @@ class ShellTaskExecutionTest {
         assertThat(output.isSuccess()).isTrue();
         assertThat((String) output.output()).contains("auto-detect-test");
     }
+
+    /**
+     * UTF-8 encoding diagnostic: echo a CJK character and verify it is not mangled.
+     */
+    @Test
+    void testUtf8ChineseOutput() {
+        // 中=中  文=文 — Unicode escapes guarantee correctness regardless of source-file encoding.
+        String inputJson = "{\"command\":\"echo 中文\"}";
+        TaskInput input = TaskInput.of(99L, null, inputJson, null);
+
+        TaskOutput output = execution.execute(input);
+
+        String stdout = (String) output.output();
+        assertThat(output.isSuccess()).isTrue();
+        assertThat(stdout).contains("中文");
+    }
 }

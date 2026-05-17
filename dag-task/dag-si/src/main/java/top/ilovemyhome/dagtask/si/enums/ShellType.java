@@ -65,7 +65,28 @@ public enum ShellType {
      * @return array in the form {@code [executable, flag, script]}
      */
     public String[] buildCommandArray(String script) {
-        return new String[]{executable, flag, script};
+        return new String[]{executable, flag, wrapCommandForEncoding(script)};
+    }
+
+    /**
+     * Wraps the user script with encoding directives to ensure UTF-8 output.
+     *
+     * <ul>
+     *   <li>Windows {@code cmd.exe}: switches code page to 65001 (UTF-8)</li>
+     *   <li>PowerShell / pwsh: sets {@code [Console]::OutputEncoding} to UTF-8</li>
+     *   <li>Unix shells ({@code bash}, {@code sh}, {@code zsh}): rely on {@code LC_ALL} / {@code LANG}
+     *       environment variables injected by the caller</li>
+     * </ul>
+     *
+     * @param script the raw user command
+     * @return script prefixed with shell-specific encoding setup if needed
+     */
+    public String wrapCommandForEncoding(String script) {
+        return switch (this) {
+            case CMD -> "chcp 65001 >nul && " + script;
+            case POWERSHELL, PWSH -> "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; " + script;
+            default -> script;
+        };
     }
 
     /**

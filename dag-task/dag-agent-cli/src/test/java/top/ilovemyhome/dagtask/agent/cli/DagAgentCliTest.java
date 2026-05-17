@@ -71,14 +71,38 @@ class DagAgentCliTest {
 
     @Test
     @EnabledOnOs({OS.WINDOWS})
-    void testLongRunningTask(){
+    void testCmdShellTask(){
         CliArguments args = CliArguments.builder()
             .withId(1000L)
-            .withName("WindowsBashTask")
+            .withName("WindowsCmdTask")
             .withInputJson("""
                 {
                 "shell": "cmd",
-                "command" : "dir && echo $p1 $p2 ",
+                "command" : "echo 你好! && echo %p1% %p2% ",
+                "timeoutSeconds": 10,
+                "env": {
+                    "p1": "v1",
+                    "p2": 100
+                    }
+                }
+                """)
+            .withExecutionClass(ShellTaskExecution.class.getCanonicalName())
+            .withTimeoutMs(30 * 1000L)
+            .build();
+        int exitCode = DagAgentCli.execute(args);
+        assertThat(exitCode).isEqualTo(0);
+    }
+
+    @Test
+    @EnabledOnOs({OS.LINUX})
+    void testBashTask(){
+        CliArguments args = CliArguments.builder()
+            .withId(1000L)
+            .withName("LinuxBashTask")
+            .withInputJson("""
+                {
+                "shell": "bash",
+                "command" : "echo 你好! && echo $p1 $p2 ",
                 "timeoutSeconds": 10,
                 "env": {
                     "p1": "v1",

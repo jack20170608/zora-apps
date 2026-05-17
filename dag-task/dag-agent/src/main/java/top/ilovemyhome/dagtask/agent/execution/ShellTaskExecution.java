@@ -6,11 +6,11 @@ import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.enums.ShellType;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -97,8 +97,10 @@ public class ShellTaskExecution extends AbstractTaskExecution {
             pb.directory(new File(param.workingDirectory()));
         }
 
+        Map<String, String> env = pb.environment();
+        env.putIfAbsent("LC_ALL", "C.UTF-8");
+        env.putIfAbsent("LANG", "C.UTF-8");
         if (param.env() != null && !param.env().isEmpty()) {
-            Map<String, String> env = pb.environment();
             env.putAll(param.env());
         }
 
@@ -242,12 +244,12 @@ public class ShellTaskExecution extends AbstractTaskExecution {
 
     /**
      * Consumes an InputStream in a separate thread to prevent pipe buffer deadlock.
-     * Routes each line through the task logger.
+     * Stores raw bytes and decodes them on demand with UTF-8 / platform-default fallback.
      */
     private class StreamGobbler implements Runnable {
         private final InputStream inputStream;
         private final boolean isStdout;
-        private final StringBuilder output = new StringBuilder();
+        private final ByteArrayOutputStream rawBuffer = new ByteArrayOutputStream();
 
         StreamGobbler(InputStream inputStream, boolean isStdout) {
             this.inputStream = inputStream;
@@ -256,24 +258,45 @@ public class ShellTaskExecution extends AbstractTaskExecution {
 
         @Override
         public void run() {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    output.append(line).append(System.lineSeparator());
-                    if (isStdout) {
-                        logger.info("[STDOUT] {}", line);
-                    } else {
-                        logger.error("[STDERR] {}", line);
-                    }
+            try {
+                byte[] buf = new byte[4096];
+                int n;
+                while ((n = inputStream.read(buf)) != -1) {
+                    rawBuffer.write(buf, 0, n);
                 }
             } catch (IOException e) {
-                output.append("[READ ERROR: ").append(e.getMessage()).append("]");
                 logger.error("Failed to read stream: {}", e.getMessage());
             }
         }
 
         String getOutput() {
-            return output.toString();
+            byte[] bytes = rawBuffer.toByteArray();
+            String text = decodeWithFallback(bytes);
+            text.lines().forEach(line -> {
+                if (isStdout) {
+                    logger.info("[STDOUT] {}", line);
+                } else {
+                    logger.error("[STDERR] {}", line);
+                }
+            });
+            return text;
+        }
+
+        private String decodeWithFallback(byte[] bytes) {
+            String utf8 = new String(bytes, StandardCharsets.UTF_8);
+            if (!utf8.contains("�")) {
+                return utf8;
+            }
+            // -Dfile.encoding overrides Charset.defaultCharset(); use the OS native encoding instead.
+            String nativeEncoding = System.getProperty("sun.jnu.encoding", "UTF-8");
+            try {
+                String fallback = new String(bytes, Charset.forName(nativeEncoding));
+                logger.warn("UTF-8 decoding produced replacement characters; falling back to native encoding {}", nativeEncoding);
+                return fallback;
+            } catch (Exception e) {
+                logger.warn("Failed to decode with native encoding {}; returning UTF-8 with replacements", nativeEncoding);
+                return utf8;
+            }
         }
     }
 }
