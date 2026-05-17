@@ -24,7 +24,9 @@ class ShellTaskExecutionTest {
      */
     @Test
     void testBasicExecution() {
-        String inputJson = "{\"command\":\"echo hello\"}";
+        String inputJson = """
+            {"command":"echo hello"}
+            """;
         TaskInput input = TaskInput.of(1L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -40,7 +42,9 @@ class ShellTaskExecutionTest {
     @Test
     @DisabledOnOs(OS.WINDOWS)
     void testTimeoutUnix() {
-        String inputJson = "{\"command\":\"sleep 10\",\"timeoutSeconds\":1}";
+        String inputJson = """
+            {"command":"sleep 10","timeoutSeconds":1}
+            """;
         TaskInput input = TaskInput.of(2L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -55,7 +59,9 @@ class ShellTaskExecutionTest {
     @Test
     @EnabledOnOs(OS.WINDOWS)
     void testTimeoutWindows() {
-        String inputJson = "{\"command\":\"ping -n 11 127.0.0.1 > nul\",\"timeoutSeconds\":1}";
+        String inputJson = """
+            {"command":"ping -n 11 127.0.0.1 > nul","timeoutSeconds":1}
+            """;
         TaskInput input = TaskInput.of(2L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -69,7 +75,9 @@ class ShellTaskExecutionTest {
      */
     @Test
     void testNonZeroExitCode() {
-        String inputJson = "{\"command\":\"exit 1\"}";
+        String inputJson = """
+            {"command":"exit 1"}
+            """;
         TaskInput input = TaskInput.of(3L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -84,7 +92,9 @@ class ShellTaskExecutionTest {
     @Test
     @DisabledOnOs(OS.WINDOWS)
     void testWorkingDirectoryUnix() {
-        String inputJson = "{\"command\":\"pwd\",\"workingDirectory\":\"/tmp\"}";
+        String inputJson = """
+            {"command":"pwd","workingDirectory":"/tmp"}
+            """;
         TaskInput input = TaskInput.of(4L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -101,7 +111,9 @@ class ShellTaskExecutionTest {
     @Test
     @DisabledOnOs(OS.WINDOWS)
     void testEnvVariablesUnix() {
-        String inputJson = "{\"command\":\"echo $MY_VAR\",\"env\":{\"MY_VAR\":\"hello\"}}";
+        String inputJson = """
+            {"command":"echo $MY_VAR","env":{"MY_VAR":"hello"}}
+            """;
         TaskInput input = TaskInput.of(5L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -116,7 +128,9 @@ class ShellTaskExecutionTest {
     @Test
     @EnabledOnOs(OS.WINDOWS)
     void testEnvVariablesWindows() {
-        String inputJson = "{\"command\":\"echo %MY_VAR%\",\"env\":{\"MY_VAR\":\"hello\"}}";
+        String inputJson = """
+            {"command":"echo %MY_VAR%","env":{"MY_VAR":"hello"}}
+            """;
         TaskInput input = TaskInput.of(5L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -130,7 +144,9 @@ class ShellTaskExecutionTest {
      */
     @Test
     void testInvalidParamNullScript() {
-        String inputJson = "{\"command\":\"\"}";
+        String inputJson = """
+            {"command":""}
+            """;
         TaskInput input = TaskInput.of(6L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -144,7 +160,9 @@ class ShellTaskExecutionTest {
      */
     @Test
     void testInvalidParamNegativeTimeout() {
-        String inputJson = "{\"command\":\"echo hello\",\"timeoutSeconds\":-1}";
+        String inputJson = """
+            {"command":"echo hello","timeoutSeconds":-1}
+            """;
         TaskInput input = TaskInput.of(7L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -159,7 +177,9 @@ class ShellTaskExecutionTest {
     @Test
     @DisabledOnOs(OS.WINDOWS)
     void testStderrInFailureMessage() {
-        String inputJson = "{\"command\":\"echo error >&2; exit 1\"}";
+        String inputJson = """
+            {"command":"echo error >&2; exit 1"}
+            """;
         TaskInput input = TaskInput.of(8L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -174,7 +194,9 @@ class ShellTaskExecutionTest {
     @Test
     @DisabledOnOs(OS.WINDOWS)
     void testExplicitBashShell() {
-        String inputJson = "{\"command\":\"echo $SHELL\",\"shell\":\"bash\"}";
+        String inputJson = """
+            {"command":"echo $SHELL","shell":"bash"}
+            """;
         TaskInput input = TaskInput.of(9L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -188,7 +210,9 @@ class ShellTaskExecutionTest {
     @Test
     @EnabledOnOs(OS.WINDOWS)
     void testExplicitCmdShell() {
-        String inputJson = "{\"command\":\"echo test\",\"shell\":\"cmd.exe\"}";
+        String inputJson = """
+            {"command":"echo test","shell":"cmd.exe"}
+            """;
         TaskInput input = TaskInput.of(10L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -203,8 +227,9 @@ class ShellTaskExecutionTest {
     @Test
     @DisabledOnOs(OS.WINDOWS)
     void testMultiLineScriptUnix() {
-        String script = "VAR1=\"hello\"\\nVAR2=\"world\"\\necho $VAR1 $VAR2";
-        String inputJson = "{\"command\":\"" + script + "\"}";
+        String inputJson = """
+            {"command":"VAR1=\\"hello\\"\\nVAR2=\\"world\\"\\necho $VAR1 $VAR2"}
+            """;
         TaskInput input = TaskInput.of(11L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -218,7 +243,9 @@ class ShellTaskExecutionTest {
      */
     @Test
     void testAutoDetectShell() {
-        String inputJson = "{\"command\":\"echo auto-detect-test\"}";
+        String inputJson = """
+            {"command":"echo auto-detect-test"}
+            """;
         TaskInput input = TaskInput.of(12L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
@@ -233,7 +260,9 @@ class ShellTaskExecutionTest {
     @Test
     void testUtf8ChineseOutput() {
         // 中=中  文=文 — Unicode escapes guarantee correctness regardless of source-file encoding.
-        String inputJson = "{\"command\":\"echo 中文\"}";
+        String inputJson = """
+            {"command":"echo 中文"}
+            """;
         TaskInput input = TaskInput.of(99L, null, inputJson, null);
 
         TaskOutput output = execution.execute(input);
