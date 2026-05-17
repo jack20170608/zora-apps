@@ -11,6 +11,7 @@ import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.enums.ShellType;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,6 +53,11 @@ import java.util.concurrent.TimeUnit;
  *   <li>Linux/Mac: bash or sh</li>
  *   <li>Script syntax should match the target shell</li>
  * </ul>
+ *
+ * <p><b>Output handling:</b> stdout/stderr are streamed to the logger in real time
+ * and written to the configured log files. They are <em>not</em> captured into
+ * {@link TaskOutput#output()} to avoid memory pressure and network overhead.
+ * The caller should consult the log files for full execution output.</p>
  */
 public class ShellTaskExecution implements TaskExecution {
 
@@ -89,14 +95,12 @@ public class ShellTaskExecution implements TaskExecution {
     private TaskOutput executeShell(Long taskId, String taskName, Param param) throws IOException, InterruptedException {
         validate(param);
 
-        // Determine shell: explicit input or auto-detect based on OS
         String shell = StringUtils.isNotBlank(param.shell()) ? param.shell() : ShellDetector.getDefaultShell();
         if (StringUtils.isNotBlank(param.shell()) && !isShellAvailable(shell)) {
             return TaskOutput.fail(taskId, null, "Shell not available on this system: " + shell);
         }
         logger.info("Using shell: {}", shell);
 
-        // Build command array appropriate for the shell
         String[] commandArray = ShellDetector.buildCommandArray(shell, param.command());
         ProcessBuilder pb = new ProcessBuilder(commandArray);
 
@@ -138,9 +142,6 @@ public class ShellTaskExecution implements TaskExecution {
                 process.destroyForcibly();
                 process.waitFor();
             }
-            // Forcibly close streams to unblock StreamGobbler threads.
-            // On some platforms destroy() does not immediately close the pipes,
-            // leaving readLine() blocked indefinitely.
             closeQuietly(process.getInputStream());
             closeQuietly(process.getErrorStream());
         }
@@ -148,17 +149,17 @@ public class ShellTaskExecution implements TaskExecution {
         awaitStreamConsumer(stdoutThread, "stdout", taskId, process.getInputStream());
         awaitStreamConsumer(stderrThread, "stderr", taskId, process.getErrorStream());
 
-        String stdout = stdoutGobbler.getOutput();
-        String stderr = stderrGobbler.getOutput();
         int exitCode = process.exitValue();
 
         if (timedOut || exitCode != 0) {
-            String message = buildFailureMessage(timedOut, exitCode, timeoutSeconds, stderr);
-            return TaskOutput.fail(taskId, stdout, message);
+            String message = timedOut
+                ? "Task timed out after " + timeoutSeconds + " seconds"
+                : "Task exited with code " + exitCode;
+            return TaskOutput.fail(taskId, null, message);
         }
 
         logger.info("Task completed successfully, exitCode={}", exitCode);
-        return TaskOutput.success(taskId, stdout);
+        return TaskOutput.success(taskId, null);
     }
 
     /**
@@ -205,7 +206,7 @@ public class ShellTaskExecution implements TaskExecution {
      * closed or forcibly closed. If the thread is still stuck (extremely rare),
      * we close the stream again and interrupt as a last resort.</p>
      */
-    private void awaitStreamConsumer(Thread thread, String name, Long taskId, java.io.InputStream stream) {
+    private void awaitStreamConsumer(Thread thread, String name, Long taskId, InputStream stream) {
         try {
             thread.join(10000);
             if (thread.isAlive()) {
@@ -223,26 +224,13 @@ public class ShellTaskExecution implements TaskExecution {
         }
     }
 
-    private static void closeQuietly(java.io.Closeable closeable) {
+    private static void closeQuietly(Closeable closeable) {
         try {
             if (closeable != null) {
                 closeable.close();
             }
         } catch (IOException ignored) {
         }
-    }
-
-    private static String buildFailureMessage(boolean timedOut, int exitCode, int timeoutSeconds, String stderr) {
-        StringBuilder sb = new StringBuilder();
-        if (timedOut) {
-            sb.append("Task timed out after ").append(timeoutSeconds).append(" seconds");
-        } else {
-            sb.append("Task exited with code ").append(exitCode);
-        }
-        if (StringUtils.isNotBlank(stderr)) {
-            sb.append(". stderr: ").append(stderr);
-        }
-        return sb.toString();
     }
 
     private void validate(Param param) {
@@ -264,7 +252,7 @@ public class ShellTaskExecution implements TaskExecution {
     }
 
     /**
-     * Input parameter DTO for BashTaskExecution.
+     * Input parameter DTO for ShellTaskExecution.
      */
     public record Param(
         String shell,
@@ -278,14 +266,14 @@ public class ShellTaskExecution implements TaskExecution {
     /**
      * Consumes an InputStream in a separate thread to prevent pipe buffer deadlock.
      * Reads line-by-line using the OS native encoding and prints each line to the logger
-     * in real time, while also buffering the full output for the final result.
+     * in real time. Output is <em>not</em> buffered in memory; callers should consult
+     * the log files for full execution output.
      */
     private class StreamGobbler implements Runnable {
         private final InputStream inputStream;
         private final boolean isStdout;
         private final String mdcTaskId;
         private final String mdcTaskName;
-        private final StringBuilder output = new StringBuilder();
 
         StreamGobbler(InputStream inputStream, boolean isStdout,
                       String mdcTaskId, String mdcTaskName) {
@@ -308,7 +296,6 @@ public class ShellTaskExecution implements TaskExecution {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
-                        output.append(line).append(System.lineSeparator());
                         if (isStdout) {
                             logger.info("[STDOUT] {}", line);
                         } else {
@@ -326,10 +313,6 @@ public class ShellTaskExecution implements TaskExecution {
                     MDC.remove(MDC_TASK_NAME);
                 }
             }
-        }
-
-        String getOutput() {
-            return output.toString();
         }
     }
 

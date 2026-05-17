@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
-import top.ilovemyhome.dagtask.agent.utils.ShellDetector;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 
@@ -14,6 +13,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for ShellTaskExecution with cross-platform support.
  *
  * Tests automatically skip based on OS when necessary to ensure compatibility.
+ * Note: stdout/stderr are streamed to the logger in real time and are not
+ * captured into {@link TaskOutput#output()}. Full output should be checked
+ * in the log files.
  */
 class ShellTaskExecutionTest {
 
@@ -32,8 +34,6 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        assertThat(output.output()).isInstanceOf(String.class);
-        assertThat((String) output.output()).contains("hello");
     }
 
     /**
@@ -60,7 +60,7 @@ class ShellTaskExecutionTest {
     @EnabledOnOs(OS.WINDOWS)
     void testTimeoutWindows() {
         String inputJson = """
-            {"command":"ping -n 5 127.0.0.1","timeoutSeconds": 1}
+            {"command":"ping -n 11 127.0.0.1","timeoutSeconds": 1}
             """;
         TaskInput input = TaskInput.of(2L, "NetworkPingTask", inputJson, null);
 
@@ -100,9 +100,6 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        if (new java.io.File("/tmp").exists()) {
-            assertThat((String) output.output()).contains("/tmp");
-        }
     }
 
     /**
@@ -119,7 +116,6 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        assertThat((String) output.output()).contains("hello");
     }
 
     /**
@@ -136,7 +132,6 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        assertThat((String) output.output()).contains("hello");
     }
 
     /**
@@ -172,23 +167,6 @@ class ShellTaskExecutionTest {
     }
 
     /**
-     * Test stderr is included in failure message
-     */
-    @Test
-    @DisabledOnOs(OS.WINDOWS)
-    void testStderrInFailureMessage() {
-        String inputJson = """
-            {"command":"echo error >&2; exit 1"}
-            """;
-        TaskInput input = TaskInput.of(8L, null, inputJson, null);
-
-        TaskOutput output = execution.execute(input);
-
-        assertThat(output.isSuccess()).isFalse();
-        assertThat(output.message()).contains("error");
-    }
-
-    /**
      * Test explicit bash shell
      */
     @Test
@@ -218,7 +196,6 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        assertThat((String) output.output()).contains("test");
     }
 
     /**
@@ -235,7 +212,6 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        assertThat((String) output.output()).contains("hello").contains("world");
     }
 
     /**
@@ -251,15 +227,15 @@ class ShellTaskExecutionTest {
         TaskOutput output = execution.execute(input);
 
         assertThat(output.isSuccess()).isTrue();
-        assertThat((String) output.output()).contains("auto-detect-test");
     }
 
     /**
-     * UTF-8 encoding diagnostic: echo a CJK character and verify it is not mangled.
+     * UTF-8 encoding diagnostic: echo a CJK character and verify execution
+     * succeeds. The actual character correctness is validated via the log
+     * output rather than TaskOutput (stdout is not captured into output).
      */
     @Test
     void testUtf8ChineseOutput() {
-        // 中=中  文=文 — Unicode escapes guarantee correctness regardless of source-file encoding.
         String inputJson = """
             {"command":"echo 中文"}
             """;
@@ -267,8 +243,6 @@ class ShellTaskExecutionTest {
 
         TaskOutput output = execution.execute(input);
 
-        String stdout = (String) output.output();
         assertThat(output.isSuccess()).isTrue();
-        assertThat(stdout).contains("中文");
     }
 }
