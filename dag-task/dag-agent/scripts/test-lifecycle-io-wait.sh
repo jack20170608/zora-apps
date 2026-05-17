@@ -15,8 +15,7 @@ TIMESTAMP=$(iso_now)
 echo "========================================"
 echo "I/O Wait Lifecycle Test (taskId=$TASK_ID)"
 echo "========================================"
-echo "NOTE: This task blocks on accept() which ignores Thread.interrupt()."
-echo "      Kill may not be able to stop it immediately."
+echo "NOTE: accept() uses a 1s timeout so kill can interrupt via checkInterruption()."
 echo ""
 
 # 1. Submit I/O wait task
@@ -48,7 +47,7 @@ api_get "health"
 
 sleep 2
 
-# 3. Kill the task (may not succeed immediately)
+# 3. Kill the task
 echo ""
 echo "Step 3: Kill the I/O blocked task"
 BODY=$(cat <<EOF
@@ -67,9 +66,9 @@ api_post "kill" "$BODY"
 
 sleep 1
 
-# 4. Check health — task may still be running because accept() ignores interrupt
+# 4. Check health — task should be gone
 echo ""
-echo "Step 4: Check health (task may still be running — accept() is not interruptible)"
+echo "Step 4: Check health (task should be gone)"
 api_get "health"
 
 echo ""
