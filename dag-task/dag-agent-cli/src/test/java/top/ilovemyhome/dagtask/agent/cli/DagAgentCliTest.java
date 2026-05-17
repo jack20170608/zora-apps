@@ -77,8 +77,8 @@ class DagAgentCliTest {
             .withName("WindowsBashTask")
             .withInputJson("""
                 {
-                "shell": "bash",
-                "command" : "ls -al && echo $p1 $p2 ",
+                "shell": "cmd",
+                "command" : "dir && echo $p1 $p2 ",
                 "timeoutSeconds": 10,
                 "env": {
                     "p1": "v1",

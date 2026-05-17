@@ -130,8 +130,8 @@ public class ShellTaskExecution extends AbstractTaskExecution {
             }
         }
 
-        stdoutThread.join(5000);
-        stderrThread.join(5000);
+        awaitStreamConsumer(stdoutThread, "stdout", taskId);
+        awaitStreamConsumer(stderrThread, "stderr", taskId);
 
         String stdout = stdoutGobbler.getOutput();
         String stderr = stderrGobbler.getOutput();
@@ -176,6 +176,24 @@ public class ShellTaskExecution extends AbstractTaskExecution {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return false;
+        }
+    }
+
+    /**
+     * Waits for a stream consumer thread to finish draining remaining output.
+     *
+     * <p>The process has already exited, so remaining buffered data is finite.
+     * A generous timeout is used to avoid truncating large final bursts of output.</p>
+     */
+    private void awaitStreamConsumer(Thread thread, String name, Long taskId) {
+        try {
+            thread.join(30000);
+            if (thread.isAlive()) {
+                logger.warn("TaskId={}: {} consumer did not finish within 30s; output may be truncated", taskId, name);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("TaskId={}: Interrupted while waiting for {} consumer", taskId, name);
         }
     }
 
