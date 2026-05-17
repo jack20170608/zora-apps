@@ -30,7 +30,6 @@ public class DagAgentCli {
         CommandLine cmd = new CommandLine(arguments);
         cmd.setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
             LOGGER.error("Execution failed: {}", ex.getMessage(), ex);
-            System.err.println("Execution failed: " + ex.getMessage());
             return 1;
         });
 
@@ -75,11 +74,10 @@ public class DagAgentCli {
             return result.success() ? 0 : 1;
         } catch (TimeoutException e) {
             long duration = System.currentTimeMillis() - startTime;
-            System.err.println("Task execution timed out after " + duration + "ms");
+            LOGGER.error("Task execution timed out after {}ms", duration);
             return 1;
         } catch (Exception e) {
             LOGGER.error("Unexpected error during task execution", e);
-            System.err.println("Task execution failed: " + e.getMessage());
             return 1;
         } finally {
             engine.stop();
@@ -110,10 +108,7 @@ public class DagAgentCli {
 
     private static void printResult(TaskExecuteResult result, long durationMs) {
         String status = result.success() ? "SUCCESS" : "FAILED";
-        System.out.println("Task execution completed:");
-        System.out.println("  Task ID: " + result.taskId());
-        System.out.println("  Status: " + status);
-        System.out.println("  Output: " + result.output());
-        System.out.println("  Duration: " + durationMs + "ms");
+        LOGGER.info("Task execution completed: taskId={}, status={}, output={}, duration={}ms",
+            result.taskId(), status, result.output(), durationMs);
     }
 }
