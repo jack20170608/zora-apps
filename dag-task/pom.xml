@@ -20,6 +20,8 @@
         <module>dag-agent</module>
         <module>dag-agent-muserver</module>
         <module>dag-agent-cli</module>
+        <module>dag-allinone</module>
+        <module>dag-allinone-muserver</module>
     </modules>
 
     <properties>
@@ -77,6 +79,17 @@
             <dependency>
                 <groupId>top.ilovemyhome.dagtask</groupId>
                 <artifactId>dag-agent-cli</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>top.ilovemyhome.dagtask</groupId>
+                <artifactId>dag-allinone</artifactId>
+                <version>${revision}</version>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>top.ilovemyhome.dagtask</groupId>
+                <artifactId>dag-allinone-muserver</artifactId>
                 <version>${revision}</version>
             </dependency>
         </dependencies>
