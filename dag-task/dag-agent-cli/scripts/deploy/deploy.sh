@@ -2,8 +2,9 @@
 #
 # Deployment script for dag-agent-cli.
 #
-# This script builds the project via Maven and deploys the fat jar
-# (and optionally the distribution archive) to a remote server via SCP.
+# This script builds the project via Maven, creates the distribution archive
+# (via maven-assembly-plugin using distribution.xml), and deploys it to a
+# remote server via SCP.  The archive is then extracted in place on the target.
 #
 # Usage:
 #   ./deploy.sh [profile]
@@ -13,8 +14,6 @@
 #   DEPLOY_USER      - SSH user (default: deploy)
 #   DEPLOY_KEY       - SSH private key path (optional)
 #   DEPLOY_DIR       - remote deployment directory (default: /opt/dag-agent-cli)
-#   DEPLOY_JAR       - whether to deploy fat jar (default: true)
-#   DEPLOY_DIST      - whether to deploy distribution tarball (default: false)
 #   MVN_PROFILE      - Maven build profile (optional)
 #
 
@@ -23,26 +22,19 @@ set -euo pipefail
 # ==============================================================================
 # CONFIG (override via environment variables or edit in place)
 # ==============================================================================
-DEPLOY_HOST="${DEPLOY_HOST:-192.168.1.100}"
-DEPLOY_USER="${DEPLOY_USER:-deploy}"
-DEPLOY_KEY="${DEPLOY_KEY:-}"              # e.g. ~/.ssh/id_rsa_deploy
-DEPLOY_DIR="${DEPLOY_DIR:-/opt/dag-agent-cli}"
-DEPLOY_JAR="${DEPLOY_JAR:-true}"
-DEPLOY_DIST="${DEPLOY_DIST:-false}"
+DEPLOY_HOST="${DEPLOY_HOST:-10.10.10.20}"
+DEPLOY_USER="${DEPLOY_USER:-jack}"
+DEPLOY_KEY="${DEPLOY_KEY:-~/.ssh/id_rsa}"              # e.g. ~/.ssh/id_rsa_deploy
+DEPLOY_DIR="${DEPLOY_DIR:-/appvol/ilovemyhome/apps/dag-task-cli}"
 MVN_PROFILE="${MVN_PROFILE:-}"
 
 # ==============================================================================
 # DERIVED PATHS
 # ==============================================================================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-TARGET_DIR="$PROJECT_ROOT/target"
-
-JAR_NAME="dag-agent-cli-1.0.1-SNAPSHOT-jar-with-dependencies.jar"
-DIST_NAME="dag-agent-cli-1.0.1-SNAPSHOT-distribution.tar.gz"
-
-JAR_PATH="$TARGET_DIR/$JAR_NAME"
-DIST_PATH="$TARGET_DIR/$DIST_NAME"
+DAG_CLI_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROJECT_ROOT="$(cd "$DAG_CLI_ROOT/../" && pwd)"
+TARGET_DIR="$DAG_CLI_ROOT/target"
 
 # ==============================================================================
 # HELPERS
@@ -74,7 +66,7 @@ ssh_cmd() {
 # ==============================================================================
 # BUILD
 # ==============================================================================
-log_step "Building project with Maven"
+log_step "Building distribution package with Maven"
 
 cd "$PROJECT_ROOT"
 
@@ -86,17 +78,16 @@ fi
 log_info "Running: mvn clean package $MVN_ARGS"
 mvn clean package $MVN_ARGS
 
-if [[ "$DEPLOY_JAR" == "true" && ! -f "$JAR_PATH" ]]; then
-    log_error "Fat jar not found: $JAR_PATH"
-    exit 1
-fi
+# Discover distribution archive dynamically AFTER build (avoids hardcoding version)
+DIST_PATH=$(ls "$TARGET_DIR"/dag-agent-cli-*-distribution.tar.gz 2>/dev/null | head -1)
+DIST_NAME=$(basename "$DIST_PATH" 2>/dev/null || true)
 
-if [[ "$DEPLOY_DIST" == "true" && ! -f "$DIST_PATH" ]]; then
+if [[ ! -f "$DIST_PATH" ]]; then
     log_error "Distribution archive not found: $DIST_PATH"
     exit 1
 fi
 
-log_info "Build completed successfully."
+log_info "Build completed.  Distribution: $DIST_NAME"
 
 # ==============================================================================
 # DEPLOY
@@ -106,27 +97,24 @@ log_step "Deploying to $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR"
 log_info "Ensuring remote directory exists..."
 ssh_cmd "mkdir -p $DEPLOY_DIR"
 
-if [[ "$DEPLOY_JAR" == "true" ]]; then
-    log_info "Uploading fat jar..."
-    scp_cmd "$JAR_PATH" "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/$JAR_NAME"
-    log_info "Fat jar uploaded: $DEPLOY_DIR/$JAR_NAME"
-fi
+log_info "Uploading distribution archive..."
+scp_cmd "$DIST_PATH" "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/$DIST_NAME"
 
-if [[ "$DEPLOY_DIST" == "true" ]]; then
-    log_info "Uploading distribution archive..."
-    scp_cmd "$DIST_PATH" "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/$DIST_NAME"
-    log_info "Distribution archive uploaded: $DEPLOY_DIR/$DIST_NAME"
-fi
+log_info "Extracting archive on remote host..."
+ssh_cmd "cd $DEPLOY_DIR && tar -xzf $DIST_NAME --overwrite"
+
+log_info "Removing remote archive file..."
+ssh_cmd "rm -f $DEPLOY_DIR/$DIST_NAME"
 
 # ==============================================================================
-# POST-DEPLOY (optional)
+# POST-DEPLOY
 # ==============================================================================
 log_step "Post-deployment verification"
 
 log_info "Listing deployed files on remote host:"
-ssh_cmd "ls -lh $DEPLOY_DIR/"
+ssh_cmd "ls -lhR $DEPLOY_DIR/"
 
-# Uncomment the following block to automatically restart a remote service after deployment
+# Uncomment to automatically restart a remote service after deployment
 # log_info "Restarting remote service..."
 # ssh_cmd "sudo systemctl restart dag-agent-cli || true"
 

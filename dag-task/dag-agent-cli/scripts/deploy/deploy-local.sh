@@ -2,8 +2,8 @@
 #
 # Local deployment script for dag-agent-cli.
 #
-# This script builds the project via Maven and copies the fat jar
-# to a local directory (e.g. for testing or local staging).
+# This script builds the project via Maven (using the distribution archive)
+# and extracts it to a local directory (e.g. for testing or local staging).
 #
 # Usage:
 #   ./deploy-local.sh [target_dir]
@@ -15,12 +15,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-TARGET_DIR="$PROJECT_ROOT/target"
+DAG_CLI_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROJECT_ROOT="$(cd "$DAG_CLI_ROOT/../" && pwd)"
+TARGET_DIR="$DAG_CLI_ROOT/target"
 
 LOCAL_DEPLOY_DIR="${1:-$SCRIPT_DIR/local-deploy}"
-JAR_NAME="dag-agent-cli-1.0.1-SNAPSHOT-jar-with-dependencies.jar"
-JAR_PATH="$TARGET_DIR/$JAR_NAME"
 
 echo "========================================"
 echo "Local Deploy"
@@ -28,25 +27,29 @@ echo "========================================"
 echo ""
 
 # Build
-echo "[STEP] Building project..."
+echo "[STEP] Building distribution package..."
 cd "$PROJECT_ROOT"
 mvn clean package -pl dag-agent-cli -am -DskipTests
 
-if [[ ! -f "$JAR_PATH" ]]; then
-    echo "[ERROR] Fat jar not found: $JAR_PATH"
+# Discover distribution archive dynamically AFTER build (avoids hardcoding version)
+DIST_PATH=$(ls "$TARGET_DIR"/dag-agent-cli-*-distribution.tar.gz 2>/dev/null | head -1)
+DIST_NAME=$(basename "$DIST_PATH" 2>/dev/null || true)
+
+if [[ ! -f "$DIST_PATH" ]]; then
+    echo "[ERROR] Distribution archive not found: $DIST_PATH"
     exit 1
 fi
 
-# Copy
+# Extract
 echo ""
-echo "[STEP] Copying to $LOCAL_DEPLOY_DIR..."
+echo "[STEP] Extracting to $LOCAL_DEPLOY_DIR..."
 mkdir -p "$LOCAL_DEPLOY_DIR"
-cp "$JAR_PATH" "$LOCAL_DEPLOY_DIR/"
+tar -xzf "$DIST_PATH" -C "$LOCAL_DEPLOY_DIR" --overwrite
 
 # Verify
 echo ""
-echo "[STEP] Verifying..."
-ls -lh "$LOCAL_DEPLOY_DIR/$JAR_NAME"
+echo "[STEP] Verifying deployed contents..."
+find "$LOCAL_DEPLOY_DIR" -maxdepth 3 -type f | sort
 
 echo ""
 echo "========================================"
