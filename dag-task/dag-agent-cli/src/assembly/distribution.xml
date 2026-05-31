@@ -9,10 +9,18 @@
     <baseDirectory>dag-agent-cli-${project.version}</baseDirectory>
     <fileSets>
         <fileSet>
-            <directory>scripts</directory>
-            <outputDirectory>bin</outputDirectory>
+            <directory>scripts/common</directory>
+            <outputDirectory>bin/common</outputDirectory>
             <includes>
-                <include>*.sh</include>
+                <include>*</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
+            <directory>scripts/functional-test</directory>
+            <outputDirectory>bin/functional-test</outputDirectory>
+            <includes>
+                <include>*</include>
             </includes>
             <fileMode>0755</fileMode>
         </fileSet>
