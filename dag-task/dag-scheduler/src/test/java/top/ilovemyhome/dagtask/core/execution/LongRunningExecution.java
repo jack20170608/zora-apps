@@ -10,7 +10,7 @@ import java.time.Duration;
 public class LongRunningExecution implements TaskExecution {
 
     @Override
-    public TaskOutput execute(TaskInput input) {
+    public TaskOutput doExecute(TaskInput input) {
         String in = (String) input.input();
         Long taskId = input.taskId();
         ThreadUtils.sleepQuietly(Duration.ofSeconds(2));

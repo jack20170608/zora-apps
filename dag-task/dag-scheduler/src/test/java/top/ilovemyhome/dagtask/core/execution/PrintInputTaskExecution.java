@@ -11,7 +11,7 @@ public class PrintInputTaskExecution implements TaskExecution {
     private static final Logger logger = LoggerFactory.getLogger(PrintInputTaskExecution.class);
 
     @Override
-    public TaskOutput execute(TaskInput input) {
+    public TaskOutput doExecute(TaskInput input) {
         logger.info("Input is [{}].", input);
         String in = (String) input.input();
         return TaskOutput.success(input.taskId(), in + "->" + getClass().getSimpleName());

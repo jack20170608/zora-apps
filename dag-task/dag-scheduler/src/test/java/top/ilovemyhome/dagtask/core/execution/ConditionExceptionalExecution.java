@@ -8,7 +8,7 @@ import top.ilovemyhome.dagtask.si.TaskOutput;
 public class ConditionExceptionalExecution implements TaskExecution {
 
     @Override
-    public TaskOutput execute(TaskInput input) {
+    public TaskOutput doExecute(TaskInput input) {
         Long taskId = input.taskId();
         String in = (String) input.input();
         if (StringUtils.startsWith(in, "error")){
