@@ -28,7 +28,7 @@ TESTS=(
     "test-nonexistent-workdir.sh"
     "test-invalid-counter-param.sh"
     "test-long-running-timeout.sh"
-    "test-long-running-timeout.sh"
+    "test-shell-call-print_time_10.sh"
 )
 
 echo "========================================"

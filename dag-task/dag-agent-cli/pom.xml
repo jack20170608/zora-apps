@@ -19,6 +19,12 @@
         <dependency>
             <groupId>top.ilovemyhome.dagtask</groupId>
             <artifactId>dag-agent</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>top.ilovemyhome.zora</groupId>
+                    <artifactId>zora-static</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- DAG SI -->
         <dependency>
