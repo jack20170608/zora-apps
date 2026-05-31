@@ -2,7 +2,7 @@
 # Test shell command that writes to stderr but succeeds (exit 0)
 # Verifies stderr lines are logged in real time
 
-source "$(dirname "$0")/run-local.sh"
+source "$(dirname "$0")/../common/run-local.sh"
 
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" ]]; then
     # Windows: echo to stderr via cmd

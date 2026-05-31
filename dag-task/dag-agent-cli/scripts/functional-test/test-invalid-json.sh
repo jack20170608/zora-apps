@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Test malformed JSON input (expected to fail)
 
-source "$(dirname "$0")/run-local.sh"
+source "$(dirname "$0")/../common/run-local.sh"
 
 run_cli \
     402 \

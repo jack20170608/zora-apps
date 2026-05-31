@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Test shell command timeout handling
 
-source "$(dirname "$0")/run-local.sh"
+source "$(dirname "$0")/../common/run-local.sh"
 
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" ]]; then
     # Windows - use ping to simulate long-running command

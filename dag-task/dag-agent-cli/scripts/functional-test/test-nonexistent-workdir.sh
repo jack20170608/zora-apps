@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Test non-existent working directory (behavior depends on OS; may succeed or fail)
 
-source "$(dirname "$0")/run-local.sh"
+source "$(dirname "$0")/../common/run-local.sh"
 
 run_cli \
     406 \
