@@ -9,7 +9,5 @@ run_cli \
     "LongRunningTimeoutTest" \
     "top.ilovemyhome.dagtask.agent.execution.LongRunningExecution" \
     '{"durationSeconds":10,"description":"Should timeout"}' \
-    2000
-
-# Expected to fail
-exit 0
+    2000 \
+    true

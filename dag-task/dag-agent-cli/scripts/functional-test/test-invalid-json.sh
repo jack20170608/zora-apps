@@ -7,7 +7,5 @@ run_cli \
     402 \
     "InvalidJsonTest" \
     "top.ilovemyhome.dagtask.agent.execution.ShellTaskExecution" \
-    '{"command": "echo hello"'
-
-# Expected to fail
-exit 0
+    '{"command": "echo hello"' \
+    true

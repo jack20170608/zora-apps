@@ -7,7 +7,5 @@ run_cli \
     405 \
     "InvalidShellTest" \
     "top.ilovemyhome.dagtask.agent.execution.ShellTaskExecution" \
-    '{"command":"echo hello","shell":"nonexistent_shell"}'
-
-# Expected to fail
-exit 0
+    '{"command":"echo hello","shell":"nonexistent_shell"}' \
+    true

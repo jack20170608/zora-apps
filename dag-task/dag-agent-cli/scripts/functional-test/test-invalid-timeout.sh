@@ -7,7 +7,5 @@ run_cli \
     404 \
     "InvalidTimeoutTest" \
     "top.ilovemyhome.dagtask.agent.execution.ShellTaskExecution" \
-    '{"command":"echo hello","timeoutSeconds":-1}'
-
-# Expected to fail
-exit 0
+    '{"command":"echo hello","timeoutSeconds":-1}' \
+    true

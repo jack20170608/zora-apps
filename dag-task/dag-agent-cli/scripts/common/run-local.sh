@@ -40,6 +40,7 @@ run_cli() {
     local execution_class="$3"
     local input_json="${4:-\{\}}"
     local timeout_ms="${5:-30000}"
+    local expect_fail="${6:-false}"
 
     echo "========================================"
     echo "Test: $name (id=$id)"
@@ -54,11 +55,23 @@ run_cli() {
         -t "$timeout_ms"
 
     local exit_code=$?
-    if [[ $exit_code -eq 0 ]]; then
-        echo "[PASS] $name"
+    if [[ "$expect_fail" == "true" ]]; then
+        if [[ $exit_code -ne 0 ]]; then
+            echo "[PASS] $name (expected failure, exit code: $exit_code)"
+            echo ""
+            return 0
+        else
+            echo "[FAIL] $name (expected failure but succeeded)"
+            echo ""
+            return 1
+        fi
     else
-        echo "[FAIL] $name (exit code: $exit_code)"
+        if [[ $exit_code -eq 0 ]]; then
+            echo "[PASS] $name"
+        else
+            echo "[FAIL] $name (exit code: $exit_code)"
+        fi
+        echo ""
+        return $exit_code
     fi
-    echo ""
-    return $exit_code
 }

@@ -17,6 +17,12 @@ TESTS=(
     "test-echo.sh"
     "test-shell-multi-line.sh"
     "test-shell-stderr.sh"
+    "test-shell-call-print_time_10.sh"
+    "test-shell-output-large.sh"
+    "test-shell-output-stderr.sh"
+    "test-shell-use-env-vars.sh"
+    "test-shell-write-files.sh"
+    "test-shell-handle-args.sh"
     # Edge / error cases (expected to fail)
     "test-shell-timeout.sh"
     "test-shell-exit-code.sh"
@@ -28,7 +34,8 @@ TESTS=(
     "test-nonexistent-workdir.sh"
     "test-invalid-counter-param.sh"
     "test-long-running-timeout.sh"
-    "test-shell-call-print_time_10.sh"
+    "test-shell-exit-nonzero.sh"
+    "test-shell-nonexistent-script.sh"
 )
 
 echo "========================================"

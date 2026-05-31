@@ -7,7 +7,5 @@ run_cli \
     406 \
     "NonExistentWorkdirTest" \
     "top.ilovemyhome.dagtask.agent.execution.ShellTaskExecution" \
-    '{"command":"pwd","workingDirectory":"/this_path_does_not_exist_12345"}'
-
-# Result varies by platform and shell, so don't force exit code
-exit 0
+    '{"command":"pwd","workingDirectory":"/this_path_does_not_exist_12345"}' \
+    true

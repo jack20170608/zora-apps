@@ -16,4 +16,5 @@ run_cli \
     "ShellTimeoutTest" \
     "top.ilovemyhome.dagtask.agent.execution.ShellTaskExecution" \
     "$CMD" \
-    15000
+    15000 \
+    true

@@ -7,7 +7,5 @@ run_cli \
     401 \
     "InvalidClassTest" \
     "top.ilovemyhome.dagtask.agent.execution.NonExistentExecution" \
-    '{"command":"echo hello"}'
-
-# Expected to fail
-exit 0
+    '{"command":"echo hello"}' \
+    true

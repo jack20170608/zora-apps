@@ -7,7 +7,5 @@ run_cli \
     403 \
     "EmptyCommandTest" \
     "top.ilovemyhome.dagtask.agent.execution.ShellTaskExecution" \
-    '{"command":""}'
-
-# Expected to fail
-exit 0
+    '{"command":""}' \
+    true

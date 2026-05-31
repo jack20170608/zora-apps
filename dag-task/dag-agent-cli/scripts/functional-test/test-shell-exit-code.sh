@@ -7,7 +7,5 @@ run_cli \
     105 \
     "ShellExitCodeTest" \
     "top.ilovemyhome.dagtask.agent.execution.ShellTaskExecution" \
-    '{"command":"exit 42"}'
-
-# This test is expected to return non-zero, so we don't fail the script
-exit 0
+    '{"command":"exit 42"}' \
+    true

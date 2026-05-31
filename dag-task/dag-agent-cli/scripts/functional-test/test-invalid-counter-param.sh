@@ -7,7 +7,5 @@ run_cli \
     407 \
     "InvalidCounterParamTest" \
     "top.ilovemyhome.dagtask.agent.execution.SimpleCounterExecution" \
-    '{"from":10,"to":5,"intervalMillisecond":100}'
-
-# Expected to fail
-exit 0
+    '{"from":10,"to":5,"intervalMillisecond":100}' \
+    true
