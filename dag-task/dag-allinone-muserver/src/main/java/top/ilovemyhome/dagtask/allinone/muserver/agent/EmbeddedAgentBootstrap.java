@@ -6,10 +6,10 @@ import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
+import top.ilovemyhome.dagtask.agent.core.DagTaskAgent;
 import top.ilovemyhome.dagtask.agent.core.TaskExecutionEngine;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,7 +28,7 @@ public class EmbeddedAgentBootstrap {
     private final Config appConfig;
     private final Jdbi jdbi;
     private final AgentConfiguration agentConfig;
-    private final TaskExecutionEngine taskExecutionEngine;
+    private final DagTaskAgent dagTaskAgent;
     private final ExecutorService executorService;
 
     public EmbeddedAgentBootstrap(Config appConfig, Jdbi jdbi, AgentSchedulerClient schedulerClient) {
@@ -37,7 +37,7 @@ public class EmbeddedAgentBootstrap {
         this.agentConfig = buildAgentConfiguration(appConfig);
         this.executorService = Executors.newFixedThreadPool(agentConfig.getMaxConcurrentTasks());
         ObjectMapper objectMapper = new ObjectMapper();
-        this.taskExecutionEngine = new TaskExecutionEngine(agentConfig, schedulerClient, executorService, objectMapper);
+        this.dagTaskAgent = new DagTaskAgent(agentConfig, schedulerClient, executorService, objectMapper);
     }
 
     /**
@@ -87,7 +87,7 @@ public class EmbeddedAgentBootstrap {
         });
 
         // Start the task execution engine (queue processor)
-        taskExecutionEngine.start();
+        dagTaskAgent.start();
         LOGGER.info("Embedded agent '{}' started successfully", LOCAL_AGENT_ID);
     }
 
@@ -96,13 +96,16 @@ public class EmbeddedAgentBootstrap {
      */
     public void stop() {
         LOGGER.info("Stopping embedded agent...");
-        taskExecutionEngine.stop();
-        executorService.shutdown();
+        dagTaskAgent.stop();
         LOGGER.info("Embedded agent stopped");
     }
 
     public TaskExecutionEngine getTaskExecutionEngine() {
-        return taskExecutionEngine;
+        return dagTaskAgent.getExecutionEngine();
+    }
+
+    public DagTaskAgent getDagTaskAgent() {
+        return dagTaskAgent;
     }
 
     public AgentConfiguration getAgentConfiguration() {
