@@ -113,6 +113,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>jar-with-dependencies</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
@@ -126,6 +127,18 @@
                                     <mainClass>top.ilovemyhome.dagtask.agent.cli.DagAgentCli</mainClass>
                                 </manifest>
                             </archive>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>distribution</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/assembly/distribution.xml</descriptor>
+                            </descriptors>
                         </configuration>
                     </execution>
                 </executions>
