@@ -2,8 +2,8 @@ package top.ilovemyhome.dagtask.core.helper;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import top.ilovemyhome.dagtask.core.dag.DagHelper;
-import top.ilovemyhome.dagtask.core.dag.DagNode;
+import top.ilovemyhome.dagtask.scheduler.domain.dag.DagHelper;
+import top.ilovemyhome.dagtask.scheduler.domain.dag.DagNode;
 
 import java.util.ArrayList;
 import java.util.List;

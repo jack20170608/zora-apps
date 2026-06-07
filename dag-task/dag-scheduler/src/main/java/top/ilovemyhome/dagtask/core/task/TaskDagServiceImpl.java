@@ -11,8 +11,8 @@ import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
 import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.persistence.TaskRecordDao;
 import top.ilovemyhome.dagtask.si.service.TaskDagService;
-import top.ilovemyhome.dagtask.core.dag.DagHelper;
-import top.ilovemyhome.dagtask.core.dag.DagNode;
+import top.ilovemyhome.dagtask.scheduler.domain.dag.DagHelper;
+import top.ilovemyhome.dagtask.scheduler.domain.dag.DagNode;
 import top.ilovemyhome.dagtask.si.TaskOrder;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 

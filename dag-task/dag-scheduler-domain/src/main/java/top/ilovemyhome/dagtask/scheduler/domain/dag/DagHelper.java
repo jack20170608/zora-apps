@@ -1,6 +1,5 @@
-package top.ilovemyhome.dagtask.core.dag;
+package top.ilovemyhome.dagtask.scheduler.domain.dag;
 
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +21,8 @@ public final class DagHelper {
     }
 
     private static Set<Long> getAllStartNode(List<DagNode> allNodes, Map<Long, DagNode> nodeMap){
-        Set<Long> result = Sets.newHashSet(nodeMap.keySet());
+        // JDK replacement for Guava Sets.newHashSet(Iterable): copy keys into a new HashSet.
+        Set<Long> result = new HashSet<>(nodeMap.keySet());
         allNodes.forEach(n -> {
             if (Objects.nonNull(n.getSuccessors()) && !n.getSuccessors().isEmpty()){
                 n.getSuccessors().forEach(result::remove);
@@ -34,7 +34,8 @@ public final class DagHelper {
     private static void visit(Stack<DagNode> path, DagNode currentNode, Map<Long, DagNode> nodeMap, List<String> taskPath){
         Objects.requireNonNull(currentNode);
         //check if the path already contain the current node, means have cycle
-        Set<DagNode> unique = Sets.newHashSet(path);
+        // JDK replacement for Guava Sets.newHashSet(Iterable): copy stack content into a new HashSet.
+        Set<DagNode> unique = new HashSet<>(path);
         if (unique.contains(currentNode)){
             throw new IllegalArgumentException("The DAG contains cycle.");
         }

@@ -9,7 +9,7 @@ import top.ilovemyhome.dagtask.core.DagSchedulerServer;
 import top.ilovemyhome.dagtask.core.agent.DefaultAgentRegistryService;
 import top.ilovemyhome.dagtask.core.dao.*;
 import top.ilovemyhome.dagtask.core.dispatcher.DefaultTaskDispatcher;
-import top.ilovemyhome.dagtask.core.dispatcher.RandomLoadBalance;
+import top.ilovemyhome.dagtask.scheduler.domain.dispatcher.RandomLoadBalance;
 import top.ilovemyhome.dagtask.core.service.DagManageServiceImpl;
 import top.ilovemyhome.dagtask.core.service.DagScheduleServiceImpl;
 import top.ilovemyhome.dagtask.core.service.TaskTemplateServiceImpl;

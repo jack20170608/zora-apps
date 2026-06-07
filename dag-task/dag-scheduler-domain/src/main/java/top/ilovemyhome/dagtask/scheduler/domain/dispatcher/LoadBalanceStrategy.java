@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.core.dispatcher;
+package top.ilovemyhome.dagtask.scheduler.domain.dispatcher;
 
 import top.ilovemyhome.dagtask.si.agent.AgentStatus;
 

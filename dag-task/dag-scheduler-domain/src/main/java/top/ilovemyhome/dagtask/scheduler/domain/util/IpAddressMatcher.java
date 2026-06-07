@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.core.util;
+package top.ilovemyhome.dagtask.scheduler.domain.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -14,7 +14,7 @@ import top.ilovemyhome.dagtask.si.agent.AgentStatus;
 import top.ilovemyhome.dagtask.si.agent.AgentStatusReport;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
-import top.ilovemyhome.dagtask.core.util.IpAddressMatcher;
+import top.ilovemyhome.dagtask.scheduler.domain.util.IpAddressMatcher;
 import top.ilovemyhome.dagtask.si.agent.AgentWhitelist;
 import top.ilovemyhome.dagtask.si.auth.TokenInfo;
 import top.ilovemyhome.dagtask.si.persistence.AgentDao;

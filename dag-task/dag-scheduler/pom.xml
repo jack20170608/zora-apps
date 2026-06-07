@@ -21,6 +21,12 @@
             <artifactId>dag-si</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- DAG Scheduler Domain (hexagonal ports + pure domain helpers) -->
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-scheduler-domain</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
         <!-- zora common -->
         <dependency>

@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.core.dag;
+package top.ilovemyhome.dagtask.scheduler.domain.dag;
 
 import java.util.Objects;
 import java.util.Set;
