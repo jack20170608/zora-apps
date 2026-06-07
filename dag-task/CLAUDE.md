@@ -43,3 +43,18 @@ dag-task/
 ## Claude Code 配置
 
 本项目已配置 `dag-task/.claude/settings.json`，允许所有 `mvn` 命令无需确认直接执行。如需调整权限规则，请编辑该文件中的 `permissions.allow` 数组。
+
+## 六边形重构进行中（自 2026-06-07 起）
+
+`dag-scheduler` 子系统正在分 4 步迁移到 Ports & Adapters 架构。**期间旧 `dag-scheduler` / `dag-scheduler-muserver` 模块保留并继续工作**，新模块逐步建立：
+
+| 模块 | 角色 | 阶段 |
+|---|---|---|
+| `dag-scheduler-domain` | 纯 domain + ports（零基础设施依赖） | 步骤 1 ✅ 已建骨架 |
+| `dag-scheduler-adapter-persistence-jdbc` | zora-jdbi/Flyway 实现 port.out | 步骤 1 ✅ 已建骨架 |
+| `dag-scheduler-adapter-web-muserver` | zora-muserver 实现 port.in | 步骤 1 ✅ 已建骨架 |
+| `dag-scheduler-app` | 手工 DI 组装 + main | 步骤 1 ✅ 已建骨架 |
+
+详见 `docs/superpowers/specs/2026-06-07-dag-scheduler-hexagonal-design.md` 与 `docs/10-ARCHITECTURE-hexagonal-refactor-pilot.md`。
+
+**给后续 Claude 的提示**：在此重构完成前，新增 dag-scheduler 相关代码请加到**新模块**，而不是旧 `dag-scheduler` / `dag-scheduler-muserver`。`dag-scheduler-domain` 的 ArchUnit 守护规则当前 `@Disabled`，待步骤 2 搬入 domain 代码后启用。

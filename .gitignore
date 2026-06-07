@@ -37,7 +37,8 @@ nbdist/
 
 # IntelliJ
 .idea/
-out/
+/out/
+**/.idea_modules/
 
 # VS Code
 .vscode/
