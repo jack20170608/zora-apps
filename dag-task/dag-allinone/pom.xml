@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>top.ilovemyhome.dagtask</groupId>
+        <artifactId>dag-task</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>dag-allinone</artifactId>
+    <packaging>pom</packaging>
+    <name>dag-allinone</name>
+    <description>Aggregation module for all-in-one deployment</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-si</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-scheduler</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-scheduler-muserver</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-admin</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-admin-muserver</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-agent</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-agent-muserver</artifactId>
+        </dependency>
+    </dependencies>
+</project>

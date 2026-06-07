@@ -20,10 +20,12 @@
         <module>dag-agent</module>
         <module>dag-agent-muserver</module>
         <module>dag-agent-cli</module>
+        <module>dag-allinone</module>
+        <module>dag-allinone-muserver</module>
     </modules>
 
     <properties>
-        <revision>1.0.1-SNAPSHOT</revision>
+        <revision>1.0.0</revision>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -77,6 +79,17 @@
             <dependency>
                 <groupId>top.ilovemyhome.dagtask</groupId>
                 <artifactId>dag-agent-cli</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>top.ilovemyhome.dagtask</groupId>
+                <artifactId>dag-allinone</artifactId>
+                <version>${revision}</version>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>top.ilovemyhome.dagtask</groupId>
+                <artifactId>dag-allinone-muserver</artifactId>
                 <version>${revision}</version>
             </dependency>
         </dependencies>

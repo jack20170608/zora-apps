@@ -6,7 +6,7 @@ import top.ilovemyhome.dagtask.si.TaskOutput;
 
 public class TestTaskExecution implements TaskExecution {
     @Override
-    public TaskOutput execute(TaskInput input) {
+    public TaskOutput doExecute(TaskInput input) {
         return null;
     }
 }
