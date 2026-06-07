@@ -42,7 +42,7 @@ public class TaskInputTest {
         String fooJson = JacksonUtil.toJson(fooInput);
         TaskInput taskInput = new TaskInput(100L, "test-task", fooJson, Map.of("p1", "v1", "p2", "v2"));
         assertThat(taskInput.taskId()).isEqualTo(100L);
-        Foo input = taskInput.getInputAs(Foo.class);
+        Foo input = taskInput.input() == null ? null : JacksonUtil.fromJson(taskInput.input(), Foo.class);
         assertThat(input.id()).isEqualTo(1L);
         assertThat(input.barList()).isEqualTo(List.of(new Bar(2L, "t1"), new Bar(3L, "t3")));
         assertThat(input.someDate()).isEqualTo(LocalDate.of(2025,6,1));
@@ -51,7 +51,7 @@ public class TaskInputTest {
         String jsonPayload = JacksonUtil.toJson(taskInput);
         TaskInput taskInput2 = JacksonUtil.fromJson(jsonPayload, TaskInput.class);
         assertThat(taskInput.taskId()).isEqualTo(taskInput2.taskId());
-        Foo input2 = taskInput2.getInputAs(Foo.class);
+        Foo input2 = taskInput2.input() == null ? null : JacksonUtil.fromJson(taskInput2.input(), Foo.class);
         assertThat(input.id()).isEqualTo(input2.id());
     }
 
