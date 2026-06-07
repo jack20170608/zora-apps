@@ -22,6 +22,14 @@
             <artifactId>dag-si</artifactId>
         </dependency>
 
+        <!-- TEMPORARY: zora-jdbi.page.{Page,Pageable} used by paginated UseCase signatures.
+             Remove in step 3 when SearchCriteria + Pageable are replaced with domain-owned
+             query/page types. See docs/10-ARCHITECTURE-hexagonal-refactor-pilot.md TD-1. -->
+        <dependency>
+            <groupId>top.ilovemyhome.zora</groupId>
+            <artifactId>zora-jdbi</artifactId>
+        </dependency>
+
         <!-- SLF4J -->
         <dependency>
             <groupId>org.slf4j</groupId>
