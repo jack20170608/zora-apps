@@ -12,12 +12,11 @@ import top.ilovemyhome.dagtask.si.TaskOrder;
 import top.ilovemyhome.dagtask.si.TaskTemplate;
 import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
 import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
+import top.ilovemyhome.dagtask.scheduler.domain.query.Page;
+import top.ilovemyhome.dagtask.scheduler.domain.query.Pageable;
 import top.ilovemyhome.dagtask.scheduler.port.in.InstantiateDagTemplateUseCase;
 import top.ilovemyhome.dagtask.scheduler.port.in.ManageTaskTemplateUseCase;
 import top.ilovemyhome.dagtask.scheduler.port.in.QueryTaskTemplateUseCase;
-import top.ilovemyhome.zora.jdbi.page.Page;
-import top.ilovemyhome.zora.jdbi.page.Pageable;
-import top.ilovemyhome.zora.jdbi.page.impl.PageRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,18 +54,18 @@ public class WorkflowApi {
         @QueryParam("page") @DefaultValue("1") int page,
         @QueryParam("pageSize") @DefaultValue("20") int pageSize) {
         TaskTemplateSearchCriteria criteria = TaskTemplateSearchCriteria.builder().build();
-        Pageable pageRequest = new PageRequest(page, pageSize);
+        Pageable pageRequest = new Pageable(page, pageSize);
         Page<TaskTemplate> result = queryTemplate.find(criteria, pageRequest);
-        List<Map<String, Object>> workflows = result.getContent().stream()
+        List<Map<String, Object>> workflows = result.content().stream()
             .map(this::toWorkflowMap)
             .collect(Collectors.toList());
         Map<String, Object> response = new HashMap<>();
         response.put("data", workflows);
-        response.put("page", result.getNumber());
-        response.put("pageSize", result.getSize());
-        response.put("total", result.getTotalElements());
-        response.put("totalPages", result.getTotalPages());
-        LOGGER.info("Listed workflows: page={}, pageSize={}, total={}", page, pageSize, result.getTotalElements());
+        response.put("page", result.number());
+        response.put("pageSize", result.size());
+        response.put("total", result.totalElements());
+        response.put("totalPages", result.totalPages());
+        LOGGER.info("Listed workflows: page={}, pageSize={}, total={}", page, pageSize, result.totalElements());
         return Response.ok().entity(ResEntityHelper.ok("Workflows retrieved successfully", response)).build();
     }
 

@@ -27,6 +27,12 @@
             <artifactId>dag-scheduler-domain</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- DAG Scheduler Persistence Adapter (DaoJdbiImpl moved here in step 3) -->
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-scheduler-adapter-persistence-jdbc</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
         <!-- zora common -->
         <dependency>

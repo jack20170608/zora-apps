@@ -51,9 +51,9 @@ dag-task/
 | 模块 | 角色 | 阶段 |
 |---|---|---|
 | `dag-scheduler-domain` | 纯 domain + ports（零基础设施依赖） | 步骤 2 ✅ Domain migrated |
-| `dag-scheduler-adapter-persistence-jdbc` | zora-jdbi/Flyway 实现 port.out | 步骤 1 ✅ 已建骨架 |
-| `dag-scheduler-adapter-web-muserver` | zora-muserver 实现 port.in | 步骤 1 ✅ 已建骨架 |
-| `dag-scheduler-app` | 手工 DI 组装 + main | 步骤 1 ✅ 已建骨架 |
+| `dag-scheduler-adapter-persistence-jdbc` | zora-jdbi/Flyway 实现 port.out | 步骤 3 ✅ Adapters migrated |
+| `dag-scheduler-adapter-web-muserver` | zora-muserver 实现 port.in | 步骤 1 ✅ 已建骨架（web API 类仍留在 dag-scheduler，新 adapter 待 step 4） |
+| `dag-scheduler-app` | 手工 DI 组装 + main | 步骤 1 ✅ 已建骨架（SchedulerContext 待 step 4） |
 
 详见 `docs/superpowers/specs/2026-06-07-dag-scheduler-hexagonal-design.md` 与 `docs/10-ARCHITECTURE-hexagonal-refactor-pilot.md`。
 

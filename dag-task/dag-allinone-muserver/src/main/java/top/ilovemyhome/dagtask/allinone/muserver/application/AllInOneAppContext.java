@@ -10,8 +10,8 @@ import top.ilovemyhome.dagtask.allinone.muserver.client.InProcessSchedulerClient
 import top.ilovemyhome.dagtask.allinone.muserver.database.DatabaseBootstrap;
 import top.ilovemyhome.dagtask.allinone.muserver.dispatcher.InProcessTaskDispatcher;
 import top.ilovemyhome.dagtask.core.DagSchedulerServer;
-import top.ilovemyhome.dagtask.core.adapter.SystemClock;
-import top.ilovemyhome.dagtask.core.dao.TaskDispatchDaoJdbiImpl;
+import top.ilovemyhome.dagtask.scheduler.adapter.persistence.jdbc.SystemClock;
+import top.ilovemyhome.dagtask.scheduler.adapter.persistence.jdbc.TaskDispatchDaoJdbiImpl;
 import top.ilovemyhome.dagtask.core.dispatcher.DefaultTaskDispatcher;
 import top.ilovemyhome.dagtask.scheduler.application.ScheduleDagRunService;
 import top.ilovemyhome.dagtask.scheduler.domain.dispatcher.RandomLoadBalance;

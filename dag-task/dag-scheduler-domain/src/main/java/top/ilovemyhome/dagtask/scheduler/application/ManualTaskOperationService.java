@@ -20,8 +20,6 @@ import top.ilovemyhome.dagtask.si.agent.AgentStatus;
 import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -79,8 +77,7 @@ public class ManualTaskOperationService implements ManualTaskOperationUseCase {
         if (!result.success()) {
             throw new RuntimeException("Failed to dispatch task: " + result.message());
         }
-        LocalDateTime now = LocalDateTime.ofInstant(clock.now(), ZoneId.systemDefault());
-        taskRecordRepository.start(taskId, input, now);
+        taskRecordRepository.start(taskId, input, clock.now());
         return result;
     }
 
@@ -145,8 +142,7 @@ public class ManualTaskOperationService implements ManualTaskOperationUseCase {
         TaskRecord task = taskOpt.get();
         String orderKey = task.getOrderKey();
 
-        LocalDateTime now = LocalDateTime.ofInstant(clock.now(), ZoneId.systemDefault());
-        taskRecordRepository.stop(taskId, newStatus, output, now);
+        taskRecordRepository.stop(taskId, newStatus, output, clock.now());
 
         if (newStatus == TaskStatus.SUCCESS) {
             List<TaskRecord> readySuccessors = taskRecordRepository.findReadySuccessors(taskId);

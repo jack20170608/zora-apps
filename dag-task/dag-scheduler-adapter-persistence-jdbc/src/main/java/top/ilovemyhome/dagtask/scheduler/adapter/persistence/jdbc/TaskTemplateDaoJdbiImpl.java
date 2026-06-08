@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.core.dao;
+package top.ilovemyhome.dagtask.scheduler.adapter.persistence.jdbc;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.RowMapper;

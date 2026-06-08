@@ -29,15 +29,7 @@ class HexagonalArchitectureTest {
                 "java.sql..",
                 "com.fasterxml.jackson..",
                 "org.flywaydb..",
-                "com.zaxxer.hikari..",
-                // TD-1: zora-jdbi.page.{Page,Pageable} still leaks in UseCase signatures.
-                // Remove this exemption when step 3 replaces with domain-owned types.
-                "top.ilovemyhome.zora.rdb..",
-                "top.ilovemyhome.zora.muserver..",
-                "top.ilovemyhome.zora.json..",
-                "top.ilovemyhome.zora.httpclient..",
-                "top.ilovemyhome.zora.config..",
-                "top.ilovemyhome.zora.static..")
+                "com.zaxxer.hikari..")
             .because("dag-scheduler-domain must remain zero-infrastructure (spec section 1)")
             .check(classes);
     }

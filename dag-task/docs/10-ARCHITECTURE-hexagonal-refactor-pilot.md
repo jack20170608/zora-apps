@@ -3,7 +3,7 @@
 - 启动日期：2026-06-07
 - 设计文档：[`superpowers/specs/2026-06-07-dag-scheduler-hexagonal-design.md`](./superpowers/specs/2026-06-07-dag-scheduler-hexagonal-design.md)
 - 试点范围：仅 `dag-scheduler` 子系统
-- 状态：进行中（步骤 2 / 4 已完成）
+- 状态：进行中（步骤 3 / 4 已完成）
 
 ## 背景
 项目长期演进可能切换 Web 框架（Spring Web / Micronaut）或持久化技术（本地文件 / KV）。为避免架构被锁死，本次重构在 `dag-scheduler` 试点 Ports & Adapters 架构，验证模式后再推广到 `dag-agent` / `dag-admin`。
@@ -13,7 +13,7 @@
 |---|---|---|
 | 1 | 建 4 个新模块骨架 + ArchUnit 守护（不动旧代码） | ✅ 已完成 |
 | 2 | 搬 domain：领域类、UseCase、ports 从旧 core 迁入 `dag-scheduler-domain` | ✅ 已完成 |
-| 3 | 搬 adapters：dao 迁入 persistence-jdbc；控制器迁入 web-muserver | 待办 |
+| 3 | 搬 adapters：dao 迁入 persistence-jdbc；Flyway 迁移迁入 persistence-jdbc；TD-1/TD-2 解决 | ✅ 已完成 |
 | 4 | 切 allinone，删旧模块，归档总结 | 待办 |
 
 ## 新模块结构
@@ -81,15 +81,29 @@ dag-scheduler-app/                          组装入口（手工 DI + main + Sc
 - ✅ `dag-allinone-muserver` 的 `AllInOneAppContext` / `InProcessSchedulerClient` 改用 `ScheduleDagRunUseCase`
 - ✅ `HexagonalArchitectureTest` 3 条规则全绿（ArchUnit `1.4.2` 为支持 JDK 25 的最低版本）
 - ✅ `mvn verify -pl '!dag-agent,!dag-agent-muserver,!dag-agent-cli'` BUILD SUCCESS，全部测试通过
-- ⚠️ 旧 `dag-si/service/*` 接口和 7 个 `@Deprecated` ServiceImpl **未物理删除**（DagSchedulerServer 仍引用），留 step 3 整体退役
+- ⚠️ 旧 `dag-si/service/*` 接口和 7 个 `@Deprecated` ServiceImpl **未物理删除**（DagSchedulerServer 仍引用），留 step 4 整体退役
+
+### 步骤 3 验收结果
+- ✅ `domain.query.Page<T>` + `domain.query.Pageable` 创建，替换 zora-jdbi 类型（TD-1 解决）
+- ✅ `TaskRecordRepository.start/stop` 改为 `Instant`，DaoJdbiImpl 内部转换（TD-2 解决）
+- ✅ `HexagonalArchitectureTest` 移除所有 zora 包豁免，3 条规则全绿
+- ✅ 8 个 `*DaoJdbiImpl` 物理迁入 `dag-scheduler-adapter-persistence-jdbc`
+- ✅ 4 个 cross-cutting adapter（SystemClock, JdbiUnitOfWork, SequenceIdGenerator, JacksonDagDefinitionParser）迁入 persistence-jdbc
+- ✅ Flyway 迁移文件从 `dag-si` 迁入 `dag-scheduler-adapter-persistence-jdbc`
+- ✅ `dag-scheduler` pom 添加 persistence-jdbc 依赖，DagSchedulerBuilder 引用新包
+- ✅ `dag-admin-muserver` / `dag-allinone-muserver` pom 添加 persistence-jdbc 依赖，AppContext 引用新包
+- ✅ `WorkflowApi` 改用 domain `Page` / `Pageable`
+- ✅ `mvn verify -pl '!dag-agent,!dag-agent-muserver,!dag-agent-cli' -am` BUILD SUCCESS
+- ⚠️ `LegacyTokenIssuer` 未迁入（依赖 `TokenService` 仍在 dag-scheduler），留 step 4
+- ⚠️ Web API 类（`TaskTemplateApi` 等）仍留在 `dag-scheduler/core/interfaces`，新 web adapter 留 step 4
 
 ## 已知技术债务（TD）
 
 | ID | 描述 | 计划修复步骤 |
 |---|---|---|
-| TD-1 | `zora-jdbi.page.{Page,Pageable}` 在 `UseCase.find(criteria, pageable)` 签名中残留；ArchUnit 临时豁免 `top.ilovemyhome.zora.jdbi..` | step 3：用 `domain.query.Page<T>` / `Pageable` 替代 |
-| TD-2 | `TaskRecordRepository.start/stop` 仍收 `LocalDateTime`；应改 `Instant` | step 3：更新 port 签名 + DaoJdbiImpl 适配 |
-| TD-3 | Agent in-memory cache 已移除（每次查 repository）；若 perf 退化需加 `CachePort` | step 3 评估 |
+| TD-1 | ✅ `zora-jdbi.page.{Page,Pageable}` 已替换为 `domain.query.Page<T>` / `Pageable` | 已完成 |
+| TD-2 | ✅ `TaskRecordRepository.start/stop` 已改为 `Instant`，DaoJdbiImpl 内部转换 | 已完成 |
+| TD-3 | Agent in-memory cache 已移除（每次查 repository）；若 perf 退化需加 `CachePort` | step 4 评估 |
 | TD-4 | `ReportTaskResultService` 直接复用 `taskRecord.getStatus()` 而非根据 success 判断（旧实现 bug 保留） | 待 dag-agent 端定义清楚后修复 |
 
 ## 总结

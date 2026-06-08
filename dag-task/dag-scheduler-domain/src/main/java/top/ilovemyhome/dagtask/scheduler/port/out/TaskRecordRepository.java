@@ -1,14 +1,14 @@
 package top.ilovemyhome.dagtask.scheduler.port.out;
 
+import top.ilovemyhome.dagtask.scheduler.domain.query.Page;
+import top.ilovemyhome.dagtask.scheduler.domain.query.Pageable;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
-import top.ilovemyhome.zora.jdbi.page.Page;
-import top.ilovemyhome.zora.jdbi.page.Pageable;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,11 +24,7 @@ public interface TaskRecordRepository {
     /** Find task records matching the given criteria without pagination. */
     List<TaskRecord> find(TaskRecordSearchCriteria criteria);
 
-    /**
-     * Find task records matching the given criteria with pagination.
-     * Page/Pageable types are a temporary leak from zora-jdbi (TD-1);
-     * will be replaced with domain-owned types in step 3.
-     */
+    /** Find task records matching the given criteria with pagination. */
     Page<TaskRecord> find(TaskRecordSearchCriteria criteria, Pageable pageable);
 
     /**
@@ -73,10 +69,10 @@ public interface TaskRecordRepository {
     boolean isSuccess(String orderKey);
 
     /** Mark the task as started, recording its input and start timestamp. */
-    int start(Long id, TaskInput input, LocalDateTime startDt);
+    int start(Long id, TaskInput input, Instant startDt);
 
     /** Mark the task as stopped, recording its output, final status, and stop timestamp. */
-    int stop(Long id, TaskStatus newStatus, TaskOutput output, LocalDateTime stopDt);
+    int stop(Long id, TaskStatus newStatus, TaskOutput output, Instant stopDt);
 
     /** Lookup the order key for a given task id. */
     String getTaskOrderByTaskId(Long taskId);

@@ -18,8 +18,6 @@ import top.ilovemyhome.dagtask.si.agent.AgentStatus;
 import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -105,8 +103,7 @@ public class ScheduleDagRunService implements ScheduleDagRunUseCase {
         TaskRecord task = taskOpt.get();
         String orderKey = task.getOrderKey();
 
-        LocalDateTime now = LocalDateTime.ofInstant(clock.now(), ZoneId.systemDefault());
-        taskRecordRepository.stop(taskId, newStatus, output, now);
+        taskRecordRepository.stop(taskId, newStatus, output, clock.now());
         logger.info("Task {} completed with status: {}", taskId, newStatus);
 
         if (newStatus == TaskStatus.SUCCESS) {

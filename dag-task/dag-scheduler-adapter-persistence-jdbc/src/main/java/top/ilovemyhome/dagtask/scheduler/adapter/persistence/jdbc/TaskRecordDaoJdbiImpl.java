@@ -1,4 +1,4 @@
-package top.ilovemyhome.dagtask.core.dao;
+package top.ilovemyhome.dagtask.scheduler.adapter.persistence.jdbc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.jdbi.v3.core.Jdbi;

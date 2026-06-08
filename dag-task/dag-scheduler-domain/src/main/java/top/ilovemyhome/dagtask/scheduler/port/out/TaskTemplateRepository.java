@@ -1,9 +1,9 @@
 package top.ilovemyhome.dagtask.scheduler.port.out;
 
+import top.ilovemyhome.dagtask.scheduler.domain.query.Page;
+import top.ilovemyhome.dagtask.scheduler.domain.query.Pageable;
 import top.ilovemyhome.dagtask.si.TaskTemplate;
 import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
-import top.ilovemyhome.zora.jdbi.page.Page;
-import top.ilovemyhome.zora.jdbi.page.Pageable;
 
 import java.util.List;
 
@@ -28,11 +28,7 @@ public interface TaskTemplateRepository {
     /** Find templates matching the given criteria without pagination. */
     List<TaskTemplate> find(TaskTemplateSearchCriteria criteria);
 
-    /**
-     * Find templates matching the given criteria with pagination.
-     * Page/Pageable types are a temporary leak from zora-jdbi (TD-1);
-     * will be replaced with domain-owned types in step 3.
-     */
+    /** Find templates matching the given criteria with pagination. */
     Page<TaskTemplate> find(TaskTemplateSearchCriteria criteria, Pageable pageable);
 
     /**

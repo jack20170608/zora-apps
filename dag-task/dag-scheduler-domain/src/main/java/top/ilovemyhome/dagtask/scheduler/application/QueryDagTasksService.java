@@ -4,8 +4,8 @@ import top.ilovemyhome.dagtask.scheduler.port.out.TaskRecordRepository;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
-import top.ilovemyhome.zora.jdbi.page.Page;
-import top.ilovemyhome.zora.jdbi.page.Pageable;
+import top.ilovemyhome.dagtask.scheduler.domain.query.Page;
+import top.ilovemyhome.dagtask.scheduler.domain.query.Pageable;
 
 import java.util.List;
 import java.util.Objects;

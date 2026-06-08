@@ -5,8 +5,6 @@ import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -56,8 +54,7 @@ public class ReportTaskResultService implements top.ilovemyhome.dagtask.schedule
 
         // TD-4: legacy behavior preserved — uses taskRecord.getStatus() instead of
         // deriving the new status from taskExecuteResult.success().
-        LocalDateTime now = LocalDateTime.ofInstant(clock.now(), ZoneId.systemDefault());
-        taskRecordRepository.stop(taskExecuteResult.taskId(), taskRecord.getStatus(), output, now);
+        taskRecordRepository.stop(taskExecuteResult.taskId(), taskRecord.getStatus(), output, clock.now());
         return true;
     }
 

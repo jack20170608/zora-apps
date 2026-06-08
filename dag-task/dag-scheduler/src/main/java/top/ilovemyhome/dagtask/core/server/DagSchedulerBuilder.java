@@ -7,7 +7,7 @@ import org.jdbi.v3.core.argument.Argument;
 import org.jdbi.v3.core.config.ConfigRegistry;
 import top.ilovemyhome.dagtask.core.DagSchedulerServer;
 import top.ilovemyhome.dagtask.core.agent.DefaultAgentRegistryService;
-import top.ilovemyhome.dagtask.core.dao.*;
+import top.ilovemyhome.dagtask.scheduler.adapter.persistence.jdbc.*;
 import top.ilovemyhome.dagtask.core.dispatcher.DefaultTaskDispatcher;
 import top.ilovemyhome.dagtask.scheduler.domain.dispatcher.RandomLoadBalance;
 import top.ilovemyhome.dagtask.core.service.DagManageServiceImpl;

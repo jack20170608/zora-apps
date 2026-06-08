@@ -7,8 +7,8 @@ import top.ilovemyhome.dagtask.scheduler.port.in.QueryTaskTemplateUseCase;
 import top.ilovemyhome.dagtask.scheduler.port.out.TaskTemplateRepository;
 import top.ilovemyhome.dagtask.si.TaskTemplate;
 import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
-import top.ilovemyhome.zora.jdbi.page.Page;
-import top.ilovemyhome.zora.jdbi.page.Pageable;
+import top.ilovemyhome.dagtask.scheduler.domain.query.Page;
+import top.ilovemyhome.dagtask.scheduler.domain.query.Pageable;
 
 import java.util.List;
 import java.util.Objects;

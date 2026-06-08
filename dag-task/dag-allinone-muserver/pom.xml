@@ -25,6 +25,10 @@
             <groupId>top.ilovemyhome.dagtask</groupId>
             <artifactId>dag-si</artifactId>
         </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-scheduler-adapter-persistence-jdbc</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.muserver</groupId>
