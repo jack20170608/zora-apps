@@ -15,6 +15,9 @@ import java.util.List;
  */
 public interface TaskDispatchRepository {
 
+    /** Create a new dispatch record and return its generated ID. */
+    Long create(TaskDispatchRecord dispatchRecord);
+
     /**
      * Finds the dispatch record(s) for a specific task.
      *

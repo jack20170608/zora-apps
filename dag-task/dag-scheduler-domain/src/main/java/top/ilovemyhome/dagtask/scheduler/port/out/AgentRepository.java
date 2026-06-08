@@ -12,6 +12,9 @@ import java.util.Optional;
  */
 public interface AgentRepository {
 
+    /** Create a new agent and return its generated ID. */
+    Long create(Agent agent);
+
     Optional<Agent> findByAgentId(String agentId);
 
     List<Agent> findByStatus(Agent.Status status);
