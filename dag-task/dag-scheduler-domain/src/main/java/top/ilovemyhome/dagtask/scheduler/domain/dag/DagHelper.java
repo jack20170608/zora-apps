@@ -3,11 +3,23 @@ package top.ilovemyhome.dagtask.scheduler.domain.dag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Pure-domain helper for traversing a DAG represented as a list of {@link DagNode}s.
+ * Detects cycles and collects all task paths from start nodes to leaf nodes.
+ */
 public final class DagHelper {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DagHelper.class);
 
     public static void visitDAG(List<DagNode> nodes, List<String> taskPath){
         if (isEmpty(nodes)){
@@ -59,6 +71,4 @@ public final class DagHelper {
     private static boolean isEmpty(Collection collection){
         return Objects.isNull(collection) || collection.isEmpty();
     }
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DagHelper.class);
 }

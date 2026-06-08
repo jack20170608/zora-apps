@@ -3,12 +3,15 @@ package top.ilovemyhome.dagtask.scheduler.domain.dag;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Immutable node in a DAG used for cycle detection and path enumeration.
+ * Identity is based solely on {@code id} (equals/hashCode ignore name and successors).
+ */
 public final class DagNode {
 
     private final Long id;
     private final Set<Long> successors;
     private final String name;
-
 
     public DagNode(Long id, Set<Long> successors) {
         this.id = id;
