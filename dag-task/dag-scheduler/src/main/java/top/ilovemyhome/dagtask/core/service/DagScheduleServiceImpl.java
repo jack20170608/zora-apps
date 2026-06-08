@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+@Deprecated(forRemoval = true, since = "step 2 hexagonal refactor")
 public class DagScheduleServiceImpl implements DagScheduleService {
 
     private final TaskRecordDao taskRecordDao;

@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import static top.ilovemyhome.dagtask.si.enums.TaskStatus.*;
 
+@Deprecated(forRemoval = true, since = "step 2 hexagonal refactor")
 public class TaskOrderServiceImpl implements TaskOrderService {
 
     public TaskOrderServiceImpl(Jdbi jdbi, TaskRecordDao taskRecordDao, TaskOrderDao taskOrderDao) {

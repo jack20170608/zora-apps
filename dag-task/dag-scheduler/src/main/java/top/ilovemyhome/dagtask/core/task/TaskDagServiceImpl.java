@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
  * Implementation of {@link TaskDagService} focusing on DAG task record management.
  * Runtime scheduling is handled by {@link top.ilovemyhome.dagtask.core.service.DagScheduleServiceImpl}.
  */
+@Deprecated(forRemoval = true, since = "step 2 hexagonal refactor")
 public class TaskDagServiceImpl implements TaskDagService {
 
     private final Jdbi jdbi;

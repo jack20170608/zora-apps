@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+@Deprecated(forRemoval = true, since = "step 2 hexagonal refactor")
 public class TaskTemplateServiceImpl implements TaskTemplateService {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskTemplateServiceImpl.class);

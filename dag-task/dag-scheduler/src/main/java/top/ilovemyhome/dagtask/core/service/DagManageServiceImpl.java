@@ -36,6 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@Deprecated(forRemoval = true, since = "step 2 hexagonal refactor")
 public class DagManageServiceImpl implements DagManageService {
 
     private final TaskRecordDao taskRecordDao;

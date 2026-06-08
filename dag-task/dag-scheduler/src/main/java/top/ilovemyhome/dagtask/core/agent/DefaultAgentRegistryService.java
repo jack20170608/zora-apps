@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * and delegates persistence to the DAO layer, allowing the registry to survive
  * server restarts.
  */
+@Deprecated(forRemoval = true, since = "step 2 hexagonal refactor")
 public class DefaultAgentRegistryService implements AgentRegistryService {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultAgentRegistryService.class);

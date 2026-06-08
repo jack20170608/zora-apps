@@ -13,6 +13,7 @@ import java.util.Optional;
 
 import static top.ilovemyhome.dagtask.si.Constants.MAX_QUERY_SIZE;
 
+@Deprecated(forRemoval = true, since = "step 2 hexagonal refactor")
 public class DagQueryServiceImpl implements DagQueryService {
 
     private final TaskRecordDao taskRecordDao;

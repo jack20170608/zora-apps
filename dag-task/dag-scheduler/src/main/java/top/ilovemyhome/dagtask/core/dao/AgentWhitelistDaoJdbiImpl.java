@@ -2,6 +2,7 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.RowMapper;
+import top.ilovemyhome.dagtask.scheduler.port.out.AgentWhitelistRepository;
 import top.ilovemyhome.dagtask.si.agent.AgentWhitelist;
 import top.ilovemyhome.dagtask.si.dto.AgentWhitelistSearchCriteria;
 import top.ilovemyhome.dagtask.si.persistence.AgentWhitelistDao;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class AgentWhitelistDaoJdbiImpl extends BaseDaoJdbiImpl<AgentWhitelist> implements AgentWhitelistDao {
+public class AgentWhitelistDaoJdbiImpl extends BaseDaoJdbiImpl<AgentWhitelist> implements AgentWhitelistDao, AgentWhitelistRepository {
 
     private final Jdbi jdbi;
 

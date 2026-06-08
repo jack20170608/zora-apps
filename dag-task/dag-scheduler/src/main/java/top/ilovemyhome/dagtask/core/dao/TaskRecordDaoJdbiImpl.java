@@ -2,6 +2,7 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.jdbi.v3.core.Jdbi;
+import top.ilovemyhome.dagtask.scheduler.port.out.TaskRecordRepository;
 import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.jdbi.SqlGenerator;
@@ -24,7 +25,7 @@ import static top.ilovemyhome.zora.common.date.LocalDateUtils.toLocalDateTime;
 import static top.ilovemyhome.zora.common.lang.StringConvertUtils.toEnum;
 
 
-public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implements TaskRecordDao {
+public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implements TaskRecordDao, TaskRecordRepository {
 
     public static final String TABLE_NAME = "t_task";
 
@@ -258,5 +259,36 @@ public class TaskRecordDaoJdbiImpl extends BaseDaoJdbiImpl<TaskRecord> implement
         Objects.requireNonNull(criteria, "criteria must not be null");
         String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll) + criteria.whereClause();
         return find(sql, criteria.normalParams(), criteria.listParam());
+    }
+
+    /**
+     * Bridge for the {@code TaskRecordRepository#find(criteria, pageable)} port method,
+     * delegating to the inherited {@code BaseDaoJdbiImpl#find(SearchCriteria, Pageable)}.
+     * The explicit override is required because Java's overload resolution treats
+     * {@code find(TaskRecordSearchCriteria, Pageable)} and {@code find(SearchCriteria, Pageable)}
+     * as distinct signatures even though TaskRecordSearchCriteria implements SearchCriteria.
+     */
+    @Override
+    public top.ilovemyhome.zora.jdbi.page.Page<TaskRecord> find(TaskRecordSearchCriteria criteria,
+                                                                top.ilovemyhome.zora.jdbi.page.Pageable pageable) {
+        return super.find(criteria, pageable);
+    }
+
+    /**
+     * Bridge for the {@code TaskRecordRepository#find(criteria)} port method,
+     * delegating to the inherited {@code BaseDaoJdbiImpl#find(SearchCriteria)}.
+     */
+    @Override
+    public List<TaskRecord> find(TaskRecordSearchCriteria criteria) {
+        return super.find(criteria);
+    }
+
+    /**
+     * Bridge for the {@code TaskRecordRepository#count(criteria)} port method,
+     * delegating to the inherited {@code BaseDaoJdbiImpl#count(SearchCriteria)}.
+     */
+    @Override
+    public int count(TaskRecordSearchCriteria criteria) {
+        return super.count(criteria);
     }
 }

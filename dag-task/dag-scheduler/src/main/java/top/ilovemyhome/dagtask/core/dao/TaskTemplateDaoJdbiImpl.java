@@ -2,6 +2,7 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.RowMapper;
+import top.ilovemyhome.dagtask.scheduler.port.out.TaskTemplateRepository;
 import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
 import top.ilovemyhome.dagtask.si.TaskTemplate;
 import top.ilovemyhome.dagtask.si.persistence.TaskTemplateDao;
@@ -22,7 +23,7 @@ import java.util.Optional;
  * JDBI-based implementation of {@link TaskTemplateDao}.
  * Persists task template information to a PostgreSQL database table.
  */
-public class TaskTemplateDaoJdbiImpl extends BaseDaoJdbiImpl<TaskTemplate> implements TaskTemplateDao {
+public class TaskTemplateDaoJdbiImpl extends BaseDaoJdbiImpl<TaskTemplate> implements TaskTemplateDao, TaskTemplateRepository {
 
     /**
      * Creates a new TaskTemplateDaoJdbiImpl with the given Jdbi instance.
@@ -132,6 +133,24 @@ public class TaskTemplateDaoJdbiImpl extends BaseDaoJdbiImpl<TaskTemplate> imple
             table.getName()
         );
         return count(sql, Map.of("templateKey", templateKey, "version", version), null) > 0;
+    }
+
+    /**
+     * Bridge for the {@code TaskTemplateRepository#find(criteria, pageable)} port method,
+     * delegating to the inherited {@code BaseDaoJdbiImpl#find(SearchCriteria, Pageable)}.
+     */
+    @Override
+    public top.ilovemyhome.zora.jdbi.page.Page<TaskTemplate> find(TaskTemplateSearchCriteria criteria,
+                                                                   top.ilovemyhome.zora.jdbi.page.Pageable pageable) {
+        return super.find(criteria, pageable);
+    }
+
+    /**
+     * Bridge for the {@code TaskTemplateRepository#find(criteria)} port method.
+     */
+    @Override
+    public List<TaskTemplate> find(TaskTemplateSearchCriteria criteria) {
+        return super.find(criteria);
     }
 
     /**

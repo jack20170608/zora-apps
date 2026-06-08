@@ -30,6 +30,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import top.ilovemyhome.dagtask.scheduler.port.out.AgentDispatcher;
+import top.ilovemyhome.dagtask.scheduler.port.out.AgentUnreachableException;
+
 import static top.ilovemyhome.dagtask.si.Constants.*;
 
 /**
@@ -72,7 +75,7 @@ import static top.ilovemyhome.dagtask.si.Constants.*;
  * }</pre>
  * </p>
  */
-public class DefaultTaskDispatcher implements TaskDispatcher {
+public class DefaultTaskDispatcher implements TaskDispatcher, AgentDispatcher {
 
     private final AgentStatusDao agentStatusDao;
     private final TaskDispatchDao taskDispatchDao;
@@ -169,6 +172,79 @@ public class DefaultTaskDispatcher implements TaskDispatcher {
 
         // Step 5: Submit the task to the selected agent
         return submitToAgent(task, selected);
+    }
+
+    /**
+     * Implementation of the {@link AgentDispatcher} outbound port.
+     * Performs the raw HTTP delivery to the agent — dispatch record tracking
+     * is the responsibility of the application service (DispatchTaskService).
+     */
+    @Override
+    public DispatchAck dispatch(AgentStatus targetAgent, TaskRecord task) {
+        Objects.requireNonNull(targetAgent, "targetAgent must not be null");
+        Objects.requireNonNull(task, "task must not be null");
+
+        String agentUrl = targetAgent.getAgentUrl();
+        String submitUrl = buildAgentUrl(agentUrl) + API_VERSION + API_SUBMIT;
+
+        SubmitRequest submitRequest = new SubmitRequest(
+            task.getId(),
+            task.getName(),
+            TaskType.JAVA_CLASS_NAME,
+            task.getExecutionKey(),
+            task.getInput()
+        );
+
+        String requestBody;
+        try {
+            requestBody = objectMapper.writeValueAsString(submitRequest);
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to serialize submission request for task {}", task.getId(), e);
+            return new DispatchAck(false, e.getMessage());
+        }
+
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(submitUrl))
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
+                .header("Content-Type", "application/json")
+                .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            int statusCode = response.statusCode();
+
+            if (statusCode == 202) {
+                logger.info("Task {} dispatched successfully to agent {} at {}",
+                    task.getId(), targetAgent.getAgentId(), agentUrl);
+                return new DispatchAck(true, "");
+            }
+            if (statusCode == 429) {
+                logger.warn("Agent {} rejected task {}: pending queue is full (429)",
+                    targetAgent.getAgentId(), task.getId());
+                return new DispatchAck(false, "pending queue is full (429)");
+            }
+            if (statusCode == 400) {
+                logger.warn("Agent {} rejected task {}: bad request (400), response: {}",
+                    targetAgent.getAgentId(), task.getId(), response.body());
+                return new DispatchAck(false, "bad request (400): " + response.body());
+            }
+
+            logger.warn("Agent {} rejected task {}: unexpected status code {}",
+                targetAgent.getAgentId(), task.getId(), statusCode);
+            return new DispatchAck(false, "unexpected status code " + statusCode + ": " + response.body());
+
+        } catch (IOException e) {
+            logger.error("IOException connecting to agent {} at {} for task {}",
+                targetAgent.getAgentId(), agentUrl, task.getId(), e);
+            throw new AgentUnreachableException(
+                "IOException connecting to agent " + targetAgent.getAgentId() + " at " + agentUrl, e);
+        } catch (InterruptedException e) {
+            logger.error("Interrupted while connecting to agent {} for task {}",
+                targetAgent.getAgentId(), task.getId(), e);
+            Thread.currentThread().interrupt();
+            throw new AgentUnreachableException(
+                "Interrupted while connecting to agent " + targetAgent.getAgentId(), e);
+        }
     }
 
     /**

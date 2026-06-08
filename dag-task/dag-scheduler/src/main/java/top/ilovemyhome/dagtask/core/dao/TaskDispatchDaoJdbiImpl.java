@@ -2,6 +2,7 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.jdbi.v3.core.Jdbi;
+import top.ilovemyhome.dagtask.scheduler.port.out.TaskDispatchRepository;
 import top.ilovemyhome.dagtask.si.enums.DispatchStatus;
 import top.ilovemyhome.zora.jdbi.SqlGenerator;
 import top.ilovemyhome.zora.jdbi.TableDescription;
@@ -29,7 +30,7 @@ import static top.ilovemyhome.zora.common.lang.StringConvertUtils.toEnum;
  * @see TaskDispatchDao
  * @see top.ilovemyhome.dagtask.si.TaskDispatchRecord
  */
-public class TaskDispatchDaoJdbiImpl extends BaseDaoJdbiImpl<TaskDispatchRecord> implements TaskDispatchDao {
+public class TaskDispatchDaoJdbiImpl extends BaseDaoJdbiImpl<TaskDispatchRecord> implements TaskDispatchDao, TaskDispatchRepository {
 
     /**
      * Database table name for task dispatch tracking.

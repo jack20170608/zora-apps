@@ -2,6 +2,7 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.RowMapper;
+import top.ilovemyhome.dagtask.scheduler.port.out.AgentRepository;
 import top.ilovemyhome.dagtask.si.agent.Agent;
 import top.ilovemyhome.dagtask.si.persistence.AgentDao;
 import top.ilovemyhome.zora.jdbi.TableDescription;
@@ -15,7 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-public class AgentDaoJdbiImpl extends BaseDaoJdbiImpl<Agent> implements AgentDao {
+public class AgentDaoJdbiImpl extends BaseDaoJdbiImpl<Agent> implements AgentDao, AgentRepository {
 
     public AgentDaoJdbiImpl(Jdbi jdbi) {
         super(TableDescription.builder()

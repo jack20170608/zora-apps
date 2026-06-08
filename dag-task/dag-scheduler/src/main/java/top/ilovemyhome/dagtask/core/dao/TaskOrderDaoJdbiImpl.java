@@ -3,6 +3,7 @@ package top.ilovemyhome.dagtask.core.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.jdbi.v3.core.Jdbi;
+import top.ilovemyhome.dagtask.scheduler.port.out.TaskOrderRepository;
 import top.ilovemyhome.dagtask.si.TaskOrder;
 import top.ilovemyhome.dagtask.si.persistence.TaskOrderDao;
 import top.ilovemyhome.dagtask.si.TaskRecord;
@@ -20,7 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 
-public class TaskOrderDaoJdbiImpl extends BaseDaoJdbiImpl<TaskOrder> implements TaskOrderDao {
+public class TaskOrderDaoJdbiImpl extends BaseDaoJdbiImpl<TaskOrder> implements TaskOrderDao, TaskOrderRepository {
 
     public TaskOrderDaoJdbiImpl(Jdbi jdbi) {
         super(TableDescription.builder()
