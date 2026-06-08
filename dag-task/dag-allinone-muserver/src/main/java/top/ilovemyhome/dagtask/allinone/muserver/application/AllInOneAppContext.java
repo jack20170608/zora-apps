@@ -10,8 +10,18 @@ import top.ilovemyhome.dagtask.allinone.muserver.client.InProcessSchedulerClient
 import top.ilovemyhome.dagtask.allinone.muserver.database.DatabaseBootstrap;
 import top.ilovemyhome.dagtask.allinone.muserver.dispatcher.InProcessTaskDispatcher;
 import top.ilovemyhome.dagtask.core.DagSchedulerServer;
+import top.ilovemyhome.dagtask.core.adapter.SystemClock;
 import top.ilovemyhome.dagtask.core.dao.TaskDispatchDaoJdbiImpl;
+import top.ilovemyhome.dagtask.core.dispatcher.DefaultTaskDispatcher;
+import top.ilovemyhome.dagtask.scheduler.application.ScheduleDagRunService;
+import top.ilovemyhome.dagtask.scheduler.domain.dispatcher.RandomLoadBalance;
+import top.ilovemyhome.dagtask.scheduler.port.in.ScheduleDagRunUseCase;
+import top.ilovemyhome.dagtask.scheduler.port.out.AgentDispatcher;
+import top.ilovemyhome.dagtask.scheduler.port.out.TaskDispatchRepository;
+import top.ilovemyhome.dagtask.scheduler.port.out.TaskRecordRepository;
+import top.ilovemyhome.dagtask.scheduler.port.out.AgentStatusRepository;
 import top.ilovemyhome.dagtask.si.service.DagScheduleService;
+import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 
 /**
  * Application context for the all-in-one server that combines scheduler, admin, and agent
@@ -30,6 +40,7 @@ public class AllInOneAppContext {
     private final Config config;
     private final DatabaseBootstrap databaseBootstrap;
     private final AppContext adminAppContext;
+    private final ScheduleDagRunUseCase scheduleDagRunUseCase;
     private final InProcessSchedulerClient inProcessSchedulerClient;
     private final EmbeddedAgentBootstrap embeddedAgentBootstrap;
     private final InProcessTaskDispatcher inProcessTaskDispatcher;
@@ -58,13 +69,31 @@ public class AllInOneAppContext {
         // 3. Create in-process scheduler client for result reporting
         DagSchedulerServer dagSchedulerServer = this.adminAppContext.getBean("dagSchedulerServer", DagSchedulerServer.class);
         DagScheduleService dagScheduleService = dagSchedulerServer.getDagScheduleService();
-        this.inProcessSchedulerClient = new InProcessSchedulerClient(dagScheduleService);
+
+        // 3b. Create shared task dispatch DAO (used by both dispatcher and scheduler)
+        TaskDispatchDaoJdbiImpl taskDispatchDao = new TaskDispatchDaoJdbiImpl(sharedJdbi);
+
+        // Construct ScheduleDagRunUseCase (replaces direct DagScheduleService usage)
+        AgentDispatcher agentDispatcher = new DefaultTaskDispatcher(
+            dagSchedulerServer.getAgentStatusDao(),
+            taskDispatchDao,
+            new RandomLoadBalance(),
+            JacksonUtil.MAPPER
+        );
+        this.scheduleDagRunUseCase = new ScheduleDagRunService(
+            (TaskRecordRepository) dagSchedulerServer.getTaskRecordDao(),
+            agentDispatcher,
+            (AgentStatusRepository) dagSchedulerServer.getAgentStatusDao(),
+            taskDispatchDao,
+            new SystemClock(),
+            new RandomLoadBalance()
+        );
+        this.inProcessSchedulerClient = new InProcessSchedulerClient(this.scheduleDagRunUseCase);
 
         // 4. Initialize the embedded agent
         this.embeddedAgentBootstrap = new EmbeddedAgentBootstrap(config, sharedJdbi, this.inProcessSchedulerClient);
 
         // 5. Create in-process task dispatcher and bind to the embedded agent's execution engine
-        var taskDispatchDao = new TaskDispatchDaoJdbiImpl(sharedJdbi);
         this.inProcessTaskDispatcher = new InProcessTaskDispatcher(taskDispatchDao);
         this.inProcessTaskDispatcher.bindTaskExecutionEngine(this.embeddedAgentBootstrap.getTaskExecutionEngine());
 
@@ -124,6 +153,10 @@ public class AllInOneAppContext {
 
     public InProcessTaskDispatcher getInProcessTaskDispatcher() {
         return inProcessTaskDispatcher;
+    }
+
+    public ScheduleDagRunUseCase getScheduleDagRunUseCase() {
+        return scheduleDagRunUseCase;
     }
 
     public InProcessSchedulerClient getInProcessSchedulerClient() {

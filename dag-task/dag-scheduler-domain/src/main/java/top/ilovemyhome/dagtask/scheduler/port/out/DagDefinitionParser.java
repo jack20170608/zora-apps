@@ -1,6 +1,6 @@
 package top.ilovemyhome.dagtask.scheduler.port.out;
 
-import top.ilovemyhome.dagtask.scheduler.port.in.SubmitDagRunUseCase.DagDefinition;
+import top.ilovemyhome.dagtask.scheduler.domain.dag.DagDefinition;
 
 import java.util.Map;
 

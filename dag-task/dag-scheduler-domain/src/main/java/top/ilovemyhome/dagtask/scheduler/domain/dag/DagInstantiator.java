@@ -1,8 +1,5 @@
 package top.ilovemyhome.dagtask.scheduler.domain.dag;
 
-import top.ilovemyhome.dagtask.scheduler.port.in.SubmitDagRunUseCase.DagDefinition;
-import top.ilovemyhome.dagtask.scheduler.port.in.SubmitDagRunUseCase.TaskDefinition;
-import top.ilovemyhome.dagtask.scheduler.port.out.IdGenerator;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
 
@@ -14,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,10 +45,10 @@ public final class DagInstantiator {
     public static List<TaskRecord> instantiate(DagDefinition definition,
                                                String orderKey,
                                                Map<String, String> parameters,
-                                               IdGenerator idGenerator) {
+                                               LongSupplier nextTaskId) {
         Objects.requireNonNull(definition, "definition must not be null");
         Objects.requireNonNull(orderKey, "orderKey must not be null");
-        Objects.requireNonNull(idGenerator, "idGenerator must not be null");
+        Objects.requireNonNull(nextTaskId, "nextTaskId must not be null");
 
         if (definition.tasks() == null || definition.tasks().isEmpty()) {
             return List.of();
@@ -60,8 +58,8 @@ public final class DagInstantiator {
         List<BuildInfo> infos = new ArrayList<>();
 
         // First pass: assign IDs and build records without successor IDs
-        for (TaskDefinition taskDef : definition.tasks()) {
-            long id = idGenerator.nextTaskId();
+        for (DagDefinition.TaskDefinition taskDef : definition.tasks()) {
+            long id = nextTaskId.getAsLong();
             taskNameToId.put(taskDef.key(), id);
 
             String resolvedName = substituteParameters(taskDef.key(), parameters);
@@ -145,6 +143,6 @@ public final class DagInstantiator {
         return sb.toString();
     }
 
-    private record BuildInfo(TaskRecord record, TaskDefinition definition, Set<String> dependencies) {
+    private record BuildInfo(TaskRecord record, DagDefinition.TaskDefinition definition, Set<String> dependencies) {
     }
 }

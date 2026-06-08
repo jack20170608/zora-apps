@@ -52,6 +52,11 @@
             <groupId>top.ilovemyhome.zora</groupId>
             <artifactId>zora-muserver</artifactId>
         </dependency>
+        <!-- OpenAPI/Swagger annotations (moved from dag-si; dag-scheduler web APIs use them) -->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+        </dependency>
 
         <!-- SnakeYAML for YAML configuration parsing -->
         <dependency>

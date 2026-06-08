@@ -27,6 +27,9 @@ import top.ilovemyhome.dagtask.core.interfaces.DagManageApi;
 import top.ilovemyhome.dagtask.core.interfaces.TaskOrderApi;
 import top.ilovemyhome.dagtask.core.interfaces.TaskTemplateApi;
 import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
+import top.ilovemyhome.dagtask.scheduler.port.in.InstantiateDagTemplateUseCase;
+import top.ilovemyhome.dagtask.scheduler.port.in.ManageTaskTemplateUseCase;
+import top.ilovemyhome.dagtask.scheduler.port.in.QueryTaskTemplateUseCase;
 import top.ilovemyhome.dagtask.scheduler.token.TokenManagementApi;
 import top.ilovemyhome.dagtask.scheduler.token.TokenService;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
@@ -126,8 +129,12 @@ public class AllInOneWebServerBootstrap {
         TokenService tokenService = new TokenService(schedulerServer.getAgentTokenDao(), jwtConfig);
         TokenManagementApi tokenManagementApi = new TokenManagementApi(tokenService);
 
+        QueryTaskTemplateUseCase queryTemplate = adminAppContext.getBean("queryTaskTemplateUseCase", QueryTaskTemplateUseCase.class);
+        ManageTaskTemplateUseCase manageTemplate = adminAppContext.getBean("manageTaskTemplateUseCase", ManageTaskTemplateUseCase.class);
+        InstantiateDagTemplateUseCase instantiateUseCase = adminAppContext.getBean("instantiateDagTemplateUseCase", InstantiateDagTemplateUseCase.class);
+
         DagManageApi dagManageApi = new DagManageApi(schedulerServer.getDagManageService());
-        WorkflowApi workflowApi = new WorkflowApi(schedulerServer.getTaskTemplateService(), schedulerServer.getDagManageService());
+        WorkflowApi workflowApi = new WorkflowApi(queryTemplate, manageTemplate, instantiateUseCase);
         ExecutionApi executionApi = new ExecutionApi(schedulerServer.getTaskOrderDao(), schedulerServer.getTaskRecordDao());
         AgentAdminApi agentAdminApi = new AgentAdminApi(schedulerServer.getAgentDao(), schedulerServer.getAgentStatusDao());
         StatsApi statsApi = new StatsApi();

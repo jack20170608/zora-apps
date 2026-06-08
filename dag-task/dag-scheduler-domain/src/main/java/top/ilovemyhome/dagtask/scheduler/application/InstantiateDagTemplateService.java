@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.scheduler.domain.dag.DagInstantiator;
 import top.ilovemyhome.dagtask.scheduler.port.in.InstantiateDagTemplateUseCase;
-import top.ilovemyhome.dagtask.scheduler.port.in.SubmitDagRunUseCase.DagDefinition;
+import top.ilovemyhome.dagtask.scheduler.domain.dag.DagDefinition;
 import top.ilovemyhome.dagtask.scheduler.port.out.DagDefinitionParser;
 import top.ilovemyhome.dagtask.scheduler.port.out.IdGenerator;
 import top.ilovemyhome.dagtask.scheduler.port.out.TaskOrderRepository;
@@ -118,7 +118,7 @@ public class InstantiateDagTemplateService implements InstantiateDagTemplateUseC
         }
 
         // Build task records via domain helper (IDs + successor links)
-        List<TaskRecord> tasks = DagInstantiator.instantiate(definition, orderKey, resolvedParameters, idGenerator);
+        List<TaskRecord> tasks = DagInstantiator.instantiate(definition, orderKey, resolvedParameters, idGenerator::nextTaskId);
 
         unitOfWork.execute(() -> {
             taskOrderRepository.create(order);

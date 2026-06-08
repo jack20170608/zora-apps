@@ -2,6 +2,7 @@ package top.ilovemyhome.dagtask.scheduler.application;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.ilovemyhome.dagtask.scheduler.domain.dag.DagDefinition;
 import top.ilovemyhome.dagtask.scheduler.domain.dag.DagInstantiator;
 import top.ilovemyhome.dagtask.scheduler.port.in.SubmitDagRunUseCase;
 import top.ilovemyhome.dagtask.scheduler.port.out.IdGenerator;
@@ -26,7 +27,7 @@ import java.util.Optional;
  * <p>
  * JSON parsing of the legacy {@code createTasksFromDagDefinition(String json, ...)}
  * has been moved to the inbound web adapter — this service accepts already-parsed
- * {@link SubmitDagRunUseCase.DagDefinition} records.
+ * {@link top.ilovemyhome.dagtask.scheduler.domain.dag.DagDefinition} records.
  * </p>
  */
 public class SubmitDagRunService implements SubmitDagRunUseCase {
@@ -94,7 +95,7 @@ public class SubmitDagRunService implements SubmitDagRunUseCase {
         }
 
         // Build all task records (IDs assigned, successor IDs resolved) in domain helper
-        List<TaskRecord> tasks = DagInstantiator.instantiate(definition, orderKey, parameters, idGenerator);
+        List<TaskRecord> tasks = DagInstantiator.instantiate(definition, orderKey, parameters, idGenerator::nextTaskId);
 
         return unitOfWork.execute(() -> {
             List<Long> result = new ArrayList<>(tasks.size());

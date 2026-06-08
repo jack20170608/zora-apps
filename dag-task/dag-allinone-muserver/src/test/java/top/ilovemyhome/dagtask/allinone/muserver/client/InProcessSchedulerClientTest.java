@@ -13,7 +13,7 @@ import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
-import top.ilovemyhome.dagtask.si.service.DagScheduleService;
+import top.ilovemyhome.dagtask.scheduler.port.in.ScheduleDagRunUseCase;
 
 import java.time.Instant;
 import java.util.List;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
 class InProcessSchedulerClientTest {
 
     @Mock
-    private DagScheduleService dagScheduleService;
+    private ScheduleDagRunUseCase scheduleDagRunUseCase;
 
     private InProcessSchedulerClient client;
 
@@ -38,7 +38,7 @@ class InProcessSchedulerClientTest {
 
     @BeforeEach
     void setUp() {
-        client = new InProcessSchedulerClient(dagScheduleService);
+        client = new InProcessSchedulerClient(scheduleDagRunUseCase);
     }
 
     @Test
@@ -52,8 +52,8 @@ class InProcessSchedulerClientTest {
 
         // Then
         assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-        verify(dagScheduleService).onTaskCompleted(eq(1L), eq(TaskStatus.SUCCESS), any(TaskOutput.class));
-        verify(dagScheduleService).onTaskCompleted(eq(2L), eq(TaskStatus.ERROR), any(TaskOutput.class));
+        verify(scheduleDagRunUseCase).onTaskCompleted(eq(1L), eq(TaskStatus.SUCCESS), any(TaskOutput.class));
+        verify(scheduleDagRunUseCase).onTaskCompleted(eq(2L), eq(TaskStatus.ERROR), any(TaskOutput.class));
     }
 
     @Test
@@ -69,7 +69,7 @@ class InProcessSchedulerClientTest {
 
         // Then
         assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-        verifyNoInteractions(dagScheduleService);
+        verifyNoInteractions(scheduleDagRunUseCase);
     }
 
     @Test
@@ -82,6 +82,6 @@ class InProcessSchedulerClientTest {
 
         // Then
         assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-        verifyNoInteractions(dagScheduleService);
+        verifyNoInteractions(scheduleDagRunUseCase);
     }
 }

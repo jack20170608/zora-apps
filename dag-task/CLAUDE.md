@@ -50,11 +50,13 @@ dag-task/
 
 | 模块 | 角色 | 阶段 |
 |---|---|---|
-| `dag-scheduler-domain` | 纯 domain + ports（零基础设施依赖） | 步骤 1 ✅ 已建骨架 |
+| `dag-scheduler-domain` | 纯 domain + ports（零基础设施依赖） | 步骤 2 ✅ Domain migrated |
 | `dag-scheduler-adapter-persistence-jdbc` | zora-jdbi/Flyway 实现 port.out | 步骤 1 ✅ 已建骨架 |
 | `dag-scheduler-adapter-web-muserver` | zora-muserver 实现 port.in | 步骤 1 ✅ 已建骨架 |
 | `dag-scheduler-app` | 手工 DI 组装 + main | 步骤 1 ✅ 已建骨架 |
 
 详见 `docs/superpowers/specs/2026-06-07-dag-scheduler-hexagonal-design.md` 与 `docs/10-ARCHITECTURE-hexagonal-refactor-pilot.md`。
 
-**给后续 Claude 的提示**：在此重构完成前，新增 dag-scheduler 相关代码请加到**新模块**，而不是旧 `dag-scheduler` / `dag-scheduler-muserver`。`dag-scheduler-domain` 的 ArchUnit 守护规则当前 `@Disabled`，待步骤 2 搬入 domain 代码后启用。
+**给后续 Claude 的提示**：
+- 新增 dag-scheduler 相关代码请加到 `dag-scheduler-domain` 的 `application/`、`domain/` 或 `port/` 包下，或对应 adapter 模块。
+- `dag-scheduler-domain` 的 `HexagonalArchitectureTest` 已启用（3 条规则全绿）；ArchUnit `1.4.2` 是支持 JDK 25 的最低版本。
