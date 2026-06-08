@@ -5,6 +5,8 @@ import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.TaskRecord;
 import top.ilovemyhome.dagtask.si.dto.TaskRecordSearchCriteria;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
+import top.ilovemyhome.zora.jdbi.page.Page;
+import top.ilovemyhome.zora.jdbi.page.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,6 +17,36 @@ import java.util.Optional;
  * dag-scheduler-adapter-persistence-jdbc (or any other persistence adapter).
  */
 public interface TaskRecordRepository {
+
+    /** Count task records matching the given criteria. */
+    int count(TaskRecordSearchCriteria criteria);
+
+    /** Find task records matching the given criteria without pagination. */
+    List<TaskRecord> find(TaskRecordSearchCriteria criteria);
+
+    /**
+     * Find task records matching the given criteria with pagination.
+     * Page/Pageable types are a temporary leak from zora-jdbi (TD-1);
+     * will be replaced with domain-owned types in step 3.
+     */
+    Page<TaskRecord> find(TaskRecordSearchCriteria criteria, Pageable pageable);
+
+    /**
+     * Create a single task record and return its generated ID.
+     *
+     * @param record the task record to create
+     * @return the generated task ID
+     */
+    Long create(TaskRecord record);
+
+    /**
+     * Update an existing task record by ID.
+     *
+     * @param id     the task record ID to update
+     * @param record the updated fields
+     * @return number of rows updated (1 if success, 0 if not found)
+     */
+    int update(Long id, TaskRecord record);
 
     /** Search task records using dynamic criteria. */
     // TODO(step-3): replace with domain-owned query record; SearchCriteria is a temporary leak from dag-si.

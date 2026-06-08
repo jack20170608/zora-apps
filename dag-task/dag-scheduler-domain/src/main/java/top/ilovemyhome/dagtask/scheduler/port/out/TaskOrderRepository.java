@@ -10,6 +10,9 @@ import java.util.Optional;
  */
 public interface TaskOrderRepository {
 
+    /** Create a new task order and return its generated ID. */
+    Long create(TaskOrder taskOrder);
+
     Optional<TaskOrder> findByKey(String key);
 
     int updateByKey(String key, TaskOrder task);
