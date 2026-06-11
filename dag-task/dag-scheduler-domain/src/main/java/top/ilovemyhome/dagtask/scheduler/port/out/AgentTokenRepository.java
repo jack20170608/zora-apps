@@ -11,6 +11,10 @@ import java.util.Optional;
  */
 public interface AgentTokenRepository {
 
+    Long create(AgentToken agentToken);
+
+    List<AgentToken> findAll();
+
     Optional<AgentToken> findByTokenId(String tokenId);
 
     List<AgentToken> findByAgentId(String agentId);

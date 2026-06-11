@@ -19,9 +19,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.ilovemyhome.dagtask.scheduler.application.DagNotFoundException;
 import top.ilovemyhome.dagtask.scheduler.application.OrderKeyAlreadyExistsException;
 import top.ilovemyhome.dagtask.scheduler.port.in.ManageTaskOrderUseCase;
-import top.ilovemyhome.dagtask.scheduler.port.in.QueryTaskOrderUseCase;
 import top.ilovemyhome.dagtask.scheduler.port.out.TaskOrderRepository;
 import top.ilovemyhome.dagtask.si.TaskOrder;
 import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
@@ -51,22 +51,18 @@ public class TaskOrderApi {
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskOrderApi.class);
 
     private final TaskOrderRepository taskOrderRepository;
-    private final QueryTaskOrderUseCase queryTaskOrderUseCase;
     private final ManageTaskOrderUseCase manageTaskOrderUseCase;
 
     /**
      * Creates a new TaskOrderApi with injected dependencies.
      *
      * @param taskOrderRepository the repository for task order read operations
-     * @param queryTaskOrderUseCase the use case for task order queries
      * @param manageTaskOrderUseCase the use case for task order modifications
      */
     @Inject
     public TaskOrderApi(TaskOrderRepository taskOrderRepository,
-                        QueryTaskOrderUseCase queryTaskOrderUseCase,
                         ManageTaskOrderUseCase manageTaskOrderUseCase) {
         this.taskOrderRepository = Objects.requireNonNull(taskOrderRepository, "taskOrderRepository must not be null");
-        this.queryTaskOrderUseCase = Objects.requireNonNull(queryTaskOrderUseCase, "queryTaskOrderUseCase must not be null");
         this.manageTaskOrderUseCase = Objects.requireNonNull(manageTaskOrderUseCase, "manageTaskOrderUseCase must not be null");
     }
 
@@ -85,7 +81,7 @@ public class TaskOrderApi {
     public Response listAll() {
         // Note: Using TaskOrderRepository directly because QueryTaskOrderUseCase only has isOrdered()
         // This maintains compatibility with legacy API behavior
-        List<TaskOrder> allOrders = ((top.ilovemyhome.dagtask.si.persistence.TaskOrderDao) taskOrderRepository).findAll();
+        List<TaskOrder> allOrders = taskOrderRepository.findAll();
         LOGGER.debug("Retrieved {} task orders", allOrders.size());
         return Response.ok().entity(ResEntityHelper.ok("List retrieved successfully", allOrders)).build();
     }
@@ -176,9 +172,22 @@ public class TaskOrderApi {
         @PathParam("key") String key,
         @Parameter(description = "Updated task order definition", required = true)
         TaskOrder taskOrder) {
-        int updated = manageTaskOrderUseCase.updateOrderByKey(key, taskOrder);
-        LOGGER.info("Updated task order: key=[{}], {} rows affected", key, updated);
-        return Response.ok().entity(ResEntityHelper.ok("Task order updated successfully", taskOrder)).build();
+        try {
+            int updated = manageTaskOrderUseCase.updateOrderByKey(key, taskOrder);
+            if (updated == 0) {
+                LOGGER.warn("Cannot update task order: key [{}] not found (no rows affected)", key);
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(ResEntityHelper.badRequest("Task order not found: " + key))
+                    .build();
+            }
+            LOGGER.info("Updated task order: key=[{}], {} rows affected", key, updated);
+            return Response.ok().entity(ResEntityHelper.ok("Task order updated successfully", taskOrder)).build();
+        } catch (DagNotFoundException e) {
+            LOGGER.warn("Cannot update task order: key [{}] not found", key);
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ResEntityHelper.badRequest("Task order not found: " + key))
+                .build();
+        }
     }
 
     /**

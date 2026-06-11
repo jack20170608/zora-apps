@@ -16,6 +16,7 @@ import top.ilovemyhome.zora.jdbi.dao.BaseDaoJdbiImpl;
 
 import static top.ilovemyhome.zora.common.lang.StringConvertUtils.toEnum;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -38,6 +39,12 @@ public class TaskOrderDaoJdbiImpl extends BaseDaoJdbiImpl<TaskOrder> implements 
         String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll)
             + " where key = :key ";
         return find(sql, Map.of("key", key), null).stream().findAny();
+    }
+
+    @Override
+    public List<TaskOrder> findAll() {
+        String sql = getCachedSql(SqlGenerator.SQL_STATEMENT.selectAll);
+        return find(sql, null, null);
     }
 
     @Override

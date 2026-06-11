@@ -22,7 +22,15 @@
         </dependency>
         <dependency>
             <groupId>top.ilovemyhome.dagtask</groupId>
-            <artifactId>dag-scheduler</artifactId>
+            <artifactId>dag-scheduler-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-scheduler-adapter-web-muserver</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-scheduler-app</artifactId>
         </dependency>
         <dependency>
             <groupId>top.ilovemyhome.dagtask</groupId>

@@ -4,21 +4,12 @@ import com.typesafe.config.Config;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.ilovemyhome.dagtask.core.DagSchedulerServer;
-import top.ilovemyhome.dagtask.scheduler.adapter.persistence.jdbc.JacksonDagDefinitionParser;
-import top.ilovemyhome.dagtask.scheduler.adapter.persistence.jdbc.JdbiUnitOfWork;
-import top.ilovemyhome.dagtask.scheduler.adapter.persistence.jdbc.SequenceIdGenerator;
-import top.ilovemyhome.dagtask.scheduler.adapter.persistence.jdbc.SystemClock;
-import top.ilovemyhome.dagtask.core.server.DagSchedulerBuilder;
+import top.ilovemyhome.dagtask.scheduler.app.SchedulerContext;
 import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
-import top.ilovemyhome.dagtask.scheduler.application.InstantiateDagTemplateService;
-import top.ilovemyhome.dagtask.scheduler.application.TaskTemplateApplicationService;
+import top.ilovemyhome.dagtask.scheduler.domain.dispatcher.RandomLoadBalance;
 import top.ilovemyhome.dagtask.scheduler.port.in.InstantiateDagTemplateUseCase;
 import top.ilovemyhome.dagtask.scheduler.port.in.ManageTaskTemplateUseCase;
 import top.ilovemyhome.dagtask.scheduler.port.in.QueryTaskTemplateUseCase;
-import top.ilovemyhome.dagtask.scheduler.port.out.TaskOrderRepository;
-import top.ilovemyhome.dagtask.scheduler.port.out.TaskRecordRepository;
-import top.ilovemyhome.dagtask.scheduler.port.out.TaskTemplateRepository;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.muserver.security.core.CookieValueType;
@@ -67,8 +58,10 @@ public final class AppContext {
         runFlywayMigration(config);
         registerBean(JwtConfig.class, "jwtConfig", jwtConfig);
 
-        DagSchedulerServer dagServer = startDagServer(jwtConfig);
-        initApplicationServices(dagServer);
+        SchedulerContext schedulerContext = new SchedulerContext(
+            this.jdbi, JacksonUtil.MAPPER, jwtConfig, new RandomLoadBalance());
+        registerBean(SchedulerContext.class, "schedulerContext", schedulerContext);
+        initApplicationServices(schedulerContext);
 
     }
 
@@ -142,42 +135,13 @@ public final class AppContext {
         logger.info("Flyway migration completed successfully");
     }
 
-    private DagSchedulerServer startDagServer(JwtConfig jwtConfig) {
-        DagSchedulerServer dagServer = DagSchedulerBuilder.builder()
-            .dataSource(this.dataSource)
-            .jdbi(this.jdbi)
-            .objectMapper(JacksonUtil.MAPPER)
-            .scanIntervalSeconds(30)
-            .maxSystemConcurrentTasks(100)
-            .databaseType("postgresql")
-            .heartbeatTimeoutSeconds(5)
-            .heartbeatIntervalSeconds(30)
-            .maxHeartbeatFailedTimes(3)
-            .jwtConfig(jwtConfig)
-            .build();
-        registerBean(DagSchedulerServer.class, "dagSchedulerServer", dagServer);
-        dagServer.start();
-        return dagServer;
-    }
-
-    private void initApplicationServices(DagSchedulerServer dagServer) {
-        // Cast legacy DAOs (which now also implement new Repository ports) to the port types
-        TaskTemplateRepository taskTemplateRepo = (TaskTemplateRepository) dagServer.getTaskTemplateDao();
-        TaskOrderRepository taskOrderRepo = (TaskOrderRepository) dagServer.getTaskOrderDao();
-        TaskRecordRepository taskRecordRepo = (TaskRecordRepository) dagServer.getTaskRecordDao();
-
-        var unitOfWork = new JdbiUnitOfWork(this.jdbi);
-        var idGenerator = new SequenceIdGenerator(this.jdbi);
-        var parser = new JacksonDagDefinitionParser(JacksonUtil.MAPPER);
-
-        TaskTemplateApplicationService taskTemplateService = new TaskTemplateApplicationService(taskTemplateRepo);
-        InstantiateDagTemplateService instantiateService = new InstantiateDagTemplateService(
-            taskOrderRepo, taskTemplateRepo, taskRecordRepo, unitOfWork, idGenerator, parser
-        );
-
-        registerBean(QueryTaskTemplateUseCase.class, "queryTaskTemplateUseCase", taskTemplateService);
-        registerBean(ManageTaskTemplateUseCase.class, "manageTaskTemplateUseCase", taskTemplateService);
-        registerBean(InstantiateDagTemplateUseCase.class, "instantiateDagTemplateUseCase", instantiateService);
+    private void initApplicationServices(SchedulerContext schedulerContext) {
+        registerBean(QueryTaskTemplateUseCase.class, "queryTaskTemplateUseCase",
+            schedulerContext.queryTaskTemplateUseCase());
+        registerBean(ManageTaskTemplateUseCase.class, "manageTaskTemplateUseCase",
+            schedulerContext.manageTaskTemplateUseCase());
+        registerBean(InstantiateDagTemplateUseCase.class, "instantiateDagTemplateUseCase",
+            schedulerContext.instantiateDagTemplateUseCase());
     }
 
     private static JwtConfig readJwtConfig(Config config) {
