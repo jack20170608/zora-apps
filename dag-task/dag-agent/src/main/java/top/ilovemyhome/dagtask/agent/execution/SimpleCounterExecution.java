@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
+import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -20,7 +21,7 @@ public class SimpleCounterExecution implements TaskExecution {
     public TaskOutput doExecute(TaskInput input) {
         Long taskId = input.taskId();
         String name = input.name();
-        Param param = input.getInputAs(Param.class);
+        Param param = input.input() == null ? null : JacksonUtil.fromJson(input.input(), Param.class);
         logger.info("Start execute taskId={}, name={}, param={}", taskId, name, param);
         if (Objects.isNull(param) || param.from() >= param.to || param.intervalMillisecond < 1L) {
             throw new IllegalArgumentException("Input param is not correct! Required: from <= to and intervalMillisecond > 1");

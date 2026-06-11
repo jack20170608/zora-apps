@@ -20,11 +20,26 @@
             <groupId>top.ilovemyhome.dagtask</groupId>
             <artifactId>dag-scheduler-domain</artifactId>
         </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-si</artifactId>
+        </dependency>
 
         <!-- zora web stack (matches legacy dag-scheduler-muserver) -->
         <dependency>
             <groupId>top.ilovemyhome.zora</groupId>
             <artifactId>zora-muserver</artifactId>
+        </dependency>
+        <!-- OpenAPI/Swagger annotations -->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+        </dependency>
+        <!-- Jakarta Inject annotation -->
+        <dependency>
+            <groupId>jakarta.inject</groupId>
+            <artifactId>jakarta.inject-api</artifactId>
+            <version>2.0.1</version>
         </dependency>
         <dependency>
             <groupId>top.ilovemyhome.zora</groupId>
@@ -88,6 +103,13 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- JAX-RS RuntimeDelegate for Response building in tests -->
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-common</artifactId>
+            <version>3.1.5</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

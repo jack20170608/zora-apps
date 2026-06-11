@@ -9,6 +9,7 @@ import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.enums.ShellType;
+import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -77,7 +78,7 @@ public class ShellTaskExecution implements TaskExecution {
         Long taskId = input.taskId();
         String taskName = input.name();
         try {
-            Param param = input.getInputAs(Param.class);
+            Param param = input.input() == null ? null : JacksonUtil.fromJson(input.input(), Param.class);
             logger.info("Starting shell execution for taskId={}, name={}, OS={}",
                 taskId, taskName, ShellDetector.getOsName());
             assert param != null;
