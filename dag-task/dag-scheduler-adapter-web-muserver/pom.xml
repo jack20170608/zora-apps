@@ -20,6 +20,10 @@
             <groupId>top.ilovemyhome.dagtask</groupId>
             <artifactId>dag-scheduler-domain</artifactId>
         </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-si</artifactId>
+        </dependency>
 
         <!-- zora web stack (matches legacy dag-scheduler-muserver) -->
         <dependency>
