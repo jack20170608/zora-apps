@@ -2,6 +2,7 @@ package top.ilovemyhome.dagtask.scheduler.port.out;
 
 import top.ilovemyhome.dagtask.si.TaskOrder;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -14,6 +15,8 @@ public interface TaskOrderRepository {
     Long create(TaskOrder taskOrder);
 
     Optional<TaskOrder> findByKey(String key);
+
+    List<TaskOrder> findAll();
 
     int updateByKey(String key, TaskOrder task);
 
