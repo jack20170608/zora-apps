@@ -21,18 +21,18 @@ public class NoOpAgentSchedulerClient implements AgentSchedulerClient {
     @Override
     public Response register(AgentRegisterRequest registration) {
         LOGGER.info("NoOp register for agent {}", registration.agentId());
-        return Response.ok().build();
+        return SimpleAgentResponse.okResponse();
     }
 
     @Override
     public Response unregister(AgentUnregistration unregistration) {
         LOGGER.info("NoOp unregister for agent {}", unregistration.agentId());
-        return Response.ok().build();
+        return SimpleAgentResponse.okResponse();
     }
 
     @Override
     public Response reportTaskResult(List<TaskExecuteResult> results) {
         LOGGER.debug("NoOp reportTaskResult for {} tasks", results.size());
-        return Response.ok().build();
+        return SimpleAgentResponse.okResponse();
     }
 }

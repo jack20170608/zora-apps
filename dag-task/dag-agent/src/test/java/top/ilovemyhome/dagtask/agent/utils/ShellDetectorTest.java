@@ -77,7 +77,7 @@ class ShellDetectorTest {
         assertThat(commands).hasSize(3);
         assertThat(commands[0]).isEqualTo("cmd.exe");
         assertThat(commands[1]).isEqualTo("/c");
-        assertThat(commands[2]).isEqualTo("echo hello");
+        assertThat(commands[2]).isEqualTo("chcp 65001 >nul && echo hello");
     }
 
     @Test
@@ -86,16 +86,16 @@ class ShellDetectorTest {
         assertThat(commands).hasSize(3);
         assertThat(commands[0]).isEqualTo("powershell.exe");
         assertThat(commands[1]).isEqualTo("-Command");
-        assertThat(commands[2]).isEqualTo("Write-Host hello");
+        assertThat(commands[2]).isEqualTo("[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Write-Host hello");
     }
 
     @Test
     void testBuildCommandArrayPwsh() {
         String[] commands = ShellDetector.buildCommandArray("pwsh", "Write-Host hello");
         assertThat(commands).hasSize(3);
-        assertThat(commands[0]).isEqualTo("pwsh");
+        assertThat(commands[0]).isEqualTo("pwsh.exe");
         assertThat(commands[1]).isEqualTo("-Command");
-        assertThat(commands[2]).isEqualTo("Write-Host hello");
+        assertThat(commands[2]).isEqualTo("[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Write-Host hello");
     }
 
     @Test
