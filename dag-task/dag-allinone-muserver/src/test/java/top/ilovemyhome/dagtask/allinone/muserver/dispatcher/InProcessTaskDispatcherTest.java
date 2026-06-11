@@ -43,12 +43,12 @@ class InProcessTaskDispatcherTest {
             .withId(1L)
             .withOrderKey("ORDER-001")
             .withName("TestTask")
-            .withExecutionKey("top.ilovemyhome.dagtask.core.TestTask")
+            .withExecutionKey("top.ilovemyhome.dagtask.examples.TestTask")
             .withStatus(TaskStatus.READY)
             .withInput("{}")
             .build();
 
-        when(taskExecutionEngine.submit(eq(1L), eq("TestTask"), eq("top.ilovemyhome.dagtask.core.TestTask"), eq("{}"), eq(true)))
+        when(taskExecutionEngine.submit(eq(1L), eq("TestTask"), eq("top.ilovemyhome.dagtask.examples.TestTask"), eq("{}"), eq(true)))
             .thenReturn(SubmissionResult.accepted(1L, 0));
 
         // When
@@ -57,7 +57,7 @@ class InProcessTaskDispatcherTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.success()).isTrue();
-        verify(taskExecutionEngine).submit(eq(1L), eq("TestTask"), eq("top.ilovemyhome.dagtask.core.TestTask"), eq("{}"), eq(true));
+        verify(taskExecutionEngine).submit(eq(1L), eq("TestTask"), eq("top.ilovemyhome.dagtask.examples.TestTask"), eq("{}"), eq(true));
         verify(dispatchDao).create(any());
     }
 
@@ -68,7 +68,7 @@ class InProcessTaskDispatcherTest {
             .withId(2L)
             .withOrderKey("ORDER-002")
             .withName("RejectedTask")
-            .withExecutionKey("top.ilovemyhome.dagtask.core.RejectedTask")
+            .withExecutionKey("top.ilovemyhome.dagtask.examples.RejectedTask")
             .withStatus(TaskStatus.READY)
             .build();
 

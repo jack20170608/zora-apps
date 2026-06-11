@@ -9,19 +9,9 @@ import top.ilovemyhome.dagtask.allinone.muserver.agent.EmbeddedAgentBootstrap;
 import top.ilovemyhome.dagtask.allinone.muserver.client.InProcessSchedulerClient;
 import top.ilovemyhome.dagtask.allinone.muserver.database.DatabaseBootstrap;
 import top.ilovemyhome.dagtask.allinone.muserver.dispatcher.InProcessTaskDispatcher;
-import top.ilovemyhome.dagtask.core.DagSchedulerServer;
-import top.ilovemyhome.dagtask.scheduler.adapter.persistence.jdbc.SystemClock;
 import top.ilovemyhome.dagtask.scheduler.adapter.persistence.jdbc.TaskDispatchDaoJdbiImpl;
-import top.ilovemyhome.dagtask.core.dispatcher.DefaultTaskDispatcher;
-import top.ilovemyhome.dagtask.scheduler.application.ScheduleDagRunService;
-import top.ilovemyhome.dagtask.scheduler.domain.dispatcher.RandomLoadBalance;
+import top.ilovemyhome.dagtask.scheduler.app.SchedulerContext;
 import top.ilovemyhome.dagtask.scheduler.port.in.ScheduleDagRunUseCase;
-import top.ilovemyhome.dagtask.scheduler.port.out.AgentDispatcher;
-import top.ilovemyhome.dagtask.scheduler.port.out.TaskDispatchRepository;
-import top.ilovemyhome.dagtask.scheduler.port.out.TaskRecordRepository;
-import top.ilovemyhome.dagtask.scheduler.port.out.AgentStatusRepository;
-import top.ilovemyhome.dagtask.si.service.DagScheduleService;
-import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 
 /**
  * Application context for the all-in-one server that combines scheduler, admin, and agent
@@ -60,56 +50,29 @@ public class AllInOneAppContext {
         Jdbi sharedJdbi = this.databaseBootstrap.start();
 
         // 2. Initialize admin application context.
-        // Note: Both scheduler and admin AppContext instantiate their own DagSchedulerServer.
-        // To avoid duplication, only the admin AppContext is created here because it is a
-        // superset (adds user management and Flyway migrations). The scheduler REST APIs
-        // will reuse the DagSchedulerServer bean from this admin context.
         this.adminAppContext = new AppContext(env, config);
 
-        // 3. Create in-process scheduler client for result reporting
-        DagSchedulerServer dagSchedulerServer = this.adminAppContext.getBean("dagSchedulerServer", DagSchedulerServer.class);
-        DagScheduleService dagScheduleService = dagSchedulerServer.getDagScheduleService();
+        // 3. Get scheduler context from admin
+        SchedulerContext schedulerContext = this.adminAppContext.getBean("schedulerContext", SchedulerContext.class);
 
-        // 3b. Create shared task dispatch DAO (used by both dispatcher and scheduler)
-        TaskDispatchDaoJdbiImpl taskDispatchDao = new TaskDispatchDaoJdbiImpl(sharedJdbi);
-
-        // Construct ScheduleDagRunUseCase (replaces direct DagScheduleService usage)
-        AgentDispatcher agentDispatcher = new DefaultTaskDispatcher(
-            dagSchedulerServer.getAgentStatusDao(),
-            taskDispatchDao,
-            new RandomLoadBalance(),
-            JacksonUtil.MAPPER
-        );
-        this.scheduleDagRunUseCase = new ScheduleDagRunService(
-            (TaskRecordRepository) dagSchedulerServer.getTaskRecordDao(),
-            agentDispatcher,
-            (AgentStatusRepository) dagSchedulerServer.getAgentStatusDao(),
-            taskDispatchDao,
-            new SystemClock(),
-            new RandomLoadBalance()
-        );
+        // 4. Get ScheduleDagRunUseCase from scheduler context and create in-process client
+        this.scheduleDagRunUseCase = schedulerContext.scheduleDagRunUseCase();
         this.inProcessSchedulerClient = new InProcessSchedulerClient(this.scheduleDagRunUseCase);
 
-        // 4. Initialize the embedded agent
+        // 5. Get task dispatch dao from scheduler context
+        TaskDispatchDaoJdbiImpl taskDispatchDao = schedulerContext.taskDispatchRepository();
+
+        // 6. Initialize the embedded agent
         this.embeddedAgentBootstrap = new EmbeddedAgentBootstrap(config, sharedJdbi, this.inProcessSchedulerClient);
 
-        // 5. Create in-process task dispatcher and bind to the embedded agent's execution engine
+        // 7. Create in-process task dispatcher and bind to the embedded agent's execution engine
         this.inProcessTaskDispatcher = new InProcessTaskDispatcher(taskDispatchDao);
         this.inProcessTaskDispatcher.bindTaskExecutionEngine(this.embeddedAgentBootstrap.getTaskExecutionEngine());
-
-        // 6. Log limitation: the scheduler's DagSchedulerServer was built internally by
-        //    DagSchedulerBuilder with a DefaultTaskDispatcher. There is no public API to
-        //    inject a custom TaskDispatcher, so the scheduler will dispatch tasks via HTTP
-        //    to the local agent URL. The in-process dispatcher is bound but not on the
-        //    scheduler's dispatch path.
-        LOGGER.warn("InProcessTaskDispatcher is bound to the embedded agent's execution engine, "
-            + "but the scheduler's DagSchedulerServer uses its own DefaultTaskDispatcher. "
-            + "Tasks will dispatch via HTTP localhost loopback instead of direct method calls.");
     }
 
     /**
      * Starts all components: embedded agent queue processor.
-     * The admin AppContext already started DagSchedulerServer in its constructor.
+     * The admin AppContext already started SchedulerContext in its constructor.
      */
     public void start() {
         LOGGER.info("Starting AllInOneAppContext...");
@@ -123,8 +86,6 @@ public class AllInOneAppContext {
     public void stop() {
         LOGGER.info("Stopping AllInOneAppContext...");
         this.embeddedAgentBootstrap.stop();
-        DagSchedulerServer dagServer = this.adminAppContext.getBean("dagSchedulerServer", DagSchedulerServer.class);
-        dagServer.stop();
         this.databaseBootstrap.stop();
         LOGGER.info("AllInOneAppContext stopped successfully");
     }

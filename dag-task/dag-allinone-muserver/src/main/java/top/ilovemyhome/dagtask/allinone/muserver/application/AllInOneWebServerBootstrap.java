@@ -21,17 +21,12 @@ import top.ilovemyhome.dagtask.admin.interfaces.api.WorkflowApi;
 import top.ilovemyhome.dagtask.admin.server.web.LoginHandler;
 import top.ilovemyhome.dagtask.agent.api.TaskAgentResource;
 import top.ilovemyhome.dagtask.allinone.muserver.security.AllInOneSecurityHandler;
-import top.ilovemyhome.dagtask.core.DagSchedulerServer;
-import top.ilovemyhome.dagtask.core.interfaces.AgentRegistryApi;
-import top.ilovemyhome.dagtask.core.interfaces.DagManageApi;
-import top.ilovemyhome.dagtask.core.interfaces.TaskOrderApi;
-import top.ilovemyhome.dagtask.core.interfaces.TaskTemplateApi;
-import top.ilovemyhome.dagtask.scheduler.config.JwtConfig;
-import top.ilovemyhome.dagtask.scheduler.port.in.InstantiateDagTemplateUseCase;
-import top.ilovemyhome.dagtask.scheduler.port.in.ManageTaskTemplateUseCase;
-import top.ilovemyhome.dagtask.scheduler.port.in.QueryTaskTemplateUseCase;
+import top.ilovemyhome.dagtask.scheduler.adapter.web.muserver.AgentRegistryApi;
+import top.ilovemyhome.dagtask.scheduler.adapter.web.muserver.DagManageApi;
+import top.ilovemyhome.dagtask.scheduler.adapter.web.muserver.TaskOrderApi;
+import top.ilovemyhome.dagtask.scheduler.adapter.web.muserver.TaskTemplateApi;
+import top.ilovemyhome.dagtask.scheduler.app.SchedulerContext;
 import top.ilovemyhome.dagtask.scheduler.token.TokenManagementApi;
-import top.ilovemyhome.dagtask.scheduler.token.TokenService;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
 
@@ -117,30 +112,46 @@ public class AllInOneWebServerBootstrap {
 
     private static RestHandlerBuilder createRestHandler(AllInOneAppContext appContext) {
         top.ilovemyhome.dagtask.admin.server.application.AppContext adminAppContext = appContext.getAdminAppContext();
-        DagSchedulerServer schedulerServer = adminAppContext.getBean("dagSchedulerServer", DagSchedulerServer.class);
+        SchedulerContext schedulerContext = adminAppContext.getBean("schedulerContext", SchedulerContext.class);
         AppSecurityContext appSecurityContext = adminAppContext.getBean("appSecurityContext", AppSecurityContext.class);
 
         // Admin REST APIs
-        TaskOrderApi taskOrderApi = new TaskOrderApi(schedulerServer.getTaskOrderDao());
-        TaskTemplateApi taskTemplateApi = new TaskTemplateApi(schedulerServer.getTaskTemplateService());
-        AgentWhitelistAdminApi agentWhitelistAdminApi = new AgentWhitelistAdminApi(schedulerServer.getAgentWhitelistDao());
+        TaskOrderApi taskOrderApi = new TaskOrderApi(
+            schedulerContext.taskOrderRepository(),
+            schedulerContext.manageTaskOrderUseCase()
+        );
+        TaskTemplateApi taskTemplateApi = new TaskTemplateApi(
+            schedulerContext.queryTaskTemplateUseCase(),
+            schedulerContext.manageTaskTemplateUseCase()
+        );
+        AgentWhitelistAdminApi agentWhitelistAdminApi = new AgentWhitelistAdminApi(
+            schedulerContext.agentWhitelistRepository()
+        );
 
-        JwtConfig jwtConfig = adminAppContext.getBean("jwtConfig", JwtConfig.class);
-        TokenService tokenService = new TokenService(schedulerServer.getAgentTokenDao(), jwtConfig);
-        TokenManagementApi tokenManagementApi = new TokenManagementApi(tokenService);
+        TokenManagementApi tokenManagementApi = schedulerContext.tokenManagementApi();
 
-        QueryTaskTemplateUseCase queryTemplate = adminAppContext.getBean("queryTaskTemplateUseCase", QueryTaskTemplateUseCase.class);
-        ManageTaskTemplateUseCase manageTemplate = adminAppContext.getBean("manageTaskTemplateUseCase", ManageTaskTemplateUseCase.class);
-        InstantiateDagTemplateUseCase instantiateUseCase = adminAppContext.getBean("instantiateDagTemplateUseCase", InstantiateDagTemplateUseCase.class);
-
-        DagManageApi dagManageApi = new DagManageApi(schedulerServer.getDagManageService());
-        WorkflowApi workflowApi = new WorkflowApi(queryTemplate, manageTemplate, instantiateUseCase);
-        ExecutionApi executionApi = new ExecutionApi(schedulerServer.getTaskOrderDao(), schedulerServer.getTaskRecordDao());
-        AgentAdminApi agentAdminApi = new AgentAdminApi(schedulerServer.getAgentDao(), schedulerServer.getAgentStatusDao());
+        DagManageApi dagManageApi = new DagManageApi(schedulerContext.instantiateDagTemplateUseCase());
+        WorkflowApi workflowApi = new WorkflowApi(
+            schedulerContext.queryTaskTemplateUseCase(),
+            schedulerContext.manageTaskTemplateUseCase(),
+            schedulerContext.instantiateDagTemplateUseCase()
+        );
+        ExecutionApi executionApi = new ExecutionApi(
+            schedulerContext.taskOrderRepository(),
+            schedulerContext.taskRecordRepository()
+        );
+        AgentAdminApi agentAdminApi = new AgentAdminApi(
+            schedulerContext.agentRepository(),
+            schedulerContext.agentStatusRepository()
+        );
         StatsApi statsApi = new StatsApi();
 
         // Scheduler REST APIs
-        AgentRegistryApi agentRegistryApi = new AgentRegistryApi(schedulerServer.getAgentRegistryService());
+        AgentRegistryApi agentRegistryApi = new AgentRegistryApi(
+            schedulerContext.registerAgentUseCase(),
+            schedulerContext.agentHeartbeatUseCase(),
+            schedulerContext.reportTaskResultUseCase()
+        );
 
         // Agent REST APIs
         TaskAgentResource taskAgentResource = appContext.getEmbeddedAgentBootstrap().getDagTaskAgent().getResource();

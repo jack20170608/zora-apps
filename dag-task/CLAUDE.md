@@ -44,19 +44,19 @@ dag-task/
 
 本项目已配置 `dag-task/.claude/settings.json`，允许所有 `mvn` 命令无需确认直接执行。如需调整权限规则，请编辑该文件中的 `permissions.allow` 数组。
 
-## 六边形重构进行中（自 2026-06-07 起）
+## 六边形重构已完成（2026-06-07 至 2026-06-11）
 
-`dag-scheduler` 子系统正在分 4 步迁移到 Ports & Adapters 架构。**期间旧 `dag-scheduler` / `dag-scheduler-muserver` 模块保留并继续工作**，新模块逐步建立：
+截至 2026-06-11，`dag-scheduler` 子系统 Ports & Adapters 架构迁移 4 个步骤已完成。旧 `dag-scheduler` / `dag-scheduler-muserver` 模块已退役并从 reactor 删除；运行入口通过 `dag-scheduler-app` 组装 domain、persistence adapter 与 web adapter。
 
 | 模块 | 角色 | 阶段 |
 |---|---|---|
 | `dag-scheduler-domain` | 纯 domain + ports（零基础设施依赖） | 步骤 2 ✅ Domain migrated |
 | `dag-scheduler-adapter-persistence-jdbc` | zora-jdbi/Flyway 实现 port.out | 步骤 3 ✅ Adapters migrated |
-| `dag-scheduler-adapter-web-muserver` | zora-muserver 实现 port.in | 步骤 1 ✅ 已建骨架（web API 类仍留在 dag-scheduler，新 adapter 待 step 4） |
-| `dag-scheduler-app` | 手工 DI 组装 + main | 步骤 1 ✅ 已建骨架（SchedulerContext 待 step 4） |
+| `dag-scheduler-adapter-web-muserver` | zora-muserver 实现 port.in | 步骤 4 ✅ Web adapter migrated |
+| `dag-scheduler-app` | 手工 DI 组装 + SchedulerContext | 步骤 4 ✅ Cutover completed |
 
-详见 `docs/superpowers/specs/2026-06-07-dag-scheduler-hexagonal-design.md` 与 `docs/10-ARCHITECTURE-hexagonal-refactor-pilot.md`。
+详见 `docs/superpowers/specs/2026-06-07-dag-scheduler-hexagonal-design.md`、`docs/superpowers/specs/2026-06-11-dag-scheduler-hexagonal-step4-cutover-design.md` 与 `docs/10-ARCHITECTURE-hexagonal-refactor-pilot.md`。
 
 **给后续 Claude 的提示**：
-- 新增 dag-scheduler 相关代码请加到 `dag-scheduler-domain` 的 `application/`、`domain/` 或 `port/` 包下，或对应 adapter 模块。
+- 新增 dag-scheduler 相关代码请加到 `dag-scheduler-domain` 的 `application/`、`domain/` 或 `port/` 包下，或对应 adapter/app 模块。
 - `dag-scheduler-domain` 的 `HexagonalArchitectureTest` 已启用（3 条规则全绿）；ArchUnit `1.4.2` 是支持 JDK 25 的最低版本。
