@@ -3,13 +3,13 @@ package top.ilovemyhome.dagtask.allinone.muserver.client;
 import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.ilovemyhome.dagtask.scheduler.port.in.ScheduleDagRunUseCase;
 import top.ilovemyhome.dagtask.si.TaskOutput;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 import top.ilovemyhome.dagtask.si.agent.AgentUnregistration;
 import top.ilovemyhome.dagtask.si.agent.TaskExecuteResult;
 import top.ilovemyhome.dagtask.si.enums.TaskStatus;
-import top.ilovemyhome.dagtask.si.service.DagScheduleService;
 
 import java.util.List;
 
@@ -22,10 +22,10 @@ public class InProcessSchedulerClient implements AgentSchedulerClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InProcessSchedulerClient.class);
 
-    private final DagScheduleService dagScheduleService;
+    private final ScheduleDagRunUseCase scheduleDagRunUseCase;
 
-    public InProcessSchedulerClient(DagScheduleService dagScheduleService) {
-        this.dagScheduleService = dagScheduleService;
+    public InProcessSchedulerClient(ScheduleDagRunUseCase scheduleDagRunUseCase) {
+        this.scheduleDagRunUseCase = scheduleDagRunUseCase;
     }
 
     @Override
@@ -51,7 +51,7 @@ public class InProcessSchedulerClient implements AgentSchedulerClient {
                     ? TaskOutput.success(result.taskId(), result.output())
                     : TaskOutput.fail(result.taskId(), result.output(), "Task execution failed");
 
-                dagScheduleService.onTaskCompleted(result.taskId(), status, output);
+                scheduleDagRunUseCase.onTaskCompleted(result.taskId(), status, output);
                 LOGGER.debug("Reported result for task {} in-process: {}", result.taskId(), status);
             } catch (Exception e) {
                 LOGGER.error("Failed to report result for task {} in-process", result.taskId(), e);

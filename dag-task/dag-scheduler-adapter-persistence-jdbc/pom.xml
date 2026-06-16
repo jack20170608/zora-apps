@@ -20,6 +20,11 @@
             <groupId>top.ilovemyhome.dagtask</groupId>
             <artifactId>dag-scheduler-domain</artifactId>
         </dependency>
+        <!-- dag-si: legacy DAO interfaces that DaoJdbiImpl still implement (step 3 transitional) -->
+        <dependency>
+            <groupId>top.ilovemyhome.dagtask</groupId>
+            <artifactId>dag-si</artifactId>
+        </dependency>
 
         <!-- zora persistence stack (sticks to project convention) -->
         <dependency>

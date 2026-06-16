@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
+import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +40,7 @@ public class InterruptibleDeadlockExecution implements TaskExecution {
     @Override
     public TaskOutput doExecute(TaskInput input) {
         Long taskId = input.taskId();
-        Param param = input.getInputAs(Param.class);
+        Param param = input.input() == null ? null : JacksonUtil.fromJson(input.input(), Param.class);
         logger.info("Start interruptible deadlock task taskId={}, param={}", taskId, param);
 
         final ReentrantLock lockA = new ReentrantLock();

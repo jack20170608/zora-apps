@@ -12,11 +12,11 @@ import top.ilovemyhome.dagtask.si.TaskOrder;
 import top.ilovemyhome.dagtask.si.TaskTemplate;
 import top.ilovemyhome.dagtask.si.dto.ResEntityHelper;
 import top.ilovemyhome.dagtask.si.dto.TaskTemplateSearchCriteria;
-import top.ilovemyhome.dagtask.si.service.DagManageService;
-import top.ilovemyhome.dagtask.si.service.TaskTemplateService;
-import top.ilovemyhome.zora.jdbi.page.Page;
-import top.ilovemyhome.zora.jdbi.page.Pageable;
-import top.ilovemyhome.zora.jdbi.page.impl.PageRequest;
+import top.ilovemyhome.dagtask.scheduler.domain.query.Page;
+import top.ilovemyhome.dagtask.scheduler.domain.query.Pageable;
+import top.ilovemyhome.dagtask.scheduler.port.in.InstantiateDagTemplateUseCase;
+import top.ilovemyhome.dagtask.scheduler.port.in.ManageTaskTemplateUseCase;
+import top.ilovemyhome.dagtask.scheduler.port.in.QueryTaskTemplateUseCase;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,13 +36,17 @@ public class WorkflowApi {
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowApi.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final TaskTemplateService taskTemplateService;
-    private final DagManageService dagManageService;
+    private final QueryTaskTemplateUseCase queryTemplate;
+    private final ManageTaskTemplateUseCase manageTemplate;
+    private final InstantiateDagTemplateUseCase instantiateUseCase;
 
     @Inject
-    public WorkflowApi(TaskTemplateService taskTemplateService, DagManageService dagManageService) {
-        this.taskTemplateService = taskTemplateService;
-        this.dagManageService = dagManageService;
+    public WorkflowApi(QueryTaskTemplateUseCase queryTemplate,
+                       ManageTaskTemplateUseCase manageTemplate,
+                       InstantiateDagTemplateUseCase instantiateUseCase) {
+        this.queryTemplate = queryTemplate;
+        this.manageTemplate = manageTemplate;
+        this.instantiateUseCase = instantiateUseCase;
     }
 
     @GET
@@ -50,18 +54,18 @@ public class WorkflowApi {
         @QueryParam("page") @DefaultValue("1") int page,
         @QueryParam("pageSize") @DefaultValue("20") int pageSize) {
         TaskTemplateSearchCriteria criteria = TaskTemplateSearchCriteria.builder().build();
-        Pageable pageRequest = new PageRequest(page, pageSize);
-        Page<TaskTemplate> result = taskTemplateService.find(criteria, pageRequest);
-        List<Map<String, Object>> workflows = result.getContent().stream()
+        Pageable pageRequest = new Pageable(page, pageSize);
+        Page<TaskTemplate> result = queryTemplate.find(criteria, pageRequest);
+        List<Map<String, Object>> workflows = result.content().stream()
             .map(this::toWorkflowMap)
             .collect(Collectors.toList());
         Map<String, Object> response = new HashMap<>();
         response.put("data", workflows);
-        response.put("page", result.getNumber());
-        response.put("pageSize", result.getSize());
-        response.put("total", result.getTotalElements());
-        response.put("totalPages", result.getTotalPages());
-        LOGGER.info("Listed workflows: page={}, pageSize={}, total={}", page, pageSize, result.getTotalElements());
+        response.put("page", result.number());
+        response.put("pageSize", result.size());
+        response.put("total", result.totalElements());
+        response.put("totalPages", result.totalPages());
+        LOGGER.info("Listed workflows: page={}, pageSize={}, total={}", page, pageSize, result.totalElements());
         return Response.ok().entity(ResEntityHelper.ok("Workflows retrieved successfully", response)).build();
     }
 
@@ -71,7 +75,7 @@ public class WorkflowApi {
         TaskTemplateSearchCriteria criteria = TaskTemplateSearchCriteria.builder()
             .withTemplateKey(key)
             .build();
-        List<TaskTemplate> templates = taskTemplateService.findAll(criteria);
+        List<TaskTemplate> templates = queryTemplate.findAll(criteria);
         if (templates.isEmpty()) {
             LOGGER.warn("Workflow not found: key=[{}]", key);
             return Response.status(Response.Status.BAD_REQUEST)
@@ -85,7 +89,7 @@ public class WorkflowApi {
 
     @POST
     public Response create(TaskTemplate template) {
-        boolean success = taskTemplateService.createTemplate(template, template.isActive());
+        boolean success = manageTemplate.createTemplate(template, template.isActive());
         if (!success) {
             LOGGER.warn("Failed to create workflow: key=[{}], version=[{}]", template.getTemplateKey(), template.getVersion());
             return Response.status(Response.Status.BAD_REQUEST)
@@ -104,7 +108,7 @@ public class WorkflowApi {
                 .entity(ResEntityHelper.badRequest("Path key does not match template key in body"))
                 .build();
         }
-        boolean success = taskTemplateService.updateTemplate(template);
+        boolean success = manageTemplate.updateTemplate(template);
         if (!success) {
             LOGGER.warn("Failed to update workflow: key=[{}], version=[{}]", template.getTemplateKey(), template.getVersion());
             return Response.status(Response.Status.BAD_REQUEST)
@@ -119,7 +123,7 @@ public class WorkflowApi {
     @Path("/{key}")
     public Response delete(@PathParam("key") String key, @QueryParam("version") String version) {
         String versionToDelete = version != null ? version : "latest";
-        boolean success = taskTemplateService.deleteVersion(key, versionToDelete);
+        boolean success = manageTemplate.deleteVersion(key, versionToDelete);
         if (!success) {
             LOGGER.warn("Failed to delete workflow: key=[{}], version=[{}]", key, versionToDelete);
             return Response.status(Response.Status.BAD_REQUEST)
@@ -136,7 +140,7 @@ public class WorkflowApi {
         TaskTemplateSearchCriteria criteria = TaskTemplateSearchCriteria.builder()
             .withTemplateKey(key)
             .build();
-        List<TaskTemplate> templates = taskTemplateService.findAll(criteria);
+        List<TaskTemplate> templates = queryTemplate.findAll(criteria);
         List<Map<String, Object>> versions = templates.stream()
             .map(this::toWorkflowMap)
             .collect(Collectors.toList());
@@ -163,7 +167,7 @@ public class WorkflowApi {
         if (orderName == null || orderName.isBlank()) {
             orderName = key;
         }
-        Optional<TaskOrder> orderOpt = dagManageService.instantiateFromTemplate(key, orderKey, orderName, parameters);
+        Optional<TaskOrder> orderOpt = instantiateUseCase.instantiateFromTemplate(key, orderKey, orderName, parameters);
         if (orderOpt.isEmpty()) {
             LOGGER.warn("Failed to execute workflow: key=[{}], orderKey=[{}]", key, orderKey);
             return Response.status(Response.Status.BAD_REQUEST)

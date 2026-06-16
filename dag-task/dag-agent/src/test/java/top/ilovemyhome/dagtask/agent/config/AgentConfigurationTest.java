@@ -54,7 +54,7 @@ class AgentConfigurationTest {
                   deadLetterPersistencePath = "/tmp/dag-agent-dead-letter"
                   token = "secret-token"
                   supportedExecutionKeys = [
-                    "top.ilovemyhome.dagtask.core.TestTaskExecution",
+                    "top.ilovemyhome.dagtask.examples.TestTaskExecution",
                     "com.example.MyCustomTask"
                   ]
                 }
@@ -74,7 +74,7 @@ class AgentConfigurationTest {
             assertThat(cfg.getToken()).isEqualTo("secret-token");
             assertThat(cfg.getSupportedExecutionKeys())
                 .containsExactly(
-                    "top.ilovemyhome.dagtask.core.TestTaskExecution",
+                    "top.ilovemyhome.dagtask.examples.TestTaskExecution",
                     "com.example.MyCustomTask"
                 );
             assertThat(cfg.getBaseUrl()).isEqualTo("http://agent01.example.com:8081");
@@ -196,8 +196,8 @@ class AgentConfigurationTest {
             assertThat(cfg.getToken()).isEmpty();
             assertThat(cfg.getSupportedExecutionKeys())
                 .containsExactly(
-                    "top.ilovemyhome.dagtask.core.ShellTaskExecution",
-                    "top.ilovemyhome.dagtask.core.PythonTaskExecution"
+                    "top.ilovemyhome.dagtask.examples.ShellTaskExecution",
+                    "top.ilovemyhome.dagtask.examples.PythonTaskExecution"
                 );
         }
 

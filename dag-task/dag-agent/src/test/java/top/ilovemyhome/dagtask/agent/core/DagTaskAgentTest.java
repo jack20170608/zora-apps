@@ -8,8 +8,8 @@ import top.ilovemyhome.dagtask.agent.config.AgentConfiguration;
 import top.ilovemyhome.dagtask.si.agent.AgentRegisterRequest;
 import top.ilovemyhome.dagtask.si.agent.AgentSchedulerClient;
 
-import jakarta.ws.rs.core.Response;
 import java.util.List;
+import top.ilovemyhome.dagtask.agent.client.SimpleAgentResponse;
 import java.util.concurrent.ExecutorService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +38,7 @@ class DagTaskAgentTest {
         when(config.getMaxPendingTasks()).thenReturn(100);
         when(config.getSupportedExecutionKeys()).thenReturn(List.of("echo"));
         when(client.register(any(AgentRegisterRequest.class)))
-                .thenReturn(Response.ok().build());
+                .thenReturn(SimpleAgentResponse.okResponse());
 
         // When
         DagTaskAgent agent = new DagTaskAgent(config, client, executor);
@@ -58,7 +58,7 @@ class DagTaskAgentTest {
         when(config.getMaxPendingTasks()).thenReturn(100);
         when(config.getSupportedExecutionKeys()).thenReturn(List.of("echo"));
         when(client.register(any(AgentRegisterRequest.class)))
-                .thenReturn(Response.serverError().build());
+                .thenReturn(SimpleAgentResponse.serverErrorResponse("registration failed"));
 
         // When
         DagTaskAgent agent = new DagTaskAgent(config, client, executor);

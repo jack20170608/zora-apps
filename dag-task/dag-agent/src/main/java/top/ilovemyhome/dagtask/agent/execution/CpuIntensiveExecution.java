@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
+import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -35,7 +36,7 @@ public class CpuIntensiveExecution implements TaskExecution {
     @Override
     public TaskOutput doExecute(TaskInput input) {
         Long taskId = input.taskId();
-        Param param = input.getInputAs(Param.class);
+        Param param = input.input() == null ? null : JacksonUtil.fromJson(input.input(), Param.class);
 
         logger.info("Start CPU-intensive task taskId={}, param={}", taskId, param);
 

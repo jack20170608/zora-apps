@@ -69,20 +69,14 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
             } else {
                 LOGGER.error("Agent {} registration failed with status {}", registration.agentId(), response.statusCode());
             }
-            return Response.status(response.statusCode())
-                .entity(response.body())
-                .build();
+            return SimpleAgentResponse.of(response.statusCode(), response.body());
         } catch (ExecutionException | IOException | TimeoutException e) {
             LOGGER.error("Failed to register agent with DAG server", e);
-            return Response.serverError()
-                .entity(e.getMessage())
-                .build();
+            return SimpleAgentResponse.serverErrorResponse(e.getMessage());
         } catch (InterruptedException e) {
             LOGGER.error("Registration request was interrupted", e);
             Thread.currentThread().interrupt();
-            return Response.serverError()
-                .entity(e.getMessage())
-                .build();
+            return SimpleAgentResponse.serverErrorResponse(e.getMessage());
         }
     }
 
@@ -106,20 +100,14 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
             } else {
                 LOGGER.error("Agent {} unregistration failed with status {}", unregistration.agentId(), response.statusCode());
             }
-            return Response.status(response.statusCode())
-                .entity(response.body())
-                .build();
+            return SimpleAgentResponse.of(response.statusCode(), response.body());
         } catch (ExecutionException | IOException | TimeoutException e) {
             LOGGER.error("Failed to unregister agent from DAG server", e);
-            return Response.serverError()
-                .entity(e.getMessage())
-                .build();
+            return SimpleAgentResponse.serverErrorResponse(e.getMessage());
         } catch (InterruptedException e) {
             LOGGER.error("Unregistration request was interrupted", e);
             Thread.currentThread().interrupt();
-            return Response.serverError()
-                .entity(e.getMessage())
-                .build();
+            return SimpleAgentResponse.serverErrorResponse(e.getMessage());
         }
     }
 
@@ -142,20 +130,14 @@ public class DefaultAgentSchedulerClient implements AgentSchedulerClient {
             } else {
                 LOGGER.warn("Result {} report failed with status {}", json, response.statusCode());
             }
-            return Response.status(response.statusCode())
-                .entity(response.body())
-                .build();
+            return SimpleAgentResponse.of(response.statusCode(), response.body());
         } catch (ExecutionException | IOException | TimeoutException e) {
             LOGGER.error("Failed to report result for task {}", results.size(), e);
-            return Response.serverError()
-                .entity(e.getMessage())
-                .build();
+            return SimpleAgentResponse.serverErrorResponse(e.getMessage());
         } catch (InterruptedException e) {
             LOGGER.error("Report task result request was interrupted", e);
             Thread.currentThread().interrupt();
-            return Response.serverError()
-                .entity(e.getMessage())
-                .build();
+            return SimpleAgentResponse.serverErrorResponse(e.getMessage());
         }
     }
 

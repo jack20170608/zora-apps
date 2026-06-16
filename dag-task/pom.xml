@@ -13,8 +13,6 @@
 
     <modules>
         <module>dag-si</module>
-        <module>dag-scheduler</module>
-        <module>dag-scheduler-muserver</module>
         <module>dag-scheduler-domain</module>
         <module>dag-scheduler-adapter-persistence-jdbc</module>
         <module>dag-scheduler-adapter-web-muserver</module>
@@ -52,17 +50,7 @@
             </dependency>
             <dependency>
                 <groupId>top.ilovemyhome.dagtask</groupId>
-                <artifactId>dag-scheduler</artifactId>
-                <version>${revision}</version>
-            </dependency>
-            <dependency>
-                <groupId>top.ilovemyhome.dagtask</groupId>
                 <artifactId>dag-agent</artifactId>
-                <version>${revision}</version>
-            </dependency>
-            <dependency>
-                <groupId>top.ilovemyhome.dagtask</groupId>
-                <artifactId>dag-scheduler-muserver</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

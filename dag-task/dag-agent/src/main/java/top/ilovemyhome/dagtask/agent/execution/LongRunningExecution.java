@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.si.TaskExecution;
 import top.ilovemyhome.dagtask.si.TaskInput;
 import top.ilovemyhome.dagtask.si.TaskOutput;
+import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 
 import java.util.Objects;
 
@@ -15,7 +16,7 @@ public class LongRunningExecution implements TaskExecution {
     @Override
     public TaskOutput doExecute(TaskInput input) {
         Long taskId = input.taskId();
-        Param param = input.getInputAs(Param.class);
+        Param param = input.input() == null ? null : JacksonUtil.fromJson(input.input(), Param.class);
         logger.info("Start execute taskId={}, param={}", taskId, param);
         if (Objects.isNull(param) || param.durationSeconds() <= 0) {
             throw new IllegalArgumentException("Input param is not correct! Required: durationSeconds > 0");

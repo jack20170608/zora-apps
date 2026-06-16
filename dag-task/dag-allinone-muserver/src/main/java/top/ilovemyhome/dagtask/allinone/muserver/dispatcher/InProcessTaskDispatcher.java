@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.dagtask.agent.core.TaskExecutionEngine;
 import top.ilovemyhome.dagtask.agent.dto.SubmissionResult;
-import top.ilovemyhome.dagtask.core.dispatcher.TaskDispatcher;
 import top.ilovemyhome.dagtask.si.DispatchResult;
 import top.ilovemyhome.dagtask.si.TaskDispatchRecord;
 import top.ilovemyhome.dagtask.si.TaskRecord;
@@ -19,7 +18,7 @@ import java.util.Optional;
  * In-process task dispatcher that directly submits tasks to TaskExecutionEngine
  * via method call, eliminating HTTP overhead in all-in-one mode.
  */
-public class InProcessTaskDispatcher implements TaskDispatcher {
+public class InProcessTaskDispatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InProcessTaskDispatcher.class);
     private static final String LOCAL_AGENT_ID = "local-agent";
@@ -41,7 +40,6 @@ public class InProcessTaskDispatcher implements TaskDispatcher {
         this.taskExecutionEngine = taskExecutionEngine;
     }
 
-    @Override
     public DispatchResult dispatch(TaskRecord task) {
         if (taskExecutionEngine == null) {
             throw new IllegalStateException("TaskExecutionEngine not bound yet");
@@ -84,7 +82,6 @@ public class InProcessTaskDispatcher implements TaskDispatcher {
         }
     }
 
-    @Override
     public boolean killTask(Long taskId, String dealer, String reason) {
         LOGGER.info("Killing task {} in-process (dealer={}, reason={})", taskId, dealer, reason);
         if (taskExecutionEngine == null) {
@@ -93,12 +90,10 @@ public class InProcessTaskDispatcher implements TaskDispatcher {
         return taskExecutionEngine.kill(taskId).success();
     }
 
-    @Override
     public boolean killTask(TaskDispatchRecord dispatchItem, String dealer, String reason) {
         return killTask(dispatchItem.getTaskId(), dealer, reason);
     }
 
-    @Override
     public boolean forceOkTask(Long taskId, String dealer, String reason) {
         LOGGER.info("Force-OK task {} in-process (dealer={}, reason={})", taskId, dealer, reason);
         if (taskExecutionEngine == null) {
@@ -107,30 +102,25 @@ public class InProcessTaskDispatcher implements TaskDispatcher {
         return taskExecutionEngine.forceOk(taskId).success();
     }
 
-    @Override
     public boolean forceOkTask(TaskDispatchRecord dispatchItem, String dealer, String reason) {
         return forceOkTask(dispatchItem.getTaskId(), dealer, reason);
     }
 
-    @Override
     public int countAvailableAgents(String executionKey) {
         // In-process mode always has exactly one agent available
         return taskExecutionEngine != null ? 1 : 0;
     }
 
-    @Override
     public List<AgentStatus> getAvailableCandidates(String executionKey) {
         // In-process mode does not use external agent candidates
         return List.of();
     }
 
-    @Override
     public List<AgentStatus> findAllActiveAgents() {
         // In-process mode does not track external agents
         return List.of();
     }
 
-    @Override
     public Optional<AgentStatus> findAgentByAgentId(String agentId) {
         // In-process mode does not track external agents
         return Optional.empty();
