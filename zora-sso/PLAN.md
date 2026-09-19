@@ -625,9 +625,9 @@ flowchart LR
 
 交付物：
 
-- `docs/01-ARCHITECTURE-SSO总体架构.md`
-- `docs/02-FEATURE-OIDC登录流程.md`
-- `docs/03-ARCHITECTURE-SSO威胁模型.md`
+- `docs/design/04-ARCHITECTURE-生产级OIDC目标架构.md`
+- `docs/design/06-FEATURE-OIDC客户端接入.md`
+- `docs/core/06-威胁模型与安全基线.md`
 
 退出条件：
 
@@ -833,13 +833,15 @@ ZORA_SSO_DATABASE_URL
 
 - 根目录 `README.md`：项目介绍、快速开始和模块导航。
 - 各子模块 `README.md`：职责、依赖、使用方式和开发指南。
-- `docs/01-ARCHITECTURE-SSO总体架构.md`
-- `docs/02-FEATURE-OIDC登录流程.md`
-- `docs/03-ARCHITECTURE-SSO威胁模型.md`
-- `docs/04-FEATURE-客户端接入指南.md`
-- `docs/05-FEATURE-会话与登出.md`
-- `docs/06-ARCHITECTURE-密钥轮换与灾难恢复.md`
-- `docs/07-FEATURE-部署与运维指南.md`
+- `docs/README.md`
+- `docs/core/00-学习路线.md`
+- `docs/design/01-ARCHITECTURE-本地认证POC架构.md`
+- `docs/design/02-FEATURE-本地登录与授权流程.md`
+- `docs/design/03-ARCHITECTURE-本地认证威胁模型.md`
+- `docs/design/04-ARCHITECTURE-生产级OIDC目标架构.md`
+- `docs/design/05-FEATURE-Keycloak部署与配置.md`
+- `docs/design/06-FEATURE-OIDC客户端接入.md`
+- `docs/design/07-ARCHITECTURE-迁移运维与灾难恢复.md`
 
 代码注释使用英文，并只解释复杂逻辑、安全约束和不明显的设计原因。
 

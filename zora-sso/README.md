@@ -24,10 +24,13 @@ mvn clean verify
 java -cp .\zora-sso-core\target\classes top.ilovemyhome.zorasso.core.PasswordHashCli
 ```
 
-将哈希写入 `zora-sso-muserver\src\main\resources\application.conf` 的 `users` 和 `clients` 列表后启动 `top.ilovemyhome.zorasso.muserver.App`。配置示例及客户端调用流程见 `docs\02-FEATURE-本地登录与授权流程.md`。
+将哈希写入 `zora-sso-muserver\src\main\resources\application.conf` 的 `users` 和 `clients` 列表后启动 `top.ilovemyhome.zorasso.muserver.App`。配置示例及客户端调用流程见 [本地登录与授权流程](docs/design/02-FEATURE-本地登录与授权流程.md)。
 
 ## 安全限制
 
 本地认证必须显式启用，生产环境默认拒绝启动。配置只接受 PBKDF2 密码哈希和客户端密钥哈希，不接受明文凭据。正式环境应替换为 Keycloak 等标准 OIDC Provider。
 
-详细设计见 `docs` 目录。
+文档分为两条路线：
+
+- [Core 学习路线](docs/core/00-学习路线.md)：从初学者视角理解认证、OAuth 2.0、OIDC、SSO、Token 与安全基线。
+- [Design 实战路线](docs/design/README.md)：区分当前本地 POC 与未来 Keycloak/OIDC 生产方案。
