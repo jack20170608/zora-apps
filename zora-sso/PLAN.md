@@ -1,5 +1,62 @@
 # zora-sso 项目实施计划
 
+## 0. 初学者阅读指南
+
+如果此前没有接触过 OAuth 2.0、OpenID Connect（OIDC）或单点登录，可以先只阅读本节，再阅读第 5、8、9、12 节。协议名暂时不需要全部记住，先理解“谁负责什么”和“浏览器在谁之间跳转”。
+
+### 0.1 一句话理解这个项目
+
+`zora-sso` 不负责检查用户名和密码，而是把用户带到可信的 Keycloak 登录中心；Keycloak 确认用户身份后，`zora-sso` 验证其签发的凭证，再为 Zora 应用建立自己的登录会话。
+
+```mermaid
+flowchart LR
+    U[用户] -->|访问| APP[Zora 业务应用]
+    APP -->|尚未登录，跳转| KC[Keycloak 统一登录中心]
+    KC -->|完成身份认证| SSO[zora-sso 集成层]
+    SSO -->|建立本地会话| APP
+    APP -->|返回业务页面| U
+```
+
+### 0.2 用“机场出行”理解各组件
+
+| SSO 概念 | 机场类比 | 实际职责 |
+|---|---|---|
+| 用户 | 旅客 | 发起访问并完成登录 |
+| Keycloak | 证件查验中心 | 验证用户是谁，并签发可信凭证 |
+| OIDC | 证件查验和身份交接规则 | 规定应用如何请求、接收并验证登录结果 |
+| OAuth 2.0 | 登机权限规则 | 规定持有什么凭证可以访问哪些资源 |
+| zora-sso | 航站楼统一安检接入层 | 对接 Keycloak、验证凭证、建立应用会话 |
+| 业务应用 | 登机口 | 根据身份和业务权限决定是否允许操作 |
+| ID Token | 身份证明 | 告诉客户端“这个用户是谁、何时完成认证” |
+| Access Token | 登机牌 | 用于访问指定 API，并受 audience 和 scope 限制 |
+| Session Cookie | 航站楼内的临时通行凭证 | 让浏览器在当前应用中保持登录 |
+
+这个类比只用于帮助入门：现实系统中的 Token 都必须经过签名、时效、签发方、接收方和用途校验，不能因为“看起来像凭证”就信任。
+
+### 0.3 先记住五个关键结论
+
+1. **Keycloak 负责登录，zora-sso 负责安全接入。**
+2. **OIDC 解决“你是谁”，业务代码解决“你能做什么”。**
+3. **ID Token 用于确认登录结果，Access Token 用于访问 API，两者不能混用。**
+4. **单点登录不等于多个应用共享 Cookie。**多个应用通过复用 Keycloak 登录状态实现免密跳转。
+5. **任何校验缺失、模糊或异常都默认拒绝。**
+
+### 0.4 常见缩写速查
+
+| 缩写 | 全称 | 初学者解释 |
+|---|---|---|
+| SSO | Single Sign-On | 登录一次后，可进入多个相互信任的应用 |
+| OAuth 2.0 | OAuth 2.0 Authorization Framework | 委托访问资源的授权框架 |
+| OIDC | OpenID Connect | 建立在 OAuth 2.0 之上的身份认证协议 |
+| IdP / OP | Identity Provider / OpenID Provider | 负责验证身份的服务，本项目中主要是 Keycloak |
+| RP / Client | Relying Party / Client | 使用登录结果的应用 |
+| PKCE | Proof Key for Code Exchange | 防止授权码被截获后遭到冒用的机制 |
+| JWT | JSON Web Token | 一种可签名的 Token 表达格式 |
+| JWKS | JSON Web Key Set | 身份提供方公布的验签公钥集合 |
+| Scope | Authorization Scope | Token 被允许执行的操作范围 |
+| Audience | `aud` Claim | Token 预期交给哪个服务使用 |
+| Issuer | `iss` Claim | Token 是由谁签发的 |
+
 ## 1. 文档目的
 
 本文档用于规划 `zora-sso` 单点登录项目的目标、架构、模块边界、安全基线、实施阶段和验收标准。
@@ -55,6 +112,23 @@ SSO 登录包含两层相互独立的会话：
 
 多个应用不共享 Cookie，而是通过跳转到统一身份提供方来复用登录状态。
 
+```mermaid
+flowchart TB
+    B[用户浏览器]
+    KC[Keycloak]
+    A[应用 A]
+    C[应用 B]
+
+    B <-->|Keycloak SSO Cookie<br/>仅发送给 Keycloak| KC
+    B <-->|应用 A Session Cookie<br/>仅发送给应用 A| A
+    B <-->|应用 B Session Cookie<br/>仅发送给应用 B| C
+
+    A -.不读取.-> C
+    C -.不读取.-> A
+```
+
+当用户已经登录应用 A，随后首次访问应用 B 时，仍然会发生一次 OIDC 跳转；区别是 Keycloak 已有自己的 SSO 会话，因此通常不再要求用户输入密码，而是立即把浏览器跳回应用 B。
+
 ### 4.4 OAuth 2.0 与 OpenID Connect
 
 - OAuth 2.0 用于授权，核心凭据是 Access Token。
@@ -62,30 +136,92 @@ SSO 登录包含两层相互独立的会话：
 - ID Token 供 OIDC 客户端验证登录结果，不能作为业务 API 的 Access Token。
 - Access Token 供 Resource Server 校验访问权限，不能简单替代应用登录会话。
 
+```mermaid
+flowchart LR
+    LOGIN[用户完成登录] --> IDT[ID Token<br/>给客户端确认身份]
+    LOGIN --> AT[Access Token<br/>给 API 判断访问范围]
+    IDT --> SESSION[建立应用本地 Session]
+    AT --> API[访问 Resource Server]
+
+    IDT -.禁止直接调用.-> API
+    AT -.不能直接等同于.-> SESSION
+```
+
+| 对比项 | ID Token | Access Token | Session Cookie |
+|---|---|---|---|
+| 主要接收方 | OIDC 客户端 | Resource Server / API | 当前 Web 应用 |
+| 回答的问题 | “谁完成了登录？” | “可访问哪个 API、具有什么 scope？” | “这个浏览器是否已在当前应用登录？” |
+| 是否发给业务 API | 否 | 是 | 通常只发给创建该会话的应用 |
+| 是否由 JavaScript 保存 | 否 | 首版服务端 Web 模式下不需要 | 否，必须 `HttpOnly` |
+| 核心风险 | 被误当作 API 凭证 | audience/scope 校验错误或泄漏 | 固定、劫持和 CSRF |
+
 ## 5. 总体架构决策
+
+### 5.0 POC 阶段调整
+
+在不部署 Keycloak 的首个 POC 中，`zora-sso-muserver` 临时提供本地用户认证、中央 SSO Session 和一次性 opaque code。该模式只用于受控的第一方开发环境，不实现或声明兼容 OAuth 2.0/OIDC，也不签发 JWT。
+
+POC 使用 `IdentityAuthenticator` 等稳定端口隔离身份来源。正式阶段仍按本章后续方案接入外置 Keycloak，并删除或编译隔离本地登录协议；本地模式不能作为生产身份系统。
 
 ### 5.1 推荐方案
 
 采用“外置 Keycloak + zora-sso 集成层”的架构：
 
-```text
-浏览器、服务端 Web、SPA/BFF
-              |
-              v
-      Keycloak OIDC Provider
-  登录、MFA、SSO、Token、JWKS
-              |
-              v
-          zora-sso
- OIDC 接入、Token 校验、会话适配
- 客户端管理、权限映射、审计
-              |
-              v
-       其他 Zora 业务服务
-      资源级和领域级授权
+```mermaid
+flowchart TB
+    U[浏览器用户]
+    APP[服务端 Web / SPA+BFF]
+    KC[Keycloak OIDC Provider<br/>登录、MFA、SSO、Token、JWKS]
+    SSO[zora-sso<br/>OIDC 接入、Token 校验、会话适配<br/>权限映射、客户端管理、审计]
+    API[Zora 业务服务<br/>资源级与领域级授权]
+    DB[(会话、映射与审计数据)]
+
+    U -->|1. 访问| APP
+    APP -->|2. 发起登录| SSO
+    SSO -->|3. OIDC 授权请求| KC
+    KC -->|4. 授权码回调| SSO
+    SSO -->|5. 后端兑换并验证 Token| KC
+    SSO -->|6. 建立本地会话| DB
+    APP -->|7. 携带已验证身份访问| API
+    API -->|8. 判断业务权限| DB
 ```
 
-### 5.2 Keycloak 职责
+图中的编号表示一次典型登录和访问路径，不代表组件之间只能按此方向通信。Keycloak 是身份权威来源；zora-sso 是协议与 Zora 应用之间的安全边界；业务服务保留最终业务授权决定权。
+
+### 5.2 信任边界
+
+```mermaid
+flowchart LR
+    subgraph UNTRUSTED[不可信输入区域]
+        BROWSER[浏览器参数、Cookie、回调]
+        TOKEN[外部 Token]
+        URL[Discovery/JWKS 地址]
+    end
+
+    subgraph VALIDATION[zora-sso 校验边界]
+        TX[state / nonce / PKCE]
+        JWT[签名 / iss / aud / exp / 类型]
+        CFG[Issuer 与 URL Allowlist]
+    end
+
+    subgraph TRUSTED[校验后区域]
+        PRINCIPAL[AuthenticatedPrincipal]
+        CONTEXT[SecurityContext]
+        DECISION[授权决策]
+    end
+
+    BROWSER --> TX
+    TOKEN --> JWT
+    URL --> CFG
+    TX -->|全部通过| PRINCIPAL
+    JWT -->|全部通过| PRINCIPAL
+    CFG -->|全部通过| PRINCIPAL
+    PRINCIPAL --> CONTEXT --> DECISION
+```
+
+任何数据只有跨过相应校验边界后，才能进入可信领域模型。校验失败时终止流程，不创建“匿名但看似成功”的结果。
+
+### 5.3 Keycloak 职责
 
 - 用户身份认证。
 - 密码策略、MFA 和 Passkey。
@@ -96,7 +232,7 @@ SSO 登录包含两层相互独立的会话：
 - 签名密钥和 JWKS 轮换。
 - Token 撤销和身份提供方登出。
 
-### 5.3 zora-sso 职责
+### 5.4 zora-sso 职责
 
 - 封装 Zora 应用接入 OIDC 的统一方式。
 - 加载并校验 OIDC Discovery Metadata。
@@ -109,7 +245,7 @@ SSO 登录包含两层相互独立的会话：
 - 通过受控接口集成 Keycloak 管理能力。
 - 为其他 Zora 服务提供可复用的认证组件或接入规范。
 
-### 5.4 备选方案
+### 5.5 备选方案
 
 只有在 Keycloak 无法满足明确需求时，才评估以下方案：
 
@@ -265,6 +401,47 @@ version: 1.0.0-SNAPSHOT
 
 首版只支持 Authorization Code + PKCE，并且只接受 `S256`。
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant B as 浏览器
+    participant Z as zora-sso / 应用
+    participant K as Keycloak
+
+    U->>B: 访问受保护页面
+    B->>Z: GET /orders
+    Z->>Z: 未发现本地 Session
+    Z->>Z: 生成 state、nonce、code_verifier
+    Z->>Z: 保存短期且一次性的登录事务
+    Z-->>B: 302 跳转到 Keycloak<br/>携带 code_challenge
+    B->>K: Authorization Request
+    K->>K: 登录或复用已有 SSO 会话
+    K-->>B: 302 回调<br/>携带 code、state、iss
+    B->>Z: GET /oidc/callback
+    Z->>Z: 校验 state、iss、有效期并原子消费事务
+    Z->>K: 使用 code + code_verifier 兑换 Token
+    K-->>Z: ID Token、Access Token
+    Z->>Z: 校验签名、算法、iss、aud、exp、nonce
+    Z->>Z: 更换 Session ID 并建立本地会话
+    Z-->>B: Set-Cookie: Secure; HttpOnly; SameSite=Lax
+    B->>Z: 携带 Session Cookie 访问原始站内地址
+    Z-->>B: 返回受保护页面
+```
+
+### 8.1 为什么需要 state、nonce 和 PKCE
+
+```mermaid
+flowchart LR
+    STATE[state] -->|绑定“谁发起了这次登录”| CSRF[防止登录 CSRF 和回调串线]
+    NONCE[nonce] -->|绑定“哪个 ID Token 属于本次登录”| REPLAY[降低 Token 注入与重放风险]
+    PKCE[PKCE S256] -->|证明兑换者持有原始秘密| CODE[降低授权码截获风险]
+```
+
+三者解决的问题不同，不能互相替代。只要其中任何一项缺失、不匹配、过期或已消费，回调都必须失败。
+
+### 8.2 文字版步骤
+
 ```text
 1. 用户访问业务应用。
 2. 应用发现没有本地会话。
@@ -297,6 +474,18 @@ version: 1.0.0-SNAPSHOT
 ## 9. Token 与会话策略
 
 ### 9.1 Token
+
+```mermaid
+stateDiagram-v2
+    [*] --> 签发
+    签发 --> 可用: 签名与 Claims 校验通过
+    签发 --> 拒绝: 校验失败
+    可用 --> 拒绝: 过期 / 撤销 / 用途不符
+    可用 --> 轮换窗口: kid 暂未命中
+    轮换窗口 --> 可用: 受控刷新 JWKS 后验签成功
+    轮换窗口 --> 拒绝: 刷新后仍无法验证
+    拒绝 --> [*]
+```
 
 建议默认值：
 
@@ -406,6 +595,20 @@ Path=/
 - 日志和指标泄漏敏感信息。
 
 ## 12. 实施阶段
+
+```mermaid
+flowchart LR
+    P0[阶段 0<br/>需求确认与架构决策] --> P1[阶段 1<br/>Maven 项目骨架]
+    P1 --> P2[阶段 2<br/>OIDC 登录 PoC]
+    P2 -->|PoC 通过后冻结 SI| P3[阶段 3<br/>首个可用版本]
+    P3 --> P4[阶段 4<br/>生产强化]
+
+    P0 -.未通过安全评审.-> P0
+    P2 -.协议或部署假设不成立.-> P0
+    P3 -.核心安全测试未通过.-> P3
+```
+
+每个阶段都设置明确退出条件。未达到退出条件时不进入下一阶段，尤其不能跳过 PoC 直接大规模实现领域模型。
 
 ### 阶段 0：需求确认和架构决策
 
@@ -689,4 +892,3 @@ ZORA_SSO_DATABASE_URL
 - OpenID Connect Back-Channel Logout 1.0
 - OWASP OAuth 2.0 Cheat Sheet
 - OWASP Session Management Cheat Sheet
-
