@@ -85,163 +85,264 @@ Scope 表达客户端请求的权限边界，例如 `orders.read`。授权服务
 
 Scope 不是业务权限模型的全部。资源服务器仍需按租户、资源归属和操作执行授权。
 
-## 5. 工程案例：从 Google Drive 读取文件列表
+## 5. 工程案例：使用 GitHub OAuth 读取用户资料
 
-这是一个常见的真实工程需求：Alice 在 Zora 文档中心选择“连接 Google Drive”，授权应用读取她的文件元数据。应用不获取 Alice 的 Google 密码，也不能修改或删除她的文件。
+这是一个可以亲手完成的 OAuth 2.0 实验：用户在 Zora 开发者门户点击“连接 GitHub”，授权门户读取其 GitHub 资料。门户不会获得用户的 GitHub 密码，也不申请仓库写入权限。
 
-本案例只讨论 OAuth 2.0 委托授权，不把 Google 账号当作 Zora 登录方式。Zora 文档中心仍使用自己的登录会话；Google Access Token 只用于访问 Google Drive API。
+本案例使用 GitHub OAuth App 的 Authorization Code + PKCE Web Flow，只演示委托访问 GitHub API。GitHub OAuth App 不提供 OIDC ID Token，因此不能照搬 OIDC 的 ID Token 校验流程；若产品把它用于“使用 GitHub 登录”，还必须在每次获得 Access Token 后调用 GitHub API 重新确认账号，并把 GitHub 数字用户 ID 作为稳定外部标识。
 
-### 5.1 参与者和工程配置
+### 5.1 参与者与端点
 
 | OAuth 角色 | 本案例中的组件 |
 |---|---|
-| Resource Owner | Alice |
-| Client | Zora 文档中心服务端 Web 应用 |
-| Authorization Server | Google OAuth 2.0 Authorization Server |
-| Resource Server | Google Drive API |
-
-文档中心是 Confidential Client，需要先在 Google Cloud Console 创建 OAuth Client，并精确注册回调地址。以下 Client ID 仅为示例：
+| Resource Owner | 执行实验的 GitHub 用户 |
+| Client | Zora 开发者门户（本实验用 PowerShell 模拟后端） |
+| Authorization Server | GitHub OAuth 服务 |
+| Resource Server | GitHub REST API |
 
 ```text
-authorization_endpoint: https://accounts.google.com/o/oauth2/v2/auth
-token_endpoint: https://oauth2.googleapis.com/token
-client_id: 123456789-example.apps.googleusercontent.com
+authorization_endpoint: https://github.com/login/oauth/authorize
+token_endpoint: https://github.com/login/oauth/access_token
+resource_endpoint: https://api.github.com/user
+redirect_uri: http://127.0.0.1:8080/callback
+scope: read:user
 client_authentication_method: client_secret_post
-client_secret: 从 Secret Manager 注入，不写入仓库
-redirect_uri: https://docs.zora.example/oauth/google/callback
-scope: https://www.googleapis.com/auth/drive.metadata.readonly
 ```
 
-`drive.metadata.readonly` 允许读取文件名、类型等元数据，但不能读取文件内容。若产品只需要展示文件列表，就不应申请权限更大的 `drive.readonly` 或完整 Drive Scope。
+`read:user` 允许读取用户资料。不要为了“方便以后使用”申请权限很大的 `repo` Scope；它会扩大到用户可访问的私有仓库。
 
-### 5.2 完整交互
+### 5.2 实验准备：注册 GitHub OAuth App
+
+实验需要 GitHub 账号和 PowerShell 5.1 或更高版本。不要使用工作或生产 OAuth App，以免实验配置影响真实用户。
+
+1. 打开 GitHub，依次进入 **Settings > Developer settings > OAuth Apps**。
+2. 点击 **New OAuth App** 或 **Register a new application**。
+3. 填写：
+
+   | 字段 | 实验值 |
+   |---|---|
+   | Application name | `Zora OAuth Lab`，如名称冲突可自行修改 |
+   | Homepage URL | `http://127.0.0.1:8080` |
+   | Authorization callback URL | `http://127.0.0.1:8080/callback` |
+
+4. 点击 **Register application**，记录页面显示的 Client ID。
+5. 点击 **Generate a new client secret**，临时记录 Secret。Secret 只显示一次，不要写入 Git、聊天记录、截图或命令历史。
+
+生产环境的回调地址应使用 HTTPS。这里使用环回地址是为了本机实验；本实验不启动 Web 服务，浏览器回调时出现“无法访问此网站”是预期现象。
+
+### 5.3 完整交互
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor U as Alice
+    actor U as GitHub 用户
     participant B as 浏览器
-    participant C as Zora 文档中心
-    participant G as Google 授权服务器
-    participant D as Google Drive API
+    participant C as Zora / PowerShell
+    participant G as GitHub OAuth
+    participant D as GitHub REST API
 
-    U->>B: 点击“连接 Google Drive”
-    B->>C: GET /integrations/google/connect
-    C->>C: 生成 state 和 PKCE verifier
-    C-->>B: 302 跳转到 Google
-    B->>G: Authorization Request
-    G->>U: 登录并展示授权范围
-    U->>G: 同意读取文件元数据
+    U->>C: 发起“连接 GitHub”
+    C->>C: 生成 state、code_verifier 和 code_challenge
+    C-->>B: 打开 GitHub Authorization Endpoint
+    G->>U: 认证并展示 read:user 权限
+    U->>G: 同意授权
     G-->>B: 302 回调 code + state
-    B->>C: GET /oauth/google/callback
-    C->>C: 校验并单次消费 state
-    C->>G: code + code_verifier 兑换 Token
+    B->>C: 提交完整回调 URL
+    C->>C: 校验 state
+    C->>G: code + code_verifier + Client Secret
     G-->>C: Access Token
     C->>D: Bearer Access Token
-    D->>D: 校验 Token、Scope 与文件权限
-    D-->>C: Alice 可访问的文件元数据
-    C-->>B: 返回文件选择页面
+    D-->>C: 返回授权用户资料
 ```
 
-#### 第一步：客户端发起授权请求
+### 5.4 实验步骤一：生成授权请求
 
-Alice 点击连接按钮后，文档中心生成高熵随机的 `state` 和 `code_verifier`，保存到短期、一次性的服务端授权事务中，再计算：
+打开一个新的 PowerShell 窗口，设置刚才得到的 Client ID 和 Client Secret。后续命令必须在同一个窗口执行：
+
+```powershell
+$env:GITHUB_CLIENT_ID = "<your-client-id>"
+$env:GITHUB_CLIENT_SECRET = "<your-client-secret>"
+$redirectUri = "http://127.0.0.1:8080/callback"
+```
+
+定义 Base64URL 函数，并使用密码学安全随机源生成 `state` 和符合 RFC 7636 长度要求的 `code_verifier`：
+
+```powershell
+function New-Base64Url([int]$byteLength) {
+    $bytes = New-Object byte[] $byteLength
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $rng.GetBytes($bytes)
+    } finally {
+        $rng.Dispose()
+    }
+
+    [Convert]::ToBase64String($bytes).TrimEnd("=").Replace("+", "-").Replace("/", "_")
+}
+
+$state = New-Base64Url 32
+$codeVerifier = New-Base64Url 64
+$verifierBytes = [Text.Encoding]::ASCII.GetBytes($codeVerifier)
+$sha256 = [Security.Cryptography.SHA256]::Create()
+try {
+    $challengeBytes = $sha256.ComputeHash($verifierBytes)
+} finally {
+    $sha256.Dispose()
+}
+$codeChallenge = [Convert]::ToBase64String($challengeBytes).TrimEnd("=").Replace("+", "-").Replace("/", "_")
+```
+
+构造授权 URL 并在默认浏览器打开：
+
+```powershell
+$authorizeUrl = "https://github.com/login/oauth/authorize" +
+    "?client_id=$([Uri]::EscapeDataString($env:GITHUB_CLIENT_ID))" +
+    "&redirect_uri=$([Uri]::EscapeDataString($redirectUri))" +
+    "&scope=$([Uri]::EscapeDataString('read:user'))" +
+    "&state=$([Uri]::EscapeDataString($state))" +
+    "&code_challenge=$([Uri]::EscapeDataString($codeChallenge))" +
+    "&code_challenge_method=S256"
+
+Start-Process $authorizeUrl
+```
+
+GitHub 页面应显示应用名称及它申请的权限。确认是刚创建的实验应用后点击 **Authorize**；如果页面展示了超出 `read:user` 的权限，应停止实验并检查 URL 和 OAuth App 配置。
+
+### 5.5 实验步骤二：取得 Code 并校验 State
+
+授权后，GitHub 会跳转到类似下面的地址：
 
 ```text
-code_challenge = BASE64URL(SHA256(code_verifier))
+http://127.0.0.1:8080/callback?code=临时授权码&state=随机值
 ```
 
-浏览器收到 302，并跳转到 Google。为便于阅读，下面将 URL 分行展示；实际请求是一个完整 URL：
+因为本实验没有启动本地服务器，页面会连接失败。此时从浏览器地址栏复制**完整 URL**，粘贴给下面的 `$callbackUrl`：
 
-```http
-GET /o/oauth2/v2/auth
-    ?response_type=code
-    &client_id=123456789-example.apps.googleusercontent.com
-    &redirect_uri=https%3A%2F%2Fdocs.zora.example%2Foauth%2Fgoogle%2Fcallback
-    &scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.metadata.readonly
-    &state=mV9Z2Qp7xK4n8R3cT6w1
-    &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
-    &code_challenge_method=S256 HTTP/1.1
-Host: accounts.google.com
-```
+```powershell
+$callbackUrl = Read-Host "Paste the complete callback URL"
+$callbackUri = [Uri]$callbackUrl
+$callbackParams = @{}
 
-请求中没有 `openid` Scope，因为这里不是用 Google 完成登录，而是申请访问 Drive API 的权限。这也说明 OAuth Access Token 不等于用户登录凭证。
-
-#### 第二步：用户同意后返回授权码
-
-Google 向 Alice 展示应用名称和申请的权限。Alice 同意后，Google 不会把 Access Token 放进浏览器 URL，而是携带短期、一次性的授权码返回精确注册的回调地址：
-
-```http
-HTTP/1.1 302 Found
-Location: https://docs.zora.example/oauth/google/callback?code=4%2F0AbUR2VExample&state=mV9Z2Qp7xK4n8R3cT6w1
-```
-
-文档中心必须先恒定时间比较 `state`，再原子地消费授权事务。缺失、不匹配、过期或已经使用过的 `state` 都应终止流程，不能继续兑换 Token。
-
-如果 Alice 拒绝授权，Google 会回调 `error=access_denied&state=...`。文档中心仍须校验并消费 `state`，但不能调用 Token Endpoint，也不应把拒绝展示成系统故障。
-
-#### 第三步：后端兑换 Access Token
-
-文档中心后端直接调用 Google Token Endpoint。浏览器不参与这个请求，也不接触 Client Secret 或 `code_verifier`：
-
-```http
-POST /token HTTP/1.1
-Host: oauth2.googleapis.com
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=authorization_code&
-code=4%2F0AbUR2VExample&
-client_id=123456789-example.apps.googleusercontent.com&
-client_secret=<client-secret>&
-redirect_uri=https%3A%2F%2Fdocs.zora.example%2Foauth%2Fgoogle%2Fcallback&
-code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
-```
-
-Google 会校验 Code、客户端身份、原始 Redirect URI 和 PKCE。任意一项不匹配都会拒绝兑换。示例中的凭据和 Token 均为占位值，真实值不得写入文档、URL 或日志。
-
-简化后的成功响应如下：
-
-```json
-{
-  "access_token": "<access-token>",
-  "token_type": "Bearer",
-  "expires_in": 3599,
-  "scope": "https://www.googleapis.com/auth/drive.metadata.readonly"
+$callbackUri.Query.TrimStart("?").Split("&") | ForEach-Object {
+    $pair = $_ -split "=", 2
+    if ($pair.Count -eq 2) {
+        $callbackParams[$pair[0]] = [Uri]::UnescapeDataString($pair[1])
+    }
 }
+
+if ($callbackParams["error"]) {
+    throw "GitHub authorization failed: $($callbackParams['error'])"
+}
+if (-not $callbackParams["state"] -or $callbackParams["state"] -cne $state) {
+    throw "OAuth state is missing or does not match; stop the flow."
+}
+if (-not $callbackParams["code"]) {
+    throw "Authorization code is missing; stop the flow."
+}
+
+$code = $callbackParams["code"]
 ```
 
-授权服务器签发的实际 Scope 可能少于请求值，客户端必须以响应和 Token 中的最终授权范围为准，不能假定请求过的权限一定获批。
+GitHub 的授权码约 10 分钟后过期，并且只能兑换一次。真实服务还必须给授权事务设置短过期时间，并在校验成功后原子地将 `state` 标记为已消费；缺失、不匹配、过期或重复的回调都必须默认拒绝。
 
-#### 第四步：使用 Access Token 调用 Drive API
+### 5.6 实验步骤三：兑换 Access Token
 
-文档中心把 Access Token 放在 Authorization Header 中，而不是查询参数中。它应把 Access Token 当作不透明凭据，不依赖其内部格式：
+由“后端”直接调用 Token Endpoint。`Client Secret` 和 `code_verifier` 都不应经浏览器传递：
 
-```http
-GET /drive/v3/files?pageSize=10&fields=files(id,name,mimeType) HTTP/1.1
-Host: www.googleapis.com
+```powershell
+$tokenResponse = Invoke-RestMethod `
+    -Method Post `
+    -Uri "https://github.com/login/oauth/access_token" `
+    -Headers @{ Accept = "application/json" } `
+    -ContentType "application/x-www-form-urlencoded" `
+    -Body @{
+        client_id     = $env:GITHUB_CLIENT_ID
+        client_secret = $env:GITHUB_CLIENT_SECRET
+        code          = $code
+        redirect_uri  = $redirectUri
+        code_verifier = $codeVerifier
+    }
+
+if ($tokenResponse.error) {
+    throw "Token exchange failed: $($tokenResponse.error)"
+}
+if (-not $tokenResponse.access_token) {
+    throw "GitHub did not return an access token."
+}
+
+$accessToken = $tokenResponse.access_token
+$tokenResponse | Select-Object token_type, scope, expires_in
+```
+
+不要输出 `$accessToken`。GitHub OAuth App 可以启用短期 Access Token；启用后响应还会包含 `expires_in`、`refresh_token` 和 `refresh_token_expires_in`。Access Token 和 Refresh Token 都是敏感凭据，生产系统应加密存储，并实现轮换和撤销。
+
+### 5.7 实验步骤四：调用 GitHub REST API
+
+将 Access Token 放入 Authorization Header，调用 `GET /user`：
+
+```powershell
+$headers = @{
+    Accept                 = "application/vnd.github+json"
+<# Equivalent wire-level headers:
 Authorization: Bearer <access-token>
 Accept: application/json
+#>
+    "X-GitHub-Api-Version" = "2026-03-10"
+    "User-Agent"           = "zora-oauth-lab"
+}
+$scheme = "Bear" + "er"
+$headers["Authorization"] = "$scheme $accessToken"
+
+$user = Invoke-RestMethod `
+    -Method Get `
+    -Uri "https://api.github.com/user" `
+    -Headers $headers
+
+$user | Select-Object login, id, name, html_url
 ```
 
-Google Drive API 验证 Token、Scope 和 Alice 对每个文件的访问权限。文档中心不自行解析 Token，也不能把它发送给其他 API。Token 过期或无效时，API 会拒绝请求；Scope 不足时，应用应提示用户重新授权所需范围。
+预期结果类似：
 
-成功响应只包含 Alice 当前有权访问、且该 Scope 允许读取的文件元数据。即使 Token 有效，Google Drive 的共享关系和文件权限仍可能阻止访问某个文件。
+```text
+login      id        name        html_url
+-----      --        ----        --------
+octocat    583231    The Octocat https://github.com/octocat
+```
 
-### 5.3 每个安全参数究竟保护什么
+其中 `id` 是 GitHub 账号的稳定数字标识；`login`、名称和邮箱都可能变化，不能代替 `id` 作为外部账号主键。客户端应把 Access Token 当作不透明凭据，不解析其格式，也不能把它发送给 GitHub 之外的 API。
+
+### 5.8 实验步骤五：失败验证与清理
+
+可以重新执行 Token 请求，观察同一个 Code 被拒绝；也可以修改 `$codeVerifier` 后重新走一遍授权流程，观察 PKCE 校验失败。测试失败分支时不要关闭当前 PowerShell 窗口，否则原始 `state` 和 `code_verifier` 会丢失。
+
+实验结束后：
+
+1. 在 GitHub 打开 **Settings > Applications > Authorized OAuth Apps**，找到实验应用并点击 **Revoke**。
+2. 在 **Settings > Developer settings > OAuth Apps** 中删除实验 Secret；不再使用该应用时删除整个 OAuth App。
+3. 清除当前 PowerShell 进程中的敏感变量：
+
+```powershell
+$env:GITHUB_CLIENT_SECRET = $null
+Remove-Variable accessToken, tokenResponse, code, codeVerifier -ErrorAction SilentlyContinue
+```
+
+仅清除变量不能撤销已签发 Token，因此 GitHub 页面中的 **Revoke** 是必需步骤。
+
+### 5.9 每个安全参数究竟保护什么
 
 | 参数或检查 | 防御目标 | 缺失时的典型风险 |
 |---|---|---|
 | `state` | 绑定浏览器发起的授权事务与回调 | 授权 CSRF、回调串线 |
 | PKCE | 证明兑换方持有原始 `code_verifier` | 授权码被截获后兑换 |
-| 精确 Redirect URI | 把 Code 只交给已注册回调 | Code 被送到攻击者控制的地址 |
-| Client Authentication | 证明兑换方是 Confidential Client | 客户端被冒充 |
-| `drive.metadata.readonly` | 只允许读取 Drive 文件元数据 | 应用获得读取内容或修改文件的过大权限 |
-| Drive 文件权限 | 限制 Alice 实际可以访问的文件 | 仅凭 Scope 绕过资源所有权和共享规则 |
-| Token 仅发送给 Drive API | 限制凭据的使用位置 | Token 泄漏或被错误发送给其他服务 |
+| 精确 Redirect URI | 把 Code 送回预期回调 | Code 被发送到错误地址 |
+| Client Secret | 证明兑换方是该 Confidential Client | 客户端被冒充 |
+| `read:user` | 只申请读取用户资料 | 取得仓库或写操作等过大权限 |
+| 每次获取 Token 后调用 `/user` | 确认 Token 当前代表的 GitHub 账号 | 把浏览器中切换后的账号关联给错误用户 |
+| Token 仅发送给 GitHub API | 限制凭据的使用位置 | Token 泄漏给第三方服务 |
 
-这条链路说明了 OAuth 的边界：Google 授予 Zora 文档中心“代表 Alice 读取 Drive 文件元数据”的有限能力，Drive API 仍保留对具体文件的最终授权决定权。
+这条链路说明了 OAuth 的边界：GitHub 授予 Zora“代表用户读取 GitHub 资料”的有限能力。它没有向 Zora 签发 OIDC ID Token，也没有替代 Zora 自己的会话、租户权限或业务授权。
 
-如果改为访问 Zora 自己的 API，资源服务器还需要执行 [Token 与校验](05-Token与校验.md) 中的完整验证，并在 Scope 之外继续检查租户和资源归属。
+GitHub 官方目前更推荐新项目评估 GitHub App，因为它支持更细粒度的权限、仓库范围选择和短期 Token。OAuth App 仍适合本章用来理解标准授权码流程。
 
 ## 6. 不再推荐的模式
 
@@ -267,7 +368,7 @@ Google Drive API 验证 Token、Scope 和 Alice 对每个文件的访问权限�
 |---|---|---|
 | OAuth 2.0 | OAuth 2.0 Authorization Framework | 委托授权框架；OAuth 是协议名称，不必按字母拆解 |
 | PKCE | Proof Key for Code Exchange | 授权码交换证明，防止截获的授权码被他人兑换 |
-| API | Application Programming Interface | 应用程序编程接口，例如 Google Drive API |
+| API | Application Programming Interface | 应用程序编程接口，例如 GitHub REST API |
 | CSRF | Cross-Site Request Forgery | 跨站请求伪造；攻击者诱导浏览器完成非用户本意的请求 |
 | SPA | Single-Page Application | 单页应用，代码主要运行在浏览器中，不能安全保存 Client Secret |
 | OIDC | OpenID Connect | 建立在 OAuth 2.0 之上的身份认证协议，回答“用户是谁” |
@@ -282,7 +383,7 @@ Google Drive API 验证 Token、Scope 和 Alice 对每个文件的访问权限�
 | Authorization Code | 授权码；短期、一次性的中间凭据，只能用于兑换 Token |
 | Access Token | 访问令牌；Client 调用 Resource Server API 时提交的凭据 |
 | Bearer Token | 持有者令牌；任何拿到它的人都可能使用，因此必须防止泄漏 |
-| Scope | 权限范围；描述 Client 申请的操作类别，例如只读文件元数据 |
+| Scope | 权限范围；描述 Client 申请的操作类别，例如 GitHub 的 `read:user` |
 | Client ID | Client 的公开标识，用于说明“哪个应用正在申请授权” |
 | Client Secret | Confidential Client 的机密凭据，只能保存在可信后端 |
 | Redirect URI | 授权完成后的回调地址，必须与预注册值精确匹配 |
