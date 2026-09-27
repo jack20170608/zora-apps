@@ -6,15 +6,14 @@
 
 - Linux、Bash、JDK 25 和 Ansible；应用由 `zora-bin` 的 `deploy.sh`、`start.sh`、`stop.sh`、`status.sh` 管理，不要求 systemd。
 - 控制机上已有对应版本的 `-service.tar.gz` 压缩包。
-- 目标机已由安全渠道创建 `/etc/host-helper/release-config/setenv`（root 所有、hosthelper 组可读，权限 0640）。playbook 把它复制到每个版本的 `config/`；应将 `HOST_HELPER_CONFIG_DIR` 设置为当前脚本所在目录的绝对路径（示例：`export HOST_HELPER_CONFIG_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"`），可选 `PORT=...`。**这是 zora-bin 信任并 source 的 Bash 文件**；`setenv-sit`、`setenv-prod` 同理可选，`application.sh` 不会自动执行。只允许可信运维修改这些文件，不要把凭据或环境文件提交到仓库。
-- 在 `/etc/host-helper/config/application-<env>.conf` 中提供所选环境的配置（root 所有、hosthelper 组可读，权限 0640）。例如 SIT 使用 `application-sit.conf`。服务 JAR 不包含 `local`/`sit` 配置或 JWT 密钥；JWT 私钥、公钥应指向 `hosthelper` 可读的受保护文件。不要直接使用仓库里的示例账户。
+- 目标机上需要准备好 JWT 私钥/公钥文件，路径在 `application-<env>.conf` 中配置。服务 JAR 不包含生产密钥，不要直接使用仓库里的示例账户。
 
 ## 应用部署后的目录结构
 
-以 `host_helper_root=/opt/hosthelper`、当前激活版本 `1.2`、环境 `sit` 为例（版本号和根目录以实际部署参数为准）：
+以 `host_helper_root=/appvol/ilovemyhome/apps/hosthelper`、当前激活版本 `1.2`、环境 `sit` 为例（版本号和根目录以实际部署参数为准）：
 
 ```text
-/opt/hosthelper/
+/appvol/ilovemyhome/apps/hosthelper/
 ├── env.tag                 # Ansible 写入 sit；手动使用 zora-bin 时可改用 APP_ENV
 ├── active -> 1.2/          # deploy.sh --activate 管理的当前版本软链
 ├── 1.0/                    # 保留的旧版本
@@ -22,13 +21,13 @@
 ├── 1.2/
 │   ├── app.jar             # service 包提供
 │   ├── lib/                # service 包提供；本项目运行时依赖必需
-│   ├── config/             # 部署时由受控配置源填充，不在 service 包内
-│   │   ├── setenv          # 通用环境变量；本 Ansible 部署要求提供
+│   ├── config/             # service 包提供
+│   │   ├── setenv          # 通用环境变量
 │   │   ├── setenv-sit      # 可选：仅 SIT 加载
 │   │   ├── setenv-uat      # 可选：仅 UAT 加载
 │   │   ├── setenv-prod     # 可选：仅 PROD 加载
-│   │   ├── application.sh  # 可选：应用自有文件，不会自动执行
-│   │   └── application-sit.conf  # SIT 的 HOCON 配置；部署时提供
+│   │   ├── application.conf  # 默认配置
+│   │   └── application-sit.conf  # SIT 的 HOCON 配置
 │   └── bin/                # service 包直接提取的 zora-bin 原版脚本
 │       ├── lifecycle.sh
 │       ├── start.sh
@@ -39,7 +38,7 @@
 └── run/                    # 脚本按需创建，包含 PID/锁文件
 ```
 
-service 归档的顶层**只有 `<version>/`**，不包含 `/opt/hosthelper`、`env.tag`、`active`、`logs/` 或 `run/`。SIT 示例之外，UAT/PROD 使用对应的 `application-uat.conf`/`application-prod.conf`，不能复用 SIT 配置。历史版本只有在确实发布过相应版本后才会出现。
+service 归档的顶层**只有 `<version>/`**，不包含 `/appvol/ilovemyhome/apps/hosthelper`、`env.tag`、`active`、`logs/` 或 `run/`。SIT 示例之外，UAT/PROD 使用对应的 `application-uat.conf`/`application-prod.conf`，不能复用 SIT 配置。历史版本只有在确实发布过相应版本后才会出现。
 
 ## 使用
 
@@ -89,5 +88,5 @@ ansible-playbook -i inventories/uat/hosts.ini playbooks/deploy.yml --limit uat -
 
 部署前 role 校验 `host_helper_env` 必须与目标主机的 inventory 环境组一致；首次部署时由 `ansible.builtin.copy` 把环境名（如 `sit`、`uat`、`prod`）写入 `{{ host_helper_root }}/env.tag`，供 `zora-bin` 读取。重复部署相同环境保持幂等；如果已有标记指向不同环境，立即拒绝部署，不会静默切换。环境迁移需另行审查并使用独立根目录或明确的迁移流程；`env.tag` 不是存放凭据的文件。
 
-role 拒绝缺失环境配置的机器，直接将归档中的 `<version>/app.jar`、`lib/`、`bin/` 解压到可配置的 `host_helper_root`（默认 `/opt/hosthelper`），并把受控的 `/etc/host-helper/release-config/` 及 `application-<env>.conf` 复制到版本目录的 `config/`。随后在 `hosthelper` 账户下调用包内原版 `zora-bin/deploy.sh --activate <version>` 建立 `active` 软链，并按需启动；`logs/`、`run/` 由脚本自动创建。重复发布同版本保持幂等；回滚用 `bash /opt/hosthelper/active/bin/deploy.sh --activate <旧版本>`。可直接运行 `bash /opt/hosthelper/active/bin/{start,stop,status}.sh` 管理应用。`env.tag` 放在运行根目录，生产密钥不得进入归档；发布前请备份并审查外部状态/数据。
+role 拒绝不完整的发布包，直接将归档中的 `<version>/app.jar`、`lib/`、`bin/`、`config/` 解压到可配置的 `host_helper_root`（默认 `/appvol/ilovemyhome/apps/hosthelper`）。配置目录包含 `setenv`、`application.conf` 及各环境的 `application-<env>.conf`，部署时只需选择对应环境的配置文件即可。随后在 `jack` 账户下调用包内原版 `zora-bin/deploy.sh --activate <version>` 建立 `active` 软链，并按需启动；`logs/`、`run/` 由脚本自动创建。重复发布同版本保持幂等；回滚用 `bash /appvol/ilovemyhome/apps/hosthelper/active/bin/deploy.sh --activate <旧版本>`。可直接运行 `bash /appvol/ilovemyhome/apps/hosthelper/active/bin/{start,stop,status}.sh` 管理应用。`env.tag` 放在运行根目录，生产密钥不得进入归档；发布前请备份并审查外部状态/数据。
 
