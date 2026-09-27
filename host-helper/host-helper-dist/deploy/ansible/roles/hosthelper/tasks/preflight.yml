@@ -7,9 +7,36 @@
       - "'..' not in host_helper_version"
       - host_helper_env is defined
       - host_helper_env is match('^[a-zA-Z0-9][a-zA-Z0-9_-]*$')
+      - host_helper_env in group_names
       - service_archive is defined
       - "service_archive | basename == 'host-helper-dist-' ~ host_helper_version ~ '-service.tar.gz'"
-    fail_msg: "Provide host_helper_version, host_helper_env and the matching service_archive tar.gz"
+    fail_msg: 'Provide a valid version, matching service archive and an environment matching the inventory group'
+
+- name: Inspect existing environment marker
+  ansible.builtin.stat:
+    path: '{{ host_helper_root }}/env.tag'
+    follow: false
+  register: host_helper_existing_env_tag
+
+- name: Reject invalid environment marker file
+  ansible.builtin.assert:
+    that:
+      - host_helper_existing_env_tag.stat.isreg | default(false)
+    fail_msg: 'Existing env.tag must be a regular file; inspect it before deployment'
+  when: host_helper_existing_env_tag.stat.exists | default(false) or host_helper_existing_env_tag.stat.islnk | default(false)
+
+- name: Read existing environment marker
+  ansible.builtin.slurp:
+    src: '{{ host_helper_root }}/env.tag'
+  register: host_helper_existing_env_content
+  when: host_helper_existing_env_tag.stat.isreg | default(false)
+
+- name: Refuse environment changes on an existing application root
+  ansible.builtin.assert:
+    that:
+      - host_helper_existing_env_content.content | b64decode | trim == host_helper_env
+    fail_msg: 'Existing env.tag differs from the inventory environment; use a separate root or migrate explicitly'
+  when: host_helper_existing_env_tag.stat.isreg | default(false)
 
 - name: Check archive on Ansible controller
   ansible.builtin.stat:

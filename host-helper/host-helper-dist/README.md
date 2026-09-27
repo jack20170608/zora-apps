@@ -39,7 +39,7 @@ host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz
 └── README.md
 ```
 
-`env.tag`、`active` 软链、`logs/` 和 `run/` 属于运行目录：前两者在部署时配置/激活，后两者由生命周期脚本按需创建。`config/` 属于版本配置，需由可信部署流程提供，不能把密钥打入归档。`app.jar` 的 manifest 包含 Main-Class 和 `lib/` Class-Path；**这不是 systemd 服务包**。
+`env.tag`、`active` 软链、`logs/` 和 `run/` 属于运行目录：前两者在部署时配置/激活，后两者由生命周期脚本按需创建。`config/` 属于版本配置，需由可信部署流程提供，不能把密钥打入归档。`app.jar` 的 manifest 包含 Main-Class 和 `lib/` Class-Path；**这不是 systemd 服务包**。完整的部署后目录树见源码中的 `host-helper-dist/deploy/README.md`，也随独立的 `-deploy.tar.gz` 提供。
 
 ```bash
 mkdir -p /opt/hosthelper

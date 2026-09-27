@@ -61,7 +61,7 @@ mvn clean package -Ppackage-deploy -DskipTests
 mvn clean package -Ppackage-service -DskipTests
 ```
 
-分别用于可复现源码交付、测试报告归档、Ansible/systemd 部署资产和可执行服务（含运行期 JAR）。运行服务需要 JDK 25；生产环境还必须提供可信配置与凭据，不能直接使用随 JAR 附带的 `local`/`sit` 示例配置。详细内容、启动及部署步骤见 [`host-helper-dist/README.md`](host-helper-dist/README.md)。
+分别用于源码交付、测试报告归档、Ansible 部署资产和可执行服务（含运行期 JAR）；服务包不安装 systemd，也不包含示例密钥及环境配置。运行服务需要 JDK 25，部署环境应单独提供可信的配置与凭据。包内容及启动方式见 [`host-helper-dist/README.md`](host-helper-dist/README.md)，完整的部署后目录结构见 [`host-helper-dist/deploy/README.md`](host-helper-dist/deploy/README.md)。
 
 ## 技术栈
 
