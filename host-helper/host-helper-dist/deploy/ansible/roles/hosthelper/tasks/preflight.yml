@@ -1,4 +1,8 @@
 ---
+- name: Extract version from archive filename
+  ansible.builtin.set_fact:
+    host_helper_version: "{{ service_archive | basename | regex_replace('^host-helper-dist-(.*)-service\\.tar\\.gz$', '\\1') }}"
+
 - name: Require safe version, environment and matching local archive
   ansible.builtin.assert:
     that:

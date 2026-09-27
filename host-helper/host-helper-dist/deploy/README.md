@@ -66,7 +66,7 @@ ansible/
 
 ```bash
 cd ansible
-ansible-playbook -i /path/to/inventory.ini playbooks/deploy.yml -e "host_helper_version=1.0.0-SNAPSHOT host_helper_env=prod service_archive=/absolute/path/host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz"
+ansible-playbook -i /path/to/inventory.ini playbooks/deploy.yml -e "host_helper_env=prod service_archive=/absolute/path/host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz"
 ```
 
 上面的生产示例要求目标主机属于 `prod` 环境组，同时该组属于 `host_helper`；只设置 `host_helper_env=prod`、却没有对应 inventory 分组时，预检会拒绝部署。
@@ -75,14 +75,14 @@ SIT 清单当前使用 `sit-30/31/32`（10.10.10.30/31/32），并通过 `group_
 
 ```bash
 cd ansible
-ansible-playbook -i inventories/sit/hosts.ini playbooks/deploy.yml --limit sit -e "host_helper_version=1.0.0-SNAPSHOT service_archive=/absolute/path/host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz"
+ansible-playbook -i inventories/sit/hosts.ini playbooks/deploy.yml --limit sit -e "service_archive=/absolute/path/host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz"
 ```
 
 UAT 清单使用 `uat-188`（172.16.10.188）和 `uat-189`（172.16.10.189），由 `group_vars/uat.yml` 设置 `host_helper_env: uat`。SSH 用户、私钥和口令通过 SSH 配置或部署命令从受控渠道提供；不要将私钥写入仓库。仅部署 UAT：
 
 ```bash
 cd ansible
-ansible-playbook -i inventories/uat/hosts.ini playbooks/deploy.yml --limit uat -e "host_helper_version=1.0.0-SNAPSHOT service_archive=/absolute/path/host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz"
+ansible-playbook -i inventories/uat/hosts.ini playbooks/deploy.yml --limit uat -e "service_archive=/absolute/path/host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz"
 ```
 
 注意：应用配置 `application.conf` 中的 UAT URL 目前仍是 `10.10.10.20/21:8000`；inventory 仅定义 SSH 部署目标，不会覆盖应用业务 URL。发布前必须核对并通过受控的 `application-uat.conf` 明确设置所需主机 URL。
