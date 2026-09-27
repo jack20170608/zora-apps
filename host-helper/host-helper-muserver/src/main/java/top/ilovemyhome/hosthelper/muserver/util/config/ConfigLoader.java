@@ -6,12 +6,12 @@ import com.typesafe.config.ConfigFactory;
 public final class ConfigLoader {
 
     public static Config loadConfig(String conf){
-        return ConfigFactory.parseResources(conf);
+        return ConfigFactory.parseResources(conf).resolve();
     }
 
     public static Config loadConfig(String rootConf, String fallbackConf){
         Config defaultConfig = ConfigFactory.parseResources(rootConf);
         Config specConfig = ConfigFactory.parseResources(fallbackConf);
-        return specConfig.withFallback(defaultConfig);
+        return specConfig.withFallback(defaultConfig).resolve();
     }
 }

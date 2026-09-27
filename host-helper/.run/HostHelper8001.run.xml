@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="HostHelper8000" type="Application" factoryName="Application">
+  <configuration default="false" name="HostHelper8001" type="Application" factoryName="Application">
     <envs>
       <env name="env" value="local" />
-      <env name="PORT" value="8000" />
+      <env name="PORT" value="8001" />
     </envs>
     <option name="MAIN_CLASS_NAME" value="top.ilovemyhome.hosthelper.muserver.App" />
     <module name="host-helper-muserver" />
