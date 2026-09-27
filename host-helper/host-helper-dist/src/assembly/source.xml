@@ -1,0 +1,43 @@
+<assembly>
+    <id>package-source</id>
+    <formats><format>tar.gz</format></formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>host-helper-${project.version}</baseDirectory>
+    <fileSets>
+        <fileSet>
+            <directory>${project.parent.basedir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes><include>pom.xml</include><include>README.md</include></includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.parent.basedir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>host-helper-si/pom.xml</include>
+                <include>host-helper-si/src/**</include>
+                <include>host-helper-si/metadata/**</include>
+                <include>host-helper-core/pom.xml</include>
+                <include>host-helper-core/src/**</include>
+                <include>host-helper-core/metadata/**</include>
+                <include>host-helper-muserver/pom.xml</include>
+                <include>host-helper-muserver/src/**</include>
+                <include>host-helper-muserver/metadata/**</include>
+                <include>host-helper-dist/pom.xml</include>
+                <include>host-helper-dist/src/**</include>
+                <include>host-helper-dist/README.md</include>
+                <include>host-helper-dist/deploy/**</include>
+                <include>docs/**</include>
+            </includes>
+            <excludes>
+                <exclude>**/*.key</exclude>
+                <exclude>**/*.pem</exclude>
+                <exclude>**/*.p12</exclude>
+                <exclude>**/*.jks</exclude>
+                <exclude>**/.env*</exclude>
+                <exclude>**/*private*</exclude>
+                <exclude>**/target/**</exclude>
+            </excludes>
+        </fileSet>
+    </fileSets>
+</assembly>
+

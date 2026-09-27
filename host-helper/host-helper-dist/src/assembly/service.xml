@@ -1,0 +1,35 @@
+<assembly>
+    <id>package-service</id>
+    <formats><format>tar.gz</format></formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>host-helper-service-${project.version}</baseDirectory>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>lib</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+            <unpack>false</unpack>
+            <scope>runtime</scope>
+        </dependencySet>
+    </dependencySets>
+    <files>
+        <file>
+            <source>${project.build.directory}/${project.build.finalName}-service-launcher.jar</source>
+            <outputDirectory>/</outputDirectory>
+            <destName>app.jar</destName>
+        </file>
+    </files>
+    <fileSets>
+        <fileSet>
+            <directory>${project.build.directory}/zora-bin/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes><include>*.sh</include></includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes><include>README.md</include></includes>
+        </fileSet>
+    </fileSets>
+</assembly>
+

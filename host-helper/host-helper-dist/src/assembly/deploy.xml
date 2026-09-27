@@ -1,0 +1,14 @@
+<assembly>
+    <id>package-deploy</id>
+    <formats><format>tar.gz</format></formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>host-helper-deploy-${project.version}</baseDirectory>
+    <fileSets>
+        <fileSet>
+            <directory>${project.basedir}/deploy</directory>
+            <outputDirectory>/</outputDirectory>
+            <excludes><exclude>**/*.env</exclude><exclude>**/*.key</exclude></excludes>
+        </fileSet>
+    </fileSets>
+</assembly>
+

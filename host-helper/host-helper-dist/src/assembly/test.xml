@@ -1,0 +1,29 @@
+<assembly>
+    <id>package-test</id>
+    <formats><format>tar.gz</format></formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>host-helper-test-${project.version}</baseDirectory>
+    <fileSets>
+        <fileSet>
+            <directory>${project.parent.basedir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes><include>README.md</include></includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.parent.basedir}/host-helper-si/target/surefire-reports</directory>
+            <outputDirectory>host-helper-si/surefire-reports</outputDirectory>
+            <includes><include>TEST-*.xml</include><include>*.txt</include></includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.parent.basedir}/host-helper-core/target/surefire-reports</directory>
+            <outputDirectory>host-helper-core/surefire-reports</outputDirectory>
+            <includes><include>TEST-*.xml</include><include>*.txt</include></includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.parent.basedir}/host-helper-muserver/target/surefire-reports</directory>
+            <outputDirectory>host-helper-muserver/surefire-reports</outputDirectory>
+            <includes><include>TEST-*.xml</include><include>*.txt</include></includes>
+        </fileSet>
+    </fileSets>
+</assembly>
+
