@@ -12,7 +12,7 @@ public class App {
 
     public static void main(String[] args) {
         LOGGER.info("Starting application.");
-        String env = System.getProperty("env");
+        String env = System.getenv("env");
         if (StringUtils.isBlank(env)){
             throw new IllegalStateException("Cannot find env property.");
         }
