@@ -35,6 +35,10 @@
             <groupId>top.ilovemyhome.zora</groupId>
             <artifactId>zora-rdb</artifactId>
         </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.zora</groupId>
+            <artifactId>zora-bin</artifactId>
+        </dependency>
         <!-- zora json -->
         <dependency>
             <groupId>top.ilovemyhome.zora</groupId>
