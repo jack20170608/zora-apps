@@ -1,0 +1,86 @@
+---
+- name: Create application group
+  ansible.builtin.group:
+    name: "{{ host_helper_group }}"
+    system: true
+
+- name: Create unprivileged application account
+  ansible.builtin.user:
+    name: "{{ host_helper_user }}"
+    group: "{{ host_helper_group }}"
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+
+- name: Create application root
+  ansible.builtin.file:
+    path: "{{ host_helper_root }}"
+    state: directory
+    owner: "{{ host_helper_user }}"
+    group: "{{ host_helper_group }}"
+    mode: '0750'
+
+- name: Select environment for zora-bin
+  ansible.builtin.copy:
+    content: "{{ host_helper_env }}\n"
+    dest: "{{ host_helper_root }}/env.tag"
+    owner: "{{ host_helper_user }}"
+    group: "{{ host_helper_group }}"
+    mode: '0640'
+
+- name: Extract version directory into application root
+  ansible.builtin.unarchive:
+    src: "{{ service_archive }}"
+    dest: "{{ host_helper_root }}"
+    owner: "{{ host_helper_user }}"
+    group: "{{ host_helper_group }}"
+    creates: "{{ host_helper_root }}/{{ host_helper_version }}/app.jar"
+
+- name: Check packaged application and zora-bin scripts
+  ansible.builtin.stat:
+    path: "{{ host_helper_root }}/{{ host_helper_version }}/{{ item }}"
+  loop:
+    - app.jar
+    - lib
+    - bin/deploy.sh
+    - bin/lifecycle.sh
+    - bin/start.sh
+    - bin/status.sh
+    - bin/stop.sh
+  register: host_helper_release_artifacts
+
+- name: Refuse an incomplete release
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: "Incomplete release: {{ item.item }}"
+  loop: "{{ host_helper_release_artifacts.results }}"
+
+- name: Create version configuration directory
+  ansible.builtin.file:
+    path: "{{ host_helper_root }}/{{ host_helper_version }}/config"
+    state: directory
+    owner: "{{ host_helper_user }}"
+    group: "{{ host_helper_group }}"
+    mode: '0750'
+
+- name: Copy trusted environment scripts from target machine
+  ansible.builtin.copy:
+    src: "{{ host_helper_release_config_dir }}/"
+    dest: "{{ host_helper_root }}/{{ host_helper_version }}/config/"
+    remote_src: true
+    owner: "{{ host_helper_user }}"
+    group: "{{ host_helper_group }}"
+    mode: preserve
+  no_log: true
+
+- name: Copy environment HOCON from target machine
+  ansible.builtin.copy:
+    src: "{{ host_helper_config_source_dir }}/application-{{ host_helper_env }}.conf"
+    dest: "{{ host_helper_root }}/{{ host_helper_version }}/config/application-{{ host_helper_env }}.conf"
+    remote_src: true
+    owner: "{{ host_helper_user }}"
+    group: "{{ host_helper_group }}"
+    mode: '0640'
+  no_log: true
+

@@ -2,7 +2,7 @@
     <id>service</id>
     <formats><format>tar.gz</format></formats>
     <includeBaseDirectory>true</includeBaseDirectory>
-    <baseDirectory>hosthelper/${project.version}</baseDirectory>
+    <baseDirectory>${project.version}</baseDirectory>
     <dependencySets>
         <dependencySet>
             <outputDirectory>lib</outputDirectory>
@@ -17,14 +17,33 @@
             <outputDirectory>/</outputDirectory>
             <destName>app.jar</destName>
         </file>
-    </files>
-    <fileSets>
-        <fileSet>
-            <directory>${project.build.directory}/zora-bin/bin</directory>
+        <file>
+            <source>${project.build.directory}/zora-bin/bin/lifecycle.sh</source>
             <outputDirectory>bin</outputDirectory>
             <fileMode>0755</fileMode>
-            <includes><include>*.sh</include></includes>
-        </fileSet>
+        </file>
+        <file>
+            <source>${project.build.directory}/zora-bin/bin/start.sh</source>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>0755</fileMode>
+        </file>
+        <file>
+            <source>${project.build.directory}/zora-bin/bin/stop.sh</source>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>0755</fileMode>
+        </file>
+        <file>
+            <source>${project.build.directory}/zora-bin/bin/status.sh</source>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>0755</fileMode>
+        </file>
+        <file>
+            <source>${project.build.directory}/zora-bin/bin/deploy.sh</source>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>0755</fileMode>
+        </file>
+    </files>
+    <fileSets>
         <fileSet>
             <directory>${project.basedir}</directory>
             <outputDirectory>/</outputDirectory>

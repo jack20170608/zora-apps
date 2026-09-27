@@ -1,0 +1,41 @@
+---
+- name: Require safe version, environment and matching local archive
+  ansible.builtin.assert:
+    that:
+      - host_helper_version is defined
+      - host_helper_version is match('^[a-zA-Z0-9][a-zA-Z0-9._-]*$')
+      - "'..' not in host_helper_version"
+      - host_helper_env is defined
+      - host_helper_env is match('^[a-zA-Z0-9][a-zA-Z0-9_-]*$')
+      - service_archive is defined
+      - "service_archive | basename == 'host-helper-dist-' ~ host_helper_version ~ '-service.tar.gz'"
+    fail_msg: "Provide host_helper_version, host_helper_env and the matching service_archive tar.gz"
+
+- name: Check archive on Ansible controller
+  ansible.builtin.stat:
+    path: "{{ service_archive }}"
+  delegate_to: localhost
+  become: false
+  register: host_helper_archive
+
+- name: Refuse missing archive
+  ansible.builtin.assert:
+    that:
+      - host_helper_archive.stat.isreg | default(false)
+    fail_msg: "Missing service archive: {{ service_archive }}"
+
+- name: Check provisioned environment script and application config
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ host_helper_release_config_dir }}/setenv"
+    - "{{ host_helper_config_source_dir }}/application-{{ host_helper_env }}.conf"
+  register: host_helper_external_files
+
+- name: Refuse missing externally managed configuration
+  ansible.builtin.assert:
+    that:
+      - item.stat.isreg | default(false)
+    fail_msg: "Provision {{ item.item }} on the target before deploying"
+  loop: "{{ host_helper_external_files.results }}"
+

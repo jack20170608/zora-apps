@@ -1,0 +1,10 @@
+---
+- name: Validate deployment inputs
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Install immutable release
+  ansible.builtin.import_tasks: install.yml
+
+- name: Activate release using zora-bin
+  ansible.builtin.import_tasks: activate.yml
+

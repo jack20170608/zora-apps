@@ -108,6 +108,7 @@
                                             <version>${zora.version}</version>
                                             <type>jar</type>
                                             <includes>bin/*.sh</includes>
+                                            <overWrite>true</overWrite>
                                             <outputDirectory>${project.build.directory}/zora-bin</outputDirectory>
                                         </artifactItem>
                                     </artifactItems>

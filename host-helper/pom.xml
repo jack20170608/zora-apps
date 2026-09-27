@@ -20,8 +20,7 @@
 
     <properties>
         <revision>1.0.0-SNAPSHOT</revision>
-        <maven.compiler.source>25</maven.compiler.source>
-        <maven.compiler.target>25</maven.compiler.target>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <zora.version>1.0.3</zora.version>
     </properties>

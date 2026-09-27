@@ -29,26 +29,26 @@ host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz
 
 `package-test` 的 Surefire XML 可能记录 JVM 属性与测试输出，只应上传到访问受控的 CI 制品库；请勿在带真实凭据的构建进程中运行测试。必须先 `clean` 且不设置 `-DskipTests`，避免空报告或旧报告。
 
-服务归档解压后直接提供完整版本目录，`bin/` 下五个脚本直接从 `zora-bin` JAR 提取（不是自写脚本）：
+服务归档只包含版本目录，由部署方选择运行根目录；`bin/` 下五个脚本直接从 `zora-bin` JAR 提取（不是自写脚本）：
 
 ```text
-hosthelper/
-└── 1.0.0-SNAPSHOT/
-	├── app.jar
-	├── lib/
-	├── bin/{deploy,lifecycle,start,stop,status}.sh
-	└── README.md
+1.0.0-SNAPSHOT/
+├── app.jar
+├── lib/
+├── bin/{deploy,lifecycle,start,stop,status}.sh
+└── README.md
 ```
 
 `env.tag`、`active` 软链、`logs/` 和 `run/` 属于运行目录：前两者在部署时配置/激活，后两者由生命周期脚本按需创建。`config/` 属于版本配置，需由可信部署流程提供，不能把密钥打入归档。`app.jar` 的 manifest 包含 Main-Class 和 `lib/` Class-Path；**这不是 systemd 服务包**。
 
 ```bash
 mkdir -p /opt/hosthelper
-tar -xzf host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz -C /opt
+tar -xzf host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz -C /opt/hosthelper
 export APP_HOME=/opt/hosthelper
 version=1.0.0-SNAPSHOT
 mkdir -p "$APP_HOME/$version/config"
 cp -a /etc/host-helper/release-config/. "$APP_HOME/$version/config/"
+cp /etc/host-helper/config/application-prod.conf "$APP_HOME/$version/config/"
 bash "$APP_HOME/$version/bin/deploy.sh" --activate "$version"
 bash "$APP_HOME/active/bin/start.sh"
 bash "$APP_HOME/active/bin/status.sh"

@@ -8,8 +8,8 @@
 
 - `package-source`：项目源码和构建所需文件，白名单方式收集，不复制 `target`、私钥与环境文件。
 - `package-test`：Surefire XML 和文本报告，不捆绑二进制；必须从 clean 开始并运行测试，避免旧报告污染。
-- `package-deploy`：Ansible 部署资产，调用 `zora-bin` 自带的发布/启动脚本；不含应用、密码或密钥，不安装 systemd unit。需与同版本的 service 包配套。
-- `package-service`：以 `hosthelper/<version>/` 为根目录，包含 manifest 指定入口和 `lib/` 类路径的 `app.jar`、所有 runtime scope 依赖 JAR，以及直接从 `zora-bin` 解包到 `bin/` 的 deploy/start/stop/status/lifecycle 脚本；不是 Linux 系统服务，不附带 JDK、test scope 依赖、示例 JWT 密钥或 `local`/`sit` 环境配置。`config/` 由部署流程提供，`env.tag` 位于运行根目录，`active` 由 `deploy.sh --activate` 创建，`logs/` 和 `run/` 由脚本按需创建。
+- `package-deploy`：Ansible playbook、role（defaults、按职责拆分的 tasks）、示例 inventory，调用 `zora-bin` 自带的发布/启动脚本；不含应用、密码或密钥，不安装 systemd unit。需与同版本的 service 包配套。
+- `package-service`：以 `<version>/` 为根目录，不包含固定应用根目录名称；包含 manifest 指定入口和 `lib/` 类路径的 `app.jar`、所有 runtime scope 依赖 JAR，以及直接从 `zora-bin` 解包到 `bin/` 的 deploy/start/stop/status/lifecycle 脚本。不是 Linux 系统服务，不附带 JDK、test scope 依赖、示例 JWT 密钥或 `local`/`sit` 环境配置。部署方将包解压到指定 `host_helper_root`（默认 `/opt/hosthelper`），`config/` 由部署流程提供，`env.tag` 位于运行根目录，`active` 由 `deploy.sh --activate` 创建，`logs/` 和 `run/` 由脚本按需创建。
 
 每种包使用 classifier 防止覆盖主构件，普通 `mvn package` 不生成以上分发包。发行前应在 CI 对每个包分别执行校验（启动入口、JAR 依赖、报告 XML、资产清单、敏感文件检查）。
 

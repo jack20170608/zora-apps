@@ -1,0 +1,35 @@
+---
+- name: Inspect active release link
+  ansible.builtin.stat:
+    path: "{{ host_helper_root }}/active"
+    follow: false
+  register: host_helper_active
+
+- name: Activate version via packaged zora-bin script
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/bash
+      - "{{ host_helper_root }}/{{ host_helper_version }}/bin/deploy.sh"
+      - --activate
+      - "{{ host_helper_version }}"
+  become_user: "{{ host_helper_user }}"
+  when: host_helper_active.stat.lnk_target | default('') != host_helper_version
+
+- name: Check current application process
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/bash
+      - "{{ host_helper_root }}/active/bin/status.sh"
+  become_user: "{{ host_helper_user }}"
+  changed_when: false
+  failed_when: false
+  register: host_helper_status
+
+- name: Start application when not running
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/bash
+      - "{{ host_helper_root }}/active/bin/start.sh"
+  become_user: "{{ host_helper_user }}"
+  when: host_helper_status.rc != 0
+
