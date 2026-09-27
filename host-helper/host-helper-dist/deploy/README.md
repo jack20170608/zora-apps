@@ -18,9 +18,12 @@ ansible/
 ├── ansible.cfg
 ├── inventories/
 │   ├── example/hosts.ini
-│   └── sit/
+│   ├── sit/
+│   │   ├── hosts.ini
+│   │   └── group_vars/sit.yml
+│   └── uat/
 │       ├── hosts.ini
-│       └── group_vars/sit.yml
+│       └── group_vars/uat.yml
 ├── playbooks/deploy.yml
 └── roles/hosthelper/
 	├── defaults/main.yml
@@ -34,12 +37,21 @@ cd ansible
 ansible-playbook -i /path/to/inventory.ini playbooks/deploy.yml -e "host_helper_version=1.0.0-SNAPSHOT host_helper_env=prod service_archive=/absolute/path/host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz"
 ```
 
-SIT 清单根据应用配置中的 `sit-10`（10.10.10.5）、`sit-11`（10.10.10.6）、`sit-12`（10.10.10.12）定义，并通过 `group_vars/sit.yml` 选择 `host_helper_env: sit`。这些是应用节点地址；请在运行前确认 SSH 可达和实际部署授权，SSH 用户、私钥及口令不得写入清单。仅部署 SIT：
+SIT 清单当前使用 `sit-30/31/32`（10.10.10.30/31/32），并通过 `group_vars/sit.yml` 选择 `host_helper_env: sit`。请在运行前核对清单与实际 SSH 可达性及部署授权；私钥和口令不得写入清单。仅部署 SIT：
 
 ```bash
 cd ansible
 ansible-playbook -i inventories/sit/hosts.ini playbooks/deploy.yml --limit sit -e "host_helper_version=1.0.0-SNAPSHOT service_archive=/absolute/path/host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz"
 ```
+
+UAT 清单使用 `uat-188`（172.16.10.188）和 `uat-189`（172.16.10.189），由 `group_vars/uat.yml` 设置 `host_helper_env: uat`。SSH 用户、私钥和口令通过 SSH 配置或部署命令从受控渠道提供；不要将私钥写入仓库。仅部署 UAT：
+
+```bash
+cd ansible
+ansible-playbook -i inventories/uat/hosts.ini playbooks/deploy.yml --limit uat -e "host_helper_version=1.0.0-SNAPSHOT service_archive=/absolute/path/host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz"
+```
+
+注意：应用配置 `application.conf` 中的 UAT URL 目前仍是 `10.10.10.20/21:8000`；inventory 仅定义 SSH 部署目标，不会覆盖应用业务 URL。发布前必须核对并通过受控的 `application-uat.conf` 明确设置所需主机 URL。
 
 role 拒绝缺失环境配置的机器，直接将归档中的 `<version>/app.jar`、`lib/`、`bin/` 解压到可配置的 `host_helper_root`（默认 `/opt/hosthelper`），并把受控的 `/etc/host-helper/release-config/` 及 `application-<env>.conf` 复制到版本目录的 `config/`。随后在 `hosthelper` 账户下调用包内原版 `zora-bin/deploy.sh --activate <version>` 建立 `active` 软链，并按需启动；`logs/`、`run/` 由脚本自动创建。重复发布同版本保持幂等；回滚用 `bash /opt/hosthelper/active/bin/deploy.sh --activate <旧版本>`。可直接运行 `bash /opt/hosthelper/active/bin/{start,stop,status}.sh` 管理应用。`env.tag` 放在运行根目录，生产密钥不得进入归档；发布前请备份并审查外部状态/数据。
 
