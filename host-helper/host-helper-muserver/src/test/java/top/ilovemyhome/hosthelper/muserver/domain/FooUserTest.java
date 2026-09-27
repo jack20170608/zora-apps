@@ -1,6 +1,8 @@
 package top.ilovemyhome.hosthelper.muserver.domain;
 
 import org.junit.jupiter.api.Test;
+import top.ilovemyhome.hosthelper.si.domain.FooUser;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -65,6 +67,10 @@ public class FooUserTest {
         FooUser nullFooUser = new FooUser.Builder()
                 .id(null)
                 .name(null)
+                .age(0)
+                .birthday(null)
+                .lastUpdateDt(null)
+                .salaryMonth(null)
                 .build();
 
         assertNull(nullFooUser.id());

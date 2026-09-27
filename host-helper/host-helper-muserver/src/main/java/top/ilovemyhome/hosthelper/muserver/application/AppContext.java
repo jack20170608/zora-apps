@@ -67,7 +67,7 @@ public final class AppContext {
         AppSecurityContext appSecurityContext = AppSecurityContext.builder()
             .inMemoryUser(users)
             .jwtIssuer(getApplicationName())
-            .jwtSubject("access")
+            .jwtAudience("access")
             .jwtTtl(config.getDuration("jwt.ttl", TimeUnit.MILLISECONDS))
             .jwtPublicKeyPath(config.getString("jwt.publicKeyLocation"))
             .jwtPrivateKeyPath(config.getString("jwt.privateKeyLocation"))

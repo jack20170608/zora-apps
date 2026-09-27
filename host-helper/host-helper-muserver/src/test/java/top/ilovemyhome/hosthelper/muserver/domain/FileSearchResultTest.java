@@ -1,6 +1,10 @@
 package top.ilovemyhome.hosthelper.muserver.domain;
 
 import org.junit.jupiter.api.Test;
+import top.ilovemyhome.hosthelper.si.domain.FileSearchResult;
+import top.ilovemyhome.hosthelper.si.domain.FileType;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class FileSearchResultTest {
 

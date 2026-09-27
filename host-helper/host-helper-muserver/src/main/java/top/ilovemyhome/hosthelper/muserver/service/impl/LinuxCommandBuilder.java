@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.zora.common.system.OSUtil;
 import top.ilovemyhome.zora.common.system.SystemCommandChecker;
-import top.ilovemyhome.zora.common.util.CollectionUtil;
+import top.ilovemyhome.zora.common.lang.CollectionUtil;
 import top.ilovemyhome.hosthelper.si.domain.FileSearchCriteria;
 import top.ilovemyhome.hosthelper.si.domain.FileType;
 import top.ilovemyhome.hosthelper.muserver.service.CommandBuilder;

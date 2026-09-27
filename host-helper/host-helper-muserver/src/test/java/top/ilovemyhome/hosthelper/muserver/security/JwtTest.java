@@ -4,7 +4,7 @@ import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.ilovemyhome.tooling.hosthelper.util.jwt.JwtHelper;
+import top.ilovemyhome.hosthelper.muserver.util.jwt.JwtHelper;
 
 import javax.crypto.SecretKey;
 

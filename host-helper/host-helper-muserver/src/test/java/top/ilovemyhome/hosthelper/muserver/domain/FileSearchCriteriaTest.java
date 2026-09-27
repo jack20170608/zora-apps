@@ -1,6 +1,9 @@
 package top.ilovemyhome.hosthelper.muserver.domain;
 
 import org.junit.jupiter.api.Test;
+import top.ilovemyhome.hosthelper.si.domain.FileSearchCriteria;
+import top.ilovemyhome.hosthelper.si.domain.FileType;
+
 import java.time.LocalDateTime;
 import java.time.Month;
 

@@ -2,7 +2,8 @@ package top.ilovemyhome.hosthelper.muserver.util.os;
 
 import org.junit.jupiter.api.Test;
 
-import static top.ilovemyhome.tooling.hosthelper.util.os.LinuxOsUtils.isValidLinuxPath;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static top.ilovemyhome.hosthelper.muserver.util.os.LinuxOsUtils.isValidLinuxPath;
 
 public class LinuxOsUtilsTest {
 
