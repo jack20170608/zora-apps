@@ -1,8 +1,8 @@
 <assembly>
-    <id>package-service</id>
+    <id>service</id>
     <formats><format>tar.gz</format></formats>
     <includeBaseDirectory>true</includeBaseDirectory>
-    <baseDirectory>host-helper-service-${project.version}</baseDirectory>
+    <baseDirectory>hosthelper/${project.version}</baseDirectory>
     <dependencySets>
         <dependencySet>
             <outputDirectory>lib</outputDirectory>

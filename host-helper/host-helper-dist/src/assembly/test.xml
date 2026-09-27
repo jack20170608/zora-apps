@@ -1,5 +1,5 @@
 <assembly>
-    <id>package-test</id>
+    <id>test</id>
     <formats><format>tar.gz</format></formats>
     <includeBaseDirectory>true</includeBaseDirectory>
     <baseDirectory>host-helper-test-${project.version}</baseDirectory>

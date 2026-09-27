@@ -18,21 +18,42 @@ mvn clean package -Ppackage-deploy -DskipTests
 mvn clean package -Ppackage-service -DskipTests
 ```
 
-文件名示例：`host-helper-dist-1.0.0-SNAPSHOT-package-service.tar.gz`。
+`package-*` 仅是 Maven profile 名；归档采用 `${artifactId}-${version}-${classifier}.tar.gz`：
+
+```text
+host-helper-dist-1.0.0-SNAPSHOT-source.tar.gz
+host-helper-dist-1.0.0-SNAPSHOT-test.tar.gz
+host-helper-dist-1.0.0-SNAPSHOT-deploy.tar.gz
+host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz
+```
 
 `package-test` 的 Surefire XML 可能记录 JVM 属性与测试输出，只应上传到访问受控的 CI 制品库；请勿在带真实凭据的构建进程中运行测试。必须先 `clean` 且不设置 `-DskipTests`，避免空报告或旧报告。
 
-`app.jar` 带有 Main-Class 和 `lib/` 的 manifest Class-Path，可用 `java -jar` 启动。Linux 上推荐用 `zora-bin` 的 `deploy.sh` 构建 `APP_HOME/<version>`、`APP_HOME/active`，然后以 `active/bin/start.sh`、`stop.sh`、`status.sh` 管理进程；**这不是 systemd 服务包**。`HOST_HELPER_CONFIG_DIR` 是包含 `application-<env>.conf` 的外部目录，配置中的 JWT 密钥应指向外部受保护文件。具体操作见部署包说明。
+服务归档解压后直接提供完整版本目录，`bin/` 下五个脚本直接从 `zora-bin` JAR 提取（不是自写脚本）：
+
+```text
+hosthelper/
+└── 1.0.0-SNAPSHOT/
+	├── app.jar
+	├── lib/
+	├── bin/{deploy,lifecycle,start,stop,status}.sh
+	└── README.md
+```
+
+`env.tag`、`active` 软链、`logs/` 和 `run/` 属于运行目录：前两者在部署时配置/激活，后两者由生命周期脚本按需创建。`config/` 属于版本配置，需由可信部署流程提供，不能把密钥打入归档。`app.jar` 的 manifest 包含 Main-Class 和 `lib/` Class-Path；**这不是 systemd 服务包**。
 
 ```bash
-tar -xzf host-helper-dist-1.0.0-SNAPSHOT-package-service.tar.gz
-export APP_HOME=/opt/host-helper
+mkdir -p /opt/hosthelper
+tar -xzf host-helper-dist-1.0.0-SNAPSHOT-service.tar.gz -C /opt
+export APP_HOME=/opt/hosthelper
 version=1.0.0-SNAPSHOT
-bash "host-helper-service-$version/bin/deploy.sh" "$version" "host-helper-service-$version/app.jar" "host-helper-service-$version/lib" /etc/host-helper/release-config
+mkdir -p "$APP_HOME/$version/config"
+cp -a /etc/host-helper/release-config/. "$APP_HOME/$version/config/"
+bash "$APP_HOME/$version/bin/deploy.sh" --activate "$version"
 bash "$APP_HOME/active/bin/start.sh"
 bash "$APP_HOME/active/bin/status.sh"
 bash "$APP_HOME/active/bin/stop.sh"
 ```
 
-在调用前需准备 `APP_HOME`、`APP_HOME/env.tag`、`/etc/host-helper/release-config/setenv` 和外部配置，详见 `deploy/README.md`。`APP_ENV`（由 `env.tag` 设置）优先于原有的 `env` 变量，`PORT` 覆盖默认端口 8000。服务包不会下载或内嵌 JDK，也不提供私钥或环境配置。`local`、`sit` 配置是开发示例，不可直接用于生产。
+调用前须准备 `APP_HOME/env.tag`（或设置 `APP_ENV`）、可信的 `config/setenv` 和外部 HOCON 配置；命令需以应用运行账户执行，详见 `deploy/README.md`。`APP_ENV` 优先于原有的 `env` 变量，`PORT` 覆盖默认端口 8000。服务包不会下载或内嵌 JDK，也不提供私钥或环境配置。`local`、`sit` 配置是开发示例，不可直接用于生产。
 
