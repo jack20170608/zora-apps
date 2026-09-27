@@ -29,3 +29,11 @@ indent_style = space
 [*.json]
 indent_size = 2
 indent_style = space
+
+[*.conf]
+indent_size = 2
+indent_style = space
+
+[*.java]
+indent_size = 4
+indent_style = space
