@@ -36,7 +36,7 @@
     group: "{{ host_helper_group }}"
     creates: "{{ host_helper_root }}/{{ host_helper_version }}/app.jar"
 
-- name: Check packaged application and zora-bin scripts
+- name: Check packaged application, zora-bin scripts and config
   ansible.builtin.stat:
     path: "{{ host_helper_root }}/{{ host_helper_version }}/{{ item }}"
   loop:
@@ -47,6 +47,8 @@
     - bin/start.sh
     - bin/status.sh
     - bin/stop.sh
+    - config/application.conf
+    - config/setenv
   register: host_helper_release_artifacts
 
 - name: Refuse an incomplete release
@@ -55,32 +57,4 @@
       - item.stat.exists
     fail_msg: "Incomplete release: {{ item.item }}"
   loop: "{{ host_helper_release_artifacts.results }}"
-
-- name: Create version configuration directory
-  ansible.builtin.file:
-    path: "{{ host_helper_root }}/{{ host_helper_version }}/config"
-    state: directory
-    owner: "{{ host_helper_user }}"
-    group: "{{ host_helper_group }}"
-    mode: '0750'
-
-- name: Copy trusted environment scripts from target machine
-  ansible.builtin.copy:
-    src: "{{ host_helper_release_config_dir }}/"
-    dest: "{{ host_helper_root }}/{{ host_helper_version }}/config/"
-    remote_src: true
-    owner: "{{ host_helper_user }}"
-    group: "{{ host_helper_group }}"
-    mode: preserve
-  no_log: true
-
-- name: Copy environment HOCON from target machine
-  ansible.builtin.copy:
-    src: "{{ host_helper_config_source_dir }}/application-{{ host_helper_env }}.conf"
-    dest: "{{ host_helper_root }}/{{ host_helper_version }}/config/application-{{ host_helper_env }}.conf"
-    remote_src: true
-    owner: "{{ host_helper_user }}"
-    group: "{{ host_helper_group }}"
-    mode: '0640'
-  no_log: true
 

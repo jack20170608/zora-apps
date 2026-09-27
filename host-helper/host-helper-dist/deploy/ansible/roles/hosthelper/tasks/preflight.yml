@@ -55,18 +55,3 @@
       - host_helper_archive.stat.isreg | default(false)
     fail_msg: "Missing service archive: {{ service_archive }}"
 
-- name: Check provisioned environment script and application config
-  ansible.builtin.stat:
-    path: "{{ item }}"
-  loop:
-    - "{{ host_helper_release_config_dir }}/setenv"
-    - "{{ host_helper_config_source_dir }}/application-{{ host_helper_env }}.conf"
-  register: host_helper_external_files
-
-- name: Refuse missing externally managed configuration
-  ansible.builtin.assert:
-    that:
-      - item.stat.isreg | default(false)
-    fail_msg: "Provision {{ item.item }} on the target before deploying"
-  loop: "{{ host_helper_external_files.results }}"
-

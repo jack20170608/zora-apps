@@ -2,6 +2,4 @@
 host_helper_root: /appvol/ilovemyhome/apps/hosthelper
 host_helper_user: jack
 host_helper_group: jack
-host_helper_release_config_dir: /etc/host-helper/release-config
-host_helper_config_source_dir: /etc/host-helper/config
 

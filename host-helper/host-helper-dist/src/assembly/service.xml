@@ -49,6 +49,15 @@
             <outputDirectory>/</outputDirectory>
             <includes><include>README.md</include></includes>
         </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/../host-helper-muserver/src/main/resources/config</directory>
+            <outputDirectory>config</outputDirectory>
+            <includes>
+                <include>application*.conf</include>
+                <include>setenv</include>
+            </includes>
+            <fileMode>0640</fileMode>
+        </fileSet>
     </fileSets>
 </assembly>
 
