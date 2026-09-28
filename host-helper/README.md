@@ -63,6 +63,22 @@ mvn clean package -Ppackage-service -DskipTests
 
 分别用于源码交付、测试报告归档、Ansible 部署资产和可执行服务（含运行期 JAR）；服务包不安装 systemd，也不包含示例密钥及环境配置。运行服务需要 JDK 25，部署环境应单独提供可信的配置与凭据。包内容及启动方式见 [`host-helper-dist/README.md`](host-helper-dist/README.md)，完整的部署后目录结构见 [`host-helper-dist/deploy/README.md`](host-helper-dist/deploy/README.md)。
 
+## 一键部署
+
+`.github/release.sh` 读取项目根目录的 `VERSION` 作为 Maven 构建版本，生成 service 归档后调用 Ansible playbook。默认部署到 SIT：
+
+```bash
+./.github/release.sh
+```
+
+使用 `-e` 选择已有 inventory 对应的环境：
+
+```bash
+./.github/release.sh -e uat
+```
+
+运行前需要安装 Maven 和 Ansible，并确保 `host-helper-dist/deploy/ansible/inventories/<环境>/hosts.ini` 已正确配置且目标主机可通过 SSH 访问。
+
 ## 技术栈
 
 - Java 25

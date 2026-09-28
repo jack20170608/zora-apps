@@ -1,7 +1,6 @@
 ---
 - name: Deploy host-helper with zora-bin lifecycle
   hosts: host_helper
-  become: true
   roles:
     - hosthelper
 
