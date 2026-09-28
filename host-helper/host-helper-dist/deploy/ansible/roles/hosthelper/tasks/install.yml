@@ -1,16 +1,16 @@
 ---
-- name: Create application group
-  ansible.builtin.group:
-    name: "{{ host_helper_group }}"
-    system: true
-
-- name: Create unprivileged application account
-  ansible.builtin.user:
-    name: "{{ host_helper_user }}"
-    group: "{{ host_helper_group }}"
-    system: true
-    create_home: false
-    shell: /usr/sbin/nologin
+#- name: Create application group
+#  ansible.builtin.group:
+#    name: "{{ host_helper_group }}"
+#    system: true
+#
+#- name: Create unprivileged application account
+#  ansible.builtin.user:
+#    name: "{{ host_helper_user }}"
+#    group: "{{ host_helper_group }}"
+#    system: true
+#    create_home: false
+#    shell: /usr/sbin/nologin
 
 - name: Create application root
   ansible.builtin.file:
