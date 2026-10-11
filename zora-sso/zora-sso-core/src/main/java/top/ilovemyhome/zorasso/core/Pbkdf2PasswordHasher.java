@@ -15,7 +15,7 @@ public final class Pbkdf2PasswordHasher implements PasswordHasher {
         this(DEFAULT_ITERATIONS, new SecureRandom());
     }
 
-    Pbkdf2PasswordHasher(int iterations, SecureRandom secureRandom) {
+    public Pbkdf2PasswordHasher(int iterations, SecureRandom secureRandom) {
         if (iterations < 100) {
             throw new IllegalArgumentException("iterations must be at least 100");
 

@@ -3,6 +3,8 @@ package top.ilovemyhome.zorasso.core;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.security.SecureRandom;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class Pbkdf2PasswordHasherTest {
@@ -21,12 +23,12 @@ class Pbkdf2PasswordHasherTest {
 
     @Test
     void rejectsMalformedOrWeakHashes() {
-        Pbkdf2PasswordHasher hasher = new Pbkdf2PasswordHasher();
+        Pbkdf2PasswordHasher hasher = new Pbkdf2PasswordHasher(101, new SecureRandom());
 
         assertThat(hasher.verify("secret".toCharArray(), "plaintext")).isFalse();
         assertThat(hasher.verify(
             "secret".toCharArray(),
-            "pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            "pbkdf2-sha256$101$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         )).isFalse();
     }
 
