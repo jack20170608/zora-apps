@@ -37,6 +37,24 @@ host-helper
 - 主机管理HTTP接口
 - 静态资源服务
 - 配置管理
+- 通过 zora-sso 统一认证，并在服务端建立短期应用会话
+
+## zora-sso 认证
+
+`host-helper-muserver` 使用 zora-sso 授权码流程。部署前必须在 zora-sso 注册
+`host-helper` 客户端，并通过受控环境变量提供配置：
+
+```bash
+export ZORA_SSO_BASE_URI="https://sso.example.com"
+export ZORA_SSO_CLIENT_ID="host-helper"
+export ZORA_SSO_CLIENT_SECRET="<从密钥管理系统注入>"
+export ZORA_SSO_REDIRECT_URI="https://host-helper.example.com/auth/sso/callback"
+export HOST_HELPER_SECURE_COOKIE="true"
+```
+
+zora-sso 中注册的回调 URI 必须与 `ZORA_SSO_REDIRECT_URI` 完全一致。非本机部署必须使用
+HTTPS 和 Secure Cookie；缺少客户端密钥时服务拒绝启动。完整流程、角色映射及安全边界见
+[`docs/02-FEATURE-zora-sso认证接入.md`](docs/02-FEATURE-zora-sso认证接入.md)。
 
 ## 构建要求
 

@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.zora.common.lang.CollectionUtil;
 import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
-import top.ilovemyhome.zora.muserver.security.core.CookieValueType;
 import top.ilovemyhome.zora.muserver.security.core.User;
 import top.ilovemyhome.hosthelper.muserver.application.AppContext;
 import top.ilovemyhome.zora.text.AntPathMatcher;
@@ -26,7 +25,7 @@ public class SecurityHandler implements MuHandler {
     public SecurityHandler(AppContext appContext) {
         this.contextPath = appContext.getConfig().getString("server.contextPath");
         this.cookieName = appContext.getConfig().getString("cookie.name");
-        this.cookieValueType = appContext.getConfig().getEnum(CookieValueType.class, "cookie.valueType");
+        this.ssoLoginPath = appContext.getConfig().getString("sso.login-path");
         this.appSecurityContext = appContext.getBean("appSecurityContext", AppSecurityContext.class);
         Function<String, List<String>> FUN_RESTRICTED_STATIC_URIS = (contextPath) -> List.of(
             "/" + contextPath + "/index.html"
@@ -54,7 +53,7 @@ public class SecurityHandler implements MuHandler {
             if (authenticated) {
                 return false;
             } else {
-                response.redirect(String.format("/%s/login.html", contextPath));
+                response.redirect(ssoLoginPath);
                 return true;
             }
         }
@@ -81,7 +80,7 @@ public class SecurityHandler implements MuHandler {
     private final Map<String, Boolean> restrictedCache = Maps.newConcurrentMap();
 
     private final String cookieName;
-    private final CookieValueType cookieValueType;
+    private final String ssoLoginPath;
     private final AppSecurityContext appSecurityContext;
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
     private final String contextPath;

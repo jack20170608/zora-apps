@@ -28,7 +28,8 @@ import top.ilovemyhome.zora.muserver.security.AppSecurityContext;
 import top.ilovemyhome.hosthelper.muserver.api.FooUserHandler;
 import top.ilovemyhome.hosthelper.muserver.api.QueryHandler;
 import top.ilovemyhome.hosthelper.muserver.api.SecurityHandler;
-import top.ilovemyhome.hosthelper.muserver.web.LoginHandler;
+import top.ilovemyhome.hosthelper.muserver.sso.SsoAuthenticationHandler;
+import top.ilovemyhome.hosthelper.muserver.sso.SsoClientConfiguration;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -55,6 +56,8 @@ public class WebServerBootstrap {
         logger.info("Start mu server on port: {}.", port);
         long start = System.currentTimeMillis();
         AppSecurityContext appSecurityContext = appContext.getBean("appSecurityContext", AppSecurityContext.class);
+        SsoClientConfiguration ssoConfiguration = SsoClientConfiguration.from(config);
+        SsoAuthenticationHandler ssoAuthenticationHandler = new SsoAuthenticationHandler(appContext);
         MuServerBuilder muServerBuilder = MuServerBuilder.httpServer()
             .withHttpPort(port)
             .addResponseCompleteListener(info -> {
@@ -67,7 +70,8 @@ public class WebServerBootstrap {
             .withMaxRequestSize(300_000_000) //300MB
             .addHandler(Method.GET, "/", (req, res, map) -> res.redirect("/" + contextPath + "/index.html"))
             .addHandler(Method.GET, "/index.html", (req, res, map) -> res.redirect("/" + contextPath + "/index.html"))
-            .addHandler(Method.POST, "/login", new LoginHandler(appContext))
+            .addHandler(Method.GET, ssoConfiguration.loginPath(), ssoAuthenticationHandler::begin)
+            .addHandler(Method.GET, ssoConfiguration.callbackPath(), ssoAuthenticationHandler::callback)
             .addHandler(context(contextPath)
                 .addHandler(Method.GET, "/", (req, res, map) -> res.redirect("/" + contextPath + "/index.html"))
                 .addHandler(new SecurityHandler(appContext))
