@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.hosthelper.muserver.application.AppContext;
 import top.ilovemyhome.hosthelper.muserver.application.WebServerBootstrap;
-import top.ilovemyhome.hosthelper.muserver.util.config.ConfigLoader;
+import top.ilovemyhome.zora.config.ConfigLoader;
 
 import java.nio.file.Path;
 
