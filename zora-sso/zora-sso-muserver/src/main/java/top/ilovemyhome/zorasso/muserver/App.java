@@ -69,6 +69,10 @@ public final class App {
         LOGGER.info("Zora SSO local POC started at {}", server.uri());
     }
 
+    private void initWebServer(AppContext appContext){
+        WebServerBootstrap.start(appContext);
+    }
+
     private void initAppContext(String env){
         String rootConfig = "config/application.conf";
         String envConfig = "config/application-" + env + ".conf";

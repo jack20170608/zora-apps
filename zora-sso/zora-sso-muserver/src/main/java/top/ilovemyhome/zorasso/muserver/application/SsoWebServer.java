@@ -1,5 +1,6 @@
 package top.ilovemyhome.zorasso.muserver.application;
 
+import com.typesafe.config.Config;
 import io.muserver.CookieBuilder;
 import io.muserver.Method;
 import io.muserver.MuRequest;
@@ -24,15 +25,18 @@ import java.util.concurrent.TimeUnit;
 
 public final class SsoWebServer {
 
-    public SsoWebServer(SsoConfiguration configuration, SsoService ssoService) {
-        this.configuration = configuration;
-        this.ssoService = ssoService;
+
+    public static MuServer start(AppContext appContext){
+        return startMuServer(appContext);
     }
 
-    public MuServer start() {
+
+    public static MuServer startMuServer(AppContext appContext) {
+        Config config = appContext.getConfig();
+        SsoConfiguration ssoConfig = SsoConfiguration.from(config);
         return MuServerBuilder.httpServer()
-            .withHttpPort(configuration.port())
-            .withInterface(configuration.host())
+            .withHttpPort(ssoConfig.port())
+            .withInterface(ssoConfig.host())
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withMaxRequestSize(16_384)
             .addHandler(Method.GET, "/health", this::health)
@@ -49,28 +53,7 @@ public final class SsoWebServer {
         json(response, 200, "{\"status\":\"UP\",\"localAuthentication\":true}");
     }
 
-    private void authorize(MuRequest request, MuResponse response, Map<String, String> pathParams) {
-        secureHeaders(response);
-        try {
-            SsoService.AuthorizationStart result = ssoService.beginAuthorization(
-                new SsoService.AuthorizationRequest(
-                    requiredQuery(request, "client_id"),
-                    URI.create(requiredQuery(request, "redirect_uri")),
-                    requiredQuery(request, "state")
-                ),
-                request.cookie(configuration.cookieName()).orElse(null)
-            );
-            if (result.loginRequired()) {
-                response.redirect("/login?transaction_id=" + encode(result.transactionId()));
-            } else {
-                response.redirect(result.redirectUri().toString());
-            }
-        } catch (IllegalArgumentException exception) {
-            error(response, new SsoException(SsoException.Code.INVALID_REQUEST, "Invalid authorization request"));
-        } catch (SsoException exception) {
-            error(response, exception);
-        }
-    }
+
 
     private void loginPage(MuRequest request, MuResponse response, Map<String, String> pathParams) {
         secureHeaders(response);
