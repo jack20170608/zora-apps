@@ -17,13 +17,13 @@ Content-Type: application/x-www-form-urlencoded
 transaction_id=replace-me&csrf_token=replace-me&username=alice&password=replace-me
 
 ### 后端兑换一次性 Code
-POST {{sso}}/token/exchange
+POST {{sso}}/sso/token/exchange
 Content-Type: application/x-www-form-urlencoded
 
 code=replace-me&client_id={{clientId}}&client_secret={{clientSecret}}&redirect_uri={{redirectUri}}
 
 ### 重复兑换相同 Code，预期返回 401 invalid_code
-POST {{sso}}/token/exchange
+POST {{sso}}/sso/token/exchange
 Content-Type: application/x-www-form-urlencoded
 
 code=replace-me&client_id={{clientId}}&client_secret={{clientSecret}}&redirect_uri={{redirectUri}}
@@ -32,4 +32,4 @@ code=replace-me&client_id={{clientId}}&client_secret={{clientSecret}}&redirect_u
 GET {{sso}}/authorize?client_id={{clientId}}&redirect_uri=https://attacker.example/callback&state=test
 
 ### 退出中央 Session
-POST {{sso}}/logout
+POST {{sso}}/sso/logout

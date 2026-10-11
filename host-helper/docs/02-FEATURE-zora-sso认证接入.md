@@ -1,5 +1,8 @@
 # 02-FEATURE zora-sso 认证接入
 
+完整请求参数、响应结构和异常分支参见
+[zora-sso 完整认证流程](03-FEATURE-zora-sso完整认证流程.md)。
+
 ## 背景与目标
 
 `host-helper-muserver` 原来直接校验本地用户名和密码，并自行签发 JWT。该方式无法共享中央登录
