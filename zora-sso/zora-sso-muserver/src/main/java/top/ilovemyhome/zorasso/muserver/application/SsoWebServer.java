@@ -180,22 +180,7 @@ public final class SsoWebServer {
         return values;
     }
 
-    private static String requiredQuery(MuRequest request, String name) {
-        String value = request.query().get(name);
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Missing query parameter");
-        }
-        return value;
-    }
 
-    private static void secureHeaders(MuResponse response) {
-        response.headers().set("Cache-Control", "no-store");
-        response.headers().set("Pragma", "no-cache");
-        response.headers().set("X-Content-Type-Options", "nosniff");
-        response.headers().set("X-Frame-Options", "DENY");
-        response.headers().set("Content-Security-Policy",
-            "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'");
-    }
 
     private static void error(MuResponse response, SsoException exception) {
         int status = switch (exception.code()) {
