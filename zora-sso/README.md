@@ -24,7 +24,17 @@ mvn clean verify
 java -cp .\zora-sso-core\target\classes top.ilovemyhome.zorasso.core.PasswordHashCli
 ```
 
-将哈希写入 `zora-sso-muserver\src\main\resources\application.conf` 的 `users` 和 `clients` 列表后启动 `top.ilovemyhome.zorasso.muserver.App`。配置示例及客户端调用流程见 [本地登录与授权流程](docs/design/02-FEATURE-本地登录与授权流程.md)。
+将哈希写入对应的 `zora-sso-muserver\src\main\resources\application-<环境>.conf` 的 `users`
+和 `clients` 列表。启动前通过小写环境变量 `app_env` 指定环境：
+
+```powershell
+$env:app_env = "local"
+```
+
+设置变量后，从 IDE 运行 `top.ilovemyhome.zorasso.muserver.App`。
+
+配置示例及客户端调用流程见 [本地登录与授权流程](docs/design/02-FEATURE-本地登录与授权流程.md)，
+配置加载规则见 [多环境配置加载](docs/design/08-FEATURE-多环境配置加载.md)。
 
 ## 安全限制
 

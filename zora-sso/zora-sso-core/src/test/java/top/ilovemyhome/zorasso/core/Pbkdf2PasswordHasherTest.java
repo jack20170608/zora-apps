@@ -1,5 +1,6 @@
 package top.ilovemyhome.zorasso.core;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,5 +28,14 @@ class Pbkdf2PasswordHasherTest {
             "secret".toCharArray(),
             "pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         )).isFalse();
+    }
+
+    @Test
+    @Disabled
+    void testHashGeneration(){
+        Pbkdf2PasswordHasher hasher = new Pbkdf2PasswordHasher();
+        String password = "1";
+        String encoded = hasher.hash(password.toCharArray());
+        System.out.println(encoded);
     }
 }
