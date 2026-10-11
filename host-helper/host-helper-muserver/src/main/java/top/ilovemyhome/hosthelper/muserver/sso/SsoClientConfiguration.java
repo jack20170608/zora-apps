@@ -53,7 +53,7 @@ public final class SsoClientConfiguration {
         this.baseUri = requireHttpUri(baseUri, "baseUri");
         this.clientId = requireText(clientId, "clientId");
         this.clientSecret = Arrays.copyOf(Objects.requireNonNull(clientSecret, "clientSecret"), clientSecret.length);
-        if (this.clientSecret.length == 0 || "NOT-SET".contentEquals(new String(this.clientSecret))) {
+        if (this.clientSecret.length == 0 ) {
             throw new IllegalArgumentException("clientSecret must be provided securely");
         }
         this.redirectUri = requireHttpUri(redirectUri, "redirectUri");

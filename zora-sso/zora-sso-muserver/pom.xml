@@ -26,6 +26,14 @@
             <artifactId>zora-config</artifactId>
         </dependency>
         <dependency>
+            <groupId>top.ilovemyhome.zora</groupId>
+            <artifactId>zora-json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.zora</groupId>
+            <artifactId>zora-static</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>

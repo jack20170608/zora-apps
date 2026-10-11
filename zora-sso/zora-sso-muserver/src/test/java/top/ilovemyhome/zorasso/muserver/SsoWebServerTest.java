@@ -60,7 +60,7 @@ class SsoWebServerTest {
             hasher,
             List.of(registeredClient)
         );
-        server = new SsoWebServer(configuration, service).start();
+        server = SsoWebServer.start(configuration, service);
         client = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
@@ -126,6 +126,28 @@ class SsoWebServerTest {
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.headers().firstValue("location")).isEmpty();
         assertThat(response.body()).contains("invalid_redirect_uri");
+    }
+
+    @Test
+    void servesHealthAndLogoutAsRestEndpoints() throws Exception {
+        HttpResponse<String> health = get("/health", null);
+        HttpResponse<String> logout = post("/logout", "", "ZORA_SSO_SESSION=unknown");
+
+        assertThat(health.statusCode()).isEqualTo(200);
+        assertThat(health.headers().firstValue("content-type")).hasValueSatisfying(
+            contentType -> assertThat(contentType).startsWith("application/json")
+        );
+        assertThat(health.headers().firstValue("cache-control")).hasValue("no-store");
+        assertThat(health.body()).contains("\"status\":\"UP\"");
+
+        assertThat(logout.statusCode()).isEqualTo(200);
+        assertThat(logout.headers().firstValue("set-cookie")).hasValueSatisfying(
+            cookie -> assertThat(cookie)
+                .contains("ZORA_SSO_SESSION=")
+                .contains("Max-Age=0")
+                .containsIgnoringCase("HttpOnly")
+        );
+        assertThat(logout.body()).contains("\"loggedOut\":true");
     }
 
     private HttpResponse<String> get(String path, String cookie) throws Exception {
