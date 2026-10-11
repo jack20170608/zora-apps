@@ -91,6 +91,17 @@ class InMemoryLocalSsoServiceTest {
     }
 
     @Test
+    void resolvesIdentityOnlyForValidSession() {
+        LoginFlow flow = login();
+
+        assertThat(service.requireIdentity(flow.sessionId()).username()).isEqualTo("alice");
+        assertThatThrownBy(() -> service.requireIdentity("unknown"))
+            .isInstanceOf(SsoException.class)
+            .extracting(exception -> ((SsoException) exception).code())
+            .isEqualTo(SsoException.Code.INVALID_SESSION);
+    }
+
+    @Test
     void rejectsUnregisteredRedirectWithoutRedirecting() {
         assertThatThrownBy(() -> service.beginAuthorization(
             new SsoService.AuthorizationRequest(

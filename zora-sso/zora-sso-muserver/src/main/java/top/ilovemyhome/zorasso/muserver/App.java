@@ -1,7 +1,6 @@
 package top.ilovemyhome.zorasso.muserver;
 
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigValueFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,12 +17,9 @@ public final class App {
 
     static void main(String[] args) {
         LOGGER.info("Starting application.");
-        String environment = System.getenv("APP_ENV");
+        var  environment = System.getenv("env");
         if (StringUtils.isBlank(environment)) {
-            environment = System.getenv("env");
-        }
-        if (StringUtils.isBlank(environment)) {
-            throw new IllegalStateException("Cannot find APP_ENV or env environment variable");
+            throw new IllegalStateException("Cannot find env environment variable");
         }
         if (!environment.matches("[a-zA-Z0-9][a-zA-Z0-9_-]*")) {
             throw new IllegalStateException("Invalid environment variable");
@@ -35,8 +31,6 @@ public final class App {
         Config config = StringUtils.isBlank(configDirectory)
             ? ConfigLoader.loadConfig(rootConfig, environmentConfig)
             : ConfigLoader.loadConfig(rootConfig, Path.of(configDirectory, environmentConfig));
-        config = config.withValue("zora-sso.environment", ConfigValueFactory.fromAnyRef(environment));
-
         AppContext appContext = new AppContext(environment, config);
         appContext.init();
         var server = SsoWebServer.start(appContext);

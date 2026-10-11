@@ -23,6 +23,8 @@ public interface SsoService {
         URI redirectUri
     );
 
+    AuthenticatedIdentity requireIdentity(String sessionId);
+
     void logout(String sessionId);
 
     record AuthorizationRequest(String clientId, URI redirectUri, String state) {

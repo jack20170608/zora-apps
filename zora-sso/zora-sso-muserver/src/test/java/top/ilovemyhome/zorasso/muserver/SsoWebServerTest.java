@@ -30,14 +30,24 @@ class SsoWebServerTest {
               local-auth { enabled = true, production-allowed = false }
               server { host = "127.0.0.1", port = 0, public-base-url = "http://localhost" }
               cookie { name = "ZORA_SSO_SESSION", secure = false }
-              users = [{
-                subject = "user-1"
-                username = "alice"
-                display-name = "Alice"
-                password-hash = "%s"
-                roles = ["USER"]
-                enabled = true
-              }]
+              users = [
+                {
+                  subject = "user-1"
+                  username = "alice"
+                  display-name = "Alice"
+                  password-hash = "%s"
+                  roles = ["USER", "ADMIN"]
+                  enabled = true
+                },
+                {
+                  subject = "user-2"
+                  username = "bob"
+                  display-name = "Bob"
+                  password-hash = "%s"
+                  roles = ["USER"]
+                  enabled = true
+                }
+              ]
               clients = [{
                 client-id = "app-a"
                 client-secret-hash = "%s"
@@ -47,6 +57,7 @@ class SsoWebServerTest {
             }
             """.formatted(
             hasher.hash("user-password".toCharArray()),
+            hasher.hash("bob-password".toCharArray()),
             hasher.hash("client-secret".toCharArray()),
             CALLBACK
         );
@@ -105,6 +116,13 @@ class SsoWebServerTest {
             .containsPattern("\"username\"\\s*:\\s*\"alice\"")
             .doesNotContain("client-secret");
 
+        HttpResponse<String> clients = get("/clients", cookie);
+        assertThat(clients.statusCode()).isEqualTo(200);
+        assertThat(clients.body())
+            .containsPattern("\"clientId\"\\s*:\\s*\"app-a\"")
+            .contains(CALLBACK.toString())
+            .doesNotContain("clientSecret", "client-secret");
+
         HttpResponse<String> secondAuthorize = get("/authorize?client_id=app-a&redirect_uri="
             + encode(CALLBACK.toString()) + "&state=second", cookie);
         assertThat(secondAuthorize.statusCode()).isEqualTo(302);
@@ -147,6 +165,39 @@ class SsoWebServerTest {
         assertThat(logout.body())
             .containsPattern("\"success\"\\s*:\\s*true")
             .containsPattern("\"loggedOut\"\\s*:\\s*true");
+    }
+
+    @Test
+    void rejectsClientListWithoutAuthenticatedSession() throws Exception {
+        HttpResponse<String> response = get("/clients", null);
+
+        assertThat(response.statusCode()).isEqualTo(401);
+        assertThat(response.body())
+            .containsPattern("\"success\"\\s*:\\s*false")
+            .contains("A valid SSO session is required")
+            .doesNotContain("clientSecret", "client-secret", CALLBACK.toString());
+    }
+
+    @Test
+    void rejectsClientListWithoutAdministratorRole() throws Exception {
+        HttpResponse<String> authorize = get("/authorize?client_id=app-a&redirect_uri="
+            + encode(CALLBACK.toString()) + "&state=client-state", null);
+        HttpResponse<String> loginPage = get(authorize.headers().firstValue("location").orElseThrow(), null);
+        HttpResponse<String> login = post("/login", form(MapBuilder.of(
+            "transaction_id", hidden(loginPage.body(), "transaction_id"),
+            "csrf_token", hidden(loginPage.body(), "csrf_token"),
+            "username", "bob",
+            "password", "bob-password"
+        )), null);
+        String cookie = login.headers().firstValue("set-cookie").orElseThrow().split(";", 2)[0];
+
+        HttpResponse<String> response = get("/clients", cookie);
+
+        assertThat(response.statusCode()).isEqualTo(403);
+        assertThat(response.body())
+            .containsPattern("\"success\"\\s*:\\s*false")
+            .contains("Administrator role is required")
+            .doesNotContain("clientSecret", "client-secret", CALLBACK.toString());
     }
 
     private HttpResponse<String> get(String path, String cookie) throws Exception {

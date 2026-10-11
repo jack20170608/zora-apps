@@ -194,6 +194,15 @@ public final class InMemoryLocalSsoService implements SsoService {
         }
     }
 
+    @Override
+    public AuthenticatedIdentity requireIdentity(String sessionId) {
+        ActiveSession activeSession = findSession(sessionId);
+        if (activeSession == null) {
+            throw new SsoException(INVALID_SESSION, "A valid SSO session is required");
+        }
+        return activeSession.session().identity();
+    }
+
     private ValidatedRequest validate(AuthorizationRequest request) {
         if (request == null || request.clientId() == null || request.redirectUri() == null
             || request.state() == null || request.state().isBlank() || request.state().length() > 512) {

@@ -10,6 +10,7 @@ public final class SsoException extends RuntimeException {
         LOGIN_REJECTED,
         RATE_LIMITED,
         INVALID_SESSION,
+        ACCESS_DENIED,
         INVALID_CODE,
         INVALID_CLIENT_CREDENTIALS
     }

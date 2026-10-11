@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Set;
 
 public record SsoConfiguration(
-    String environment,
     String host,
     int port,
     URI publicBaseUrl,
@@ -42,7 +41,6 @@ public record SsoConfiguration(
         if ("production".equalsIgnoreCase(environment) && !secureCookie) {
             throw new IllegalStateException("Production mode requires secure cookies");
         }
-
         List<LocalUser> users = config.getConfigList("users").stream()
             .map(item -> new LocalUser(
                 item.getString("subject"),
@@ -63,7 +61,6 @@ public record SsoConfiguration(
             .toList();
 
         return new SsoConfiguration(
-            environment,
             config.getString("server.host"),
             config.getInt("server.port"),
             publicBaseUrl,

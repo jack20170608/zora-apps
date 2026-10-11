@@ -64,7 +64,7 @@ public final class SsoWebServer {
             .addHandler(Method.GET, "/authorize", ssoHandler::authorize)
             .addHandler(Method.GET, "/login", ssoHandler::loginPage)
             .addHandler(Method.POST, "/login", ssoHandler::login)
-            .addHandler(createRestHandler(appContext));
+            .addHandler(createRestHandler(ssoHandler));
 
         MuServer server = serverBuilder.start();
         LOGGER.info("MuServer started in {} ms.", System.currentTimeMillis() - start);
@@ -73,10 +73,15 @@ public final class SsoWebServer {
     }
 
 
-    private static RestHandlerBuilder createRestHandler(AppContext appContext) {
+    private static RestHandlerBuilder createRestHandler(SsoHandler ssoHandler) {
 
         return RestHandlerBuilder
-            .restHandler(new SsoHandler(appContext), new HealthHandler())
+            .restHandler(
+                ssoHandler.logoutResource(),
+                ssoHandler.tokenExchangeResource(),
+                ssoHandler.clientsResource(),
+                new HealthHandler()
+            )
             .addCustomReader(new JacksonJsonProvider((JsonMapper) JacksonUtil.MAPPER))
             .addCustomWriter(new JacksonJsonProvider((JsonMapper) JacksonUtil.MAPPER))
             .withCollectionParameterStrategy(CollectionParameterStrategy.NO_TRANSFORM)
@@ -85,6 +90,7 @@ public final class SsoWebServer {
             .addExceptionMapper(SsoException.class, e -> {
                 int status = switch (e.code()) {
                     case LOGIN_REJECTED, INVALID_CLIENT_CREDENTIALS, INVALID_SESSION, INVALID_CODE -> 401;
+                    case ACCESS_DENIED -> 403;
                     case RATE_LIMITED -> 429;
                     default -> 400;
                 };

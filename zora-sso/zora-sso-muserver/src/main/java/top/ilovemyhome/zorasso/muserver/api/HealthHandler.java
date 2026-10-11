@@ -21,7 +21,10 @@ public final class HealthHandler {
 
     private Response health() {
         return Response.ok(RestResponse.success(
-            Map.of("status", "UP", "localAuthentication", true)
-        )).build();
+                Map.of("status", "UP", "localAuthentication", true)
+            ))
+            .header("Cache-Control", "no-store")
+            .header("Pragma", "no-cache")
+            .build();
     }
 }

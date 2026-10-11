@@ -14,7 +14,7 @@ public class App {
 
     static void main(String[] args) {
         LOGGER.info("Starting application.");
-        String env = System.getenv("APP_ENV");
+        String env = System.getenv("env");
         if (StringUtils.isBlank(env)){
             throw new IllegalStateException("Cannot find the env variable.");
         }
