@@ -1,6 +1,5 @@
 package top.ilovemyhome.zorasso.muserver.application;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
 import io.muserver.Method;
 import io.muserver.MuRequest;
 import io.muserver.MuResponse;
@@ -15,13 +14,16 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.jakarta.rs.json.JacksonJsonProvider;
 import top.ilovemyhome.zora.json.jackson.JacksonUtil;
+import top.ilovemyhome.zorasso.muserver.api.HealthHandler;
 import top.ilovemyhome.zorasso.muserver.api.SsoHandler;
-import top.ilovemyhome.zorasso.muserver.config.SsoConfiguration;
-import top.ilovemyhome.zorasso.si.SsoService;
+import top.ilovemyhome.zorasso.muserver.api.dto.RestResponse;
+import top.ilovemyhome.zorasso.si.SsoException;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static io.muserver.openapi.ExternalDocumentationObjectBuilder.externalDocumentationObject;
@@ -74,30 +76,41 @@ public final class SsoWebServer {
     private static RestHandlerBuilder createRestHandler(AppContext appContext) {
 
         return RestHandlerBuilder
-            .restHandler(new SsoHandler(appContext))
-            .addCustomReader(new JacksonJsonProvider(JacksonUtil.MAPPER))
-            .addCustomWriter(new JacksonJsonProvider(JacksonUtil.MAPPER))
+            .restHandler(new SsoHandler(appContext), new HealthHandler())
+            .addCustomReader(new JacksonJsonProvider((JsonMapper) JacksonUtil.MAPPER))
+            .addCustomWriter(new JacksonJsonProvider((JsonMapper) JacksonUtil.MAPPER))
             .withCollectionParameterStrategy(CollectionParameterStrategy.NO_TRANSFORM)
             .withOpenApiHtmlUrl("/api.html")
             .withOpenApiJsonUrl("/openapi.json")
+            .addExceptionMapper(SsoException.class, e -> {
+                int status = switch (e.code()) {
+                    case LOGIN_REJECTED, INVALID_CLIENT_CREDENTIALS, INVALID_SESSION, INVALID_CODE -> 401;
+                    case RATE_LIMITED -> 429;
+                    default -> 400;
+                };
+                return Response.status(status)
+                    .type(MediaType.APPLICATION_JSON_TYPE)
+                    .entity(RestResponse.failure(e.getMessage()))
+                    .build();
+            })
             .addExceptionMapper(ClientErrorException.class, e -> Response.status(Response.Status.BAD_REQUEST.getStatusCode())
                 .type(MediaType.APPLICATION_JSON)
-                .entity(Map.of("message", e.getMessage()))
+                .entity(RestResponse.failure(e.getMessage()))
                 .build())
             .addExceptionMapper(InternalServerErrorException.class, e -> Response.status(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
                 .type(MediaType.APPLICATION_JSON)
-                .entity(Map.of("message", e.getMessage()))
+                .entity(RestResponse.failure(e.getMessage()))
                 .build())
-            .addExceptionMapper(JsonMappingException.class, e -> Response.status(Response.Status.BAD_REQUEST.getStatusCode())
+            .addExceptionMapper(JacksonException.class, e -> Response.status(Response.Status.BAD_REQUEST.getStatusCode())
                 .type(MediaType.APPLICATION_JSON)
-                .entity(Map.of("message", e.getMessage()))
+                .entity(RestResponse.failure(e.getMessage()))
                 .build())
             .withOpenApiDocument(
                 OpenAPIObjectBuilder.openAPIObject()
                     .withInfo(
                         infoObject()
-                            .withTitle("HostHelper API")
-                            .withDescription("This is a API for the host helper application!")
+                            .withTitle("Zora SSO API")
+                            .withDescription("REST endpoints for the Zora SSO service.")
                             .withVersion("1.0")
                             .build())
                     .withExternalDocs(

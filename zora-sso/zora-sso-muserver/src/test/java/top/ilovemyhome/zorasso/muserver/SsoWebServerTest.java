@@ -1,16 +1,13 @@
 package top.ilovemyhome.zorasso.muserver;
 
+import com.typesafe.config.ConfigFactory;
 import io.muserver.MuServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import top.ilovemyhome.zorasso.core.InMemoryLocalSsoService;
-import top.ilovemyhome.zorasso.core.LocalIdentityAuthenticator;
-import top.ilovemyhome.zorasso.core.LocalUser;
 import top.ilovemyhome.zorasso.core.Pbkdf2PasswordHasher;
-import top.ilovemyhome.zorasso.core.RegisteredClient;
+import top.ilovemyhome.zorasso.muserver.application.AppContext;
 import top.ilovemyhome.zorasso.muserver.application.SsoWebServer;
-import top.ilovemyhome.zorasso.muserver.config.SsoConfiguration;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -18,9 +15,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Clock;
-import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,37 +24,35 @@ class SsoWebServerTest {
     @BeforeEach
     void setUp() {
         Pbkdf2PasswordHasher hasher = new Pbkdf2PasswordHasher();
-        LocalUser user = new LocalUser(
-            "user-1",
-            "alice",
-            "Alice",
+        String config = """
+            zora-sso {
+              environment = test
+              local-auth { enabled = true, production-allowed = false }
+              server { host = "127.0.0.1", port = 0, public-base-url = "http://localhost" }
+              cookie { name = "ZORA_SSO_SESSION", secure = false }
+              users = [{
+                subject = "user-1"
+                username = "alice"
+                display-name = "Alice"
+                password-hash = "%s"
+                roles = ["USER"]
+                enabled = true
+              }]
+              clients = [{
+                client-id = "app-a"
+                client-secret-hash = "%s"
+                redirect-uris = ["%s"]
+                enabled = true
+              }]
+            }
+            """.formatted(
             hasher.hash("user-password".toCharArray()),
-            Set.of("USER"),
-            true
-        );
-        RegisteredClient registeredClient = new RegisteredClient(
-            "app-a",
             hasher.hash("client-secret".toCharArray()),
-            Set.of(CALLBACK),
-            true
+            CALLBACK
         );
-        SsoConfiguration configuration = new SsoConfiguration(
-            "test",
-            "127.0.0.1",
-            0,
-            URI.create("http://localhost"),
-            "ZORA_SSO_SESSION",
-            false,
-            true,
-            List.of(user),
-            List.of(registeredClient)
-        );
-        InMemoryLocalSsoService service = new InMemoryLocalSsoService(
-            new LocalIdentityAuthenticator(List.of(user), hasher, Clock.systemUTC()),
-            hasher,
-            List.of(registeredClient)
-        );
-        server = SsoWebServer.start(configuration, service);
+        AppContext appContext = new AppContext("test", ConfigFactory.parseString(config));
+        appContext.init();
+        server = SsoWebServer.start(appContext);
         client = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
@@ -108,7 +100,10 @@ class SsoWebServerTest {
             "redirect_uri", CALLBACK.toString()
         )), cookie);
         assertThat(exchange.statusCode()).isEqualTo(200);
-        assertThat(exchange.body()).contains("\"username\":\"alice\"").doesNotContain("client-secret");
+        assertThat(exchange.body())
+            .containsPattern("\"success\"\\s*:\\s*true")
+            .containsPattern("\"username\"\\s*:\\s*\"alice\"")
+            .doesNotContain("client-secret");
 
         HttpResponse<String> secondAuthorize = get("/authorize?client_id=app-a&redirect_uri="
             + encode(CALLBACK.toString()) + "&state=second", cookie);
@@ -138,7 +133,9 @@ class SsoWebServerTest {
             contentType -> assertThat(contentType).startsWith("application/json")
         );
         assertThat(health.headers().firstValue("cache-control")).hasValue("no-store");
-        assertThat(health.body()).contains("\"status\":\"UP\"");
+        assertThat(health.body())
+            .containsPattern("\"success\"\\s*:\\s*true")
+            .containsPattern("\"status\"\\s*:\\s*\"UP\"");
 
         assertThat(logout.statusCode()).isEqualTo(200);
         assertThat(logout.headers().firstValue("set-cookie")).hasValueSatisfying(
@@ -147,7 +144,9 @@ class SsoWebServerTest {
                 .contains("Max-Age=0")
                 .containsIgnoringCase("HttpOnly")
         );
-        assertThat(logout.body()).contains("\"loggedOut\":true");
+        assertThat(logout.body())
+            .containsPattern("\"success\"\\s*:\\s*true")
+            .containsPattern("\"loggedOut\"\\s*:\\s*true");
     }
 
     private HttpResponse<String> get(String path, String cookie) throws Exception {

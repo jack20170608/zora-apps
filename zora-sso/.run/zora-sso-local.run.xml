@@ -1,0 +1,18 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="zora-sso-local" type="Application" factoryName="Application">
+    <envs>
+      <env name="env" value="local" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="top.ilovemyhome.zorasso.muserver.App" />
+    <module name="zora-sso-muserver" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="top.ilovemyhome.zorasso.muserver.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -16,7 +16,7 @@ public final class App {
     private App() {
     }
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         LOGGER.info("Starting application.");
         String environment = System.getenv("APP_ENV");
         if (StringUtils.isBlank(environment)) {

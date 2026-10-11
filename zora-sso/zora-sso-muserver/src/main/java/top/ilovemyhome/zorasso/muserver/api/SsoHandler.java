@@ -3,9 +3,7 @@ package top.ilovemyhome.zorasso.muserver.api;
 import io.muserver.CookieBuilder;
 import io.muserver.MuRequest;
 import io.muserver.MuResponse;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -14,6 +12,7 @@ import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.ilovemyhome.zorasso.muserver.application.AppContext;
+import top.ilovemyhome.zorasso.muserver.api.dto.RestResponse;
 import top.ilovemyhome.zorasso.muserver.config.SsoConfiguration;
 import top.ilovemyhome.zorasso.si.SsoException;
 import top.ilovemyhome.zorasso.si.SsoService;
@@ -26,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+@Path("/sso")
 public final class SsoHandler {
 
     public SsoHandler(AppContext appContext) {
@@ -33,93 +33,98 @@ public final class SsoHandler {
         this.ssoService = appContext.ssoService();
     }
 
+    @POST
+    @Path("/logout")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response post(@Context HttpHeaders headers) {
+        Cookie sessionCookie = headers.getCookies().get(configuration.cookieName());
+        ssoService.logout(sessionCookie == null ? null : sessionCookie.getValue());
+        return restResponseBuilder(200, RestResponse.success(Map.of("loggedOut", true)))
+            .header("Set-Cookie", expiredSessionCookie())
+            .build();
+    }
 
+    @POST
+    @Path("/token/exchange")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response post(
+        @FormParam("code") String code,
+        @FormParam("client_id") String clientId,
+        @FormParam("client_secret") String clientSecret,
+        @FormParam("redirect_uri") String redirectUri) {
+        var identity = ssoService.exchange(
+            code,
+            clientId,
+            Optional.ofNullable(clientSecret).orElse("").toCharArray(),
+            URI.create(Optional.ofNullable(redirectUri).orElse(""))
+        );
+        return Response.ok(RestResponse.success(identity))
+            .build();
+    }
 
     public void authorize(MuRequest request, MuResponse response, Map<String, String> pathParams) {
         secureHeaders(response);
-        try {
-            SsoService.AuthorizationStart result = ssoService.beginAuthorization(
-                new SsoService.AuthorizationRequest(
-                    requiredQuery(request, "client_id"),
-                    URI.create(requiredQuery(request, "redirect_uri")),
-                    requiredQuery(request, "state")
-                ),
-                request.cookie(configuration.cookieName()).orElse(null)
-            );
-            if (result.loginRequired()) {
-                response.redirect("/login?transaction_id=" + encode(result.transactionId()));
-            } else {
-                response.redirect(result.redirectUri().toString());
-            }
-        } catch (IllegalArgumentException exception) {
-            error(response, new SsoException(SsoException.Code.INVALID_REQUEST, "Invalid authorization request"));
-        } catch (SsoException exception) {
-            error(response, exception);
+        SsoService.AuthorizationStart result = ssoService.beginAuthorization(
+            new SsoService.AuthorizationRequest(
+                requiredQuery(request, "client_id"),
+                URI.create(requiredQuery(request, "redirect_uri")),
+                requiredQuery(request, "state")
+            ),
+            request.cookie(configuration.cookieName()).orElse(null)
+        );
+        if (result.loginRequired()) {
+            response.redirect("/login?transaction_id=" + encode(result.transactionId()));
+        } else {
+            response.redirect(result.redirectUri().toString());
         }
     }
 
     public void loginPage(MuRequest request, MuResponse response, Map<String, String> pathParams) {
         secureHeaders(response);
-        try {
-            SsoService.LoginPage page = ssoService.prepareLogin(requiredQuery(request, "transaction_id"));
-            response.status(200);
-            response.contentType("text/html; charset=utf-8");
-            response.write("""
-                <!doctype html>
-                <html lang="en">
-                <head>
-                  <meta charset="utf-8">
-                  <meta name="viewport" content="width=device-width,initial-scale=1">
-                  <title>Zora SSO Login</title>
-                </head>
-                <body>
-                  <main>
-                    <h1>Sign in to Zora</h1>
-                    <p>Client: %s</p>
-                    <form method="post" action="/login">
-                      <input type="hidden" name="transaction_id" value="%s">
-                      <input type="hidden" name="csrf_token" value="%s">
-                      <label>Username <input name="username" autocomplete="username" required maxlength="128"></label>
-                      <label>Password <input type="password" name="password" autocomplete="current-password" required maxlength="1024"></label>
-                      <button type="submit">Sign in</button>
-                    </form>
-                  </main>
-                </body>
-                </html>
-                """.formatted(escape(page.clientId()), escape(page.transactionId()), escape(page.csrfToken())));
-        } catch (SsoException exception) {
-            error(response, exception);
-        }
+        SsoService.LoginPage page = ssoService.prepareLogin(requiredQuery(request, "transaction_id"));
+        response.status(200);
+        response.contentType("text/html; charset=utf-8");
+        response.write("""
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width,initial-scale=1">
+              <title>Zora SSO Login</title>
+            </head>
+            <body>
+              <main>
+                <h1>Sign in to Zora</h1>
+                <p>Client: %s</p>
+                <form method="post" action="/login">
+                  <input type="hidden" name="transaction_id" value="%s">
+                  <input type="hidden" name="csrf_token" value="%s">
+                  <label>Username <input name="username" autocomplete="username" required maxlength="128"></label>
+                  <label>Password <input type="password" name="password" autocomplete="current-password" required maxlength="1024"></label>
+                  <button type="submit">Sign in</button>
+                </form>
+              </main>
+            </body>
+            </html>
+            """.formatted(escape(page.clientId()), escape(page.transactionId()), escape(page.csrfToken())));
     }
 
     public void login(MuRequest request, MuResponse response, Map<String, String> pathParams) {
         secureHeaders(response);
-        try {
-            Map<String, String> form = parseForm(request);
-            char[] password = form.getOrDefault("password", "").toCharArray();
-            SsoService.LoginResult result = ssoService.login(
-                form.get("transaction_id"),
-                form.get("csrf_token"),
-                form.get("username"),
-                password,
-                request.clientIP()
-            );
-            response.addCookie(sessionCookie(result.sessionId(), 7_200));
-            response.redirect(result.redirectUri().toString());
-        } catch (SsoException exception) {
-            error(response, exception);
-        }
+        Map<String, String> form = parseForm(request);
+        char[] password = form.getOrDefault("password", "").toCharArray();
+        SsoService.LoginResult result = ssoService.login(
+            form.get("transaction_id"),
+            form.get("csrf_token"),
+            form.get("username"),
+            password,
+            request.clientIP()
+        );
+        response.addCookie(sessionCookie(result.sessionId(), 7_200));
+        response.redirect(result.redirectUri().toString());
     }
 
-
-
-    private Response logout(HttpHeaders headers) {
-        Cookie sessionCookie = headers.getCookies().get(configuration.cookieName());
-        ssoService.logout(sessionCookie == null ? null : sessionCookie.getValue());
-        return restResponseBuilder(200, "{\"loggedOut\":true}")
-            .header("Set-Cookie", expiredSessionCookie())
-            .build();
-    }
 
     private io.muserver.Cookie sessionCookie(String value, long maxAgeSeconds) {
         return CookieBuilder.newCookie()
@@ -164,6 +169,14 @@ public final class SsoHandler {
         return values;
     }
 
+    private static String escape(String value) {
+        return value.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
+    }
+
     private static String requiredQuery(MuRequest request, String name) {
         String value = request.query().get(name);
         if (value == null || value.isBlank()) {
@@ -181,32 +194,8 @@ public final class SsoHandler {
             "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'");
     }
 
-    private static void error(MuResponse response, SsoException exception) {
-        int status = errorStatus(exception);
-        LOGGER.warn("SSO request rejected with code {}", exception.code());
-        json(response, status, "{\"error\":\""
-            + exception.code().name().toLowerCase(java.util.Locale.ROOT) + "\"}");
-    }
 
-    private static Response restError(SsoException exception) {
-        LOGGER.warn("SSO request rejected with code {}", exception.code());
-        return restResponse(errorStatus(exception), "{\"error\":\""
-            + exception.code().name().toLowerCase(java.util.Locale.ROOT) + "\"}");
-    }
-
-    private static int errorStatus(SsoException exception) {
-        return switch (exception.code()) {
-            case LOGIN_REJECTED, INVALID_CLIENT_CREDENTIALS, INVALID_SESSION, INVALID_CODE -> 401;
-            case RATE_LIMITED -> 429;
-            default -> 400;
-        };
-    }
-
-    private static Response restResponse(int status, String body) {
-        return restResponseBuilder(status, body).build();
-    }
-
-    private static Response.ResponseBuilder restResponseBuilder(int status, String body) {
+    private static Response.ResponseBuilder restResponseBuilder(int status, RestResponse<?> body) {
         return Response.status(status)
             .type(MediaType.APPLICATION_JSON_TYPE)
             .header("Cache-Control", "no-store")
@@ -218,11 +207,6 @@ public final class SsoHandler {
             .entity(body);
     }
 
-    private static void json(MuResponse response, int status, String body) {
-        response.status(status);
-        response.contentType("application/json; charset=utf-8");
-        response.write(body);
-    }
 
     private static String encode(String value) {
         return java.net.URLEncoder.encode(value, StandardCharsets.UTF_8);
@@ -232,34 +216,6 @@ public final class SsoHandler {
         return URLDecoder.decode(value, StandardCharsets.UTF_8);
     }
 
-    private static String escape(String value) {
-        return value.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("\"", "&quot;")
-            .replace("'", "&#39;");
-    }
-
-    private static String jsonEscape(String value) {
-        return value.replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\r", "\\r")
-            .replace("\n", "\\n");
-    }
-
-
-
-
-
-    @Path("/logout")
-    public final class LogoutResource {
-
-        @POST
-        @Produces(MediaType.APPLICATION_JSON)
-        public Response post(@Context HttpHeaders headers) {
-            return logout(headers);
-        }
-    }
 
     private final SsoConfiguration configuration;
     private final SsoService ssoService;

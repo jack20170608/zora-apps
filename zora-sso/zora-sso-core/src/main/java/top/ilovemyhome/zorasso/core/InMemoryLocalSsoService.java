@@ -147,8 +147,7 @@ public final class InMemoryLocalSsoService implements SsoService {
         String code,
         String clientId,
         char[] clientSecret,
-        URI redirectUri
-    ) {
+        URI redirectUri) {
         RegisteredClient client = clients.get(clientId);
         String configuredHash = client == null ? DUMMY_SECRET_HASH : client.clientSecretHash();
         boolean validSecret;
