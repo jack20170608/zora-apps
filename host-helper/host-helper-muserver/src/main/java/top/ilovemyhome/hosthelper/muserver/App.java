@@ -12,14 +12,11 @@ import java.nio.file.Path;
 
 public class App {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         LOGGER.info("Starting application.");
         String env = System.getenv("APP_ENV");
-        if (StringUtils.isBlank(env)) {
-            env = System.getenv("env");
-        }
         if (StringUtils.isBlank(env)){
-            throw new IllegalStateException("Cannot find env property.");
+            throw new IllegalStateException("Cannot find the env variable.");
         }
         if (!env.matches("[a-zA-Z0-9][a-zA-Z0-9_-]*")) {
             throw new IllegalStateException("Invalid env property.");

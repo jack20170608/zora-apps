@@ -1,6 +1,5 @@
 package top.ilovemyhome.zorasso.muserver;
 
-import com.typesafe.config.ConfigFactory;
 import io.muserver.MuServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +15,7 @@ public final class App {
     }
 
     public static void main(String[] args) {
-        SsoConfiguration configuration = SsoConfiguration.from(ConfigFactory.load());
+        SsoConfiguration configuration = SsoConfiguration.from(SsoConfigLoader.load(System.getenv()));
         Pbkdf2PasswordHasher passwordHasher = new Pbkdf2PasswordHasher();
         LocalIdentityAuthenticator authenticator = new LocalIdentityAuthenticator(
             configuration.users(),
