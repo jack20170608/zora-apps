@@ -4,15 +4,16 @@
 
 该模块只允许在明确启用的开发环境运行；正式环境应接入标准 OIDC Provider。
 
-启动时必须通过小写环境变量 `app_env` 选择环境配置：
+配置加载方式与 host-helper-server 保持一致。启动时优先通过 `APP_ENV` 选择环境，
+并兼容旧环境变量 `env`：
 
 ```bash
-export app_env=local
+export APP_ENV=local
 ```
 
-程序将 `application-${app_env}.conf` 合并到公共 `application.conf`。环境变量缺失、格式非法或
-对应资源不存在时，服务拒绝启动。设置变量后，可从 IDE 运行
-`top.ilovemyhome.zorasso.muserver.App`。
+默认将 classpath 中的 `application-${APP_ENV}.conf` 合并到公共 `application.conf`。设置
+`ZORA_SSO_CONFIG_DIR` 后，改为读取该目录下的环境配置文件。环境变量缺失、格式非法，或者配置
+文件不存在或不可读时，服务拒绝启动。
 
 启动配置和接口流程见：
 

@@ -2,6 +2,7 @@ package top.ilovemyhome.zorasso.muserver;
 
 import com.typesafe.config.ConfigFactory;
 import org.junit.jupiter.api.Test;
+import top.ilovemyhome.zorasso.muserver.config.SsoConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

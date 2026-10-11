@@ -22,8 +22,8 @@
             <artifactId>mu-server</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.typesafe</groupId>
-            <artifactId>config</artifactId>
+            <groupId>top.ilovemyhome.zora</groupId>
+            <artifactId>zora-config</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

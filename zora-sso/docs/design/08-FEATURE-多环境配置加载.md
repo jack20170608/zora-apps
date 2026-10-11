@@ -2,18 +2,20 @@
 
 ## 目标
 
-`zora-sso-muserver` 通过小写环境变量 `app_env` 选择运行环境，避免在启动命令中修改配置文件，
-并确保不同环境的用户、客户端和网络安全设置彼此隔离。
+`zora-sso-muserver` 使用与 host-helper-server 一致的配置加载方式，通过 `APP_ENV` 选择运行
+环境，并兼容旧变量 `env`。部署环境可通过 `ZORA_SSO_CONFIG_DIR` 从外部目录加载配置，确保
+不同环境的用户、客户端和网络安全设置彼此隔离。
 
 ## 加载规则
 
 启动时按以下顺序处理：
 
-1. 读取环境变量 `app_env`。
+1. 优先读取环境变量 `APP_ENV`；值为空时读取兼容变量 `env`。
 2. 校验环境名只能包含字母、数字、下划线和连字符，且第一个字符必须是字母或数字。
-3. 加载 `application-${app_env}.conf`。
+3. 如果设置了 `ZORA_SSO_CONFIG_DIR`，加载该目录下的 `application-${APP_ENV}.conf`；否则
+   加载 classpath 中的同名资源。
 4. 使用公共 `application.conf` 补充未定义的配置。
-5. 将 `zora-sso.environment` 强制设置为 `app_env` 的值。
+5. 将 `zora-sso.environment` 强制设置为最终选择的环境值。
 6. 执行 `SsoConfiguration` 的安全校验后启动服务。
 
 环境变量缺失、值非法或对应配置不存在时，服务立即拒绝启动。环境配置不能通过声明另一个
@@ -56,16 +58,18 @@ zora-sso {
 Linux：
 
 ```bash
-export app_env=local
+export APP_ENV=local
+export ZORA_SSO_CONFIG_DIR=/etc/zora-sso
 ```
 
 PowerShell：
 
 ```powershell
-$env:app_env = "local"
+$env:APP_ENV = "local"
+$env:ZORA_SSO_CONFIG_DIR = "C:\zora-sso\config"
 ```
 
-设置变量后，从 IDE 运行 `top.ilovemyhome.zorasso.muserver.App`。
-
-新增环境时创建 `zora-sso-muserver/src/main/resources/application-<环境>.conf`，并在发布前验证
-公开地址、Cookie、安全开关、用户哈希、客户端哈希和回调 URI。
+本地开发可以不设置 `ZORA_SSO_CONFIG_DIR`，直接使用
+`zora-sso-muserver/src/main/resources/application-local.conf`。新增部署环境时，在受控外部配置
+目录中创建 `application-<环境>.conf`，并在发布前验证公开地址、Cookie、安全开关、用户哈希、
+客户端哈希和回调 URI。

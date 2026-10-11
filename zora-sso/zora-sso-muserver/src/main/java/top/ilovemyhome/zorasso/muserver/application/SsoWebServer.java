@@ -1,4 +1,4 @@
-package top.ilovemyhome.zorasso.muserver;
+package top.ilovemyhome.zorasso.muserver.application;
 
 import io.muserver.CookieBuilder;
 import io.muserver.Method;
@@ -8,6 +8,7 @@ import io.muserver.MuServer;
 import io.muserver.MuServerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.ilovemyhome.zorasso.muserver.config.SsoConfiguration;
 import top.ilovemyhome.zorasso.si.AuthenticatedIdentity;
 import top.ilovemyhome.zorasso.si.SsoException;
 import top.ilovemyhome.zorasso.si.SsoService;

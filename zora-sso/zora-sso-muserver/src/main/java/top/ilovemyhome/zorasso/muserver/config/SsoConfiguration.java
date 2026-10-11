@@ -1,4 +1,4 @@
-package top.ilovemyhome.zorasso.muserver;
+package top.ilovemyhome.zorasso.muserver.config;
 
 import com.typesafe.config.Config;
 import top.ilovemyhome.zorasso.core.LocalUser;

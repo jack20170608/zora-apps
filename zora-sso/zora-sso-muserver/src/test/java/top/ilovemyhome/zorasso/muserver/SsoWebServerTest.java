@@ -9,6 +9,8 @@ import top.ilovemyhome.zorasso.core.LocalIdentityAuthenticator;
 import top.ilovemyhome.zorasso.core.LocalUser;
 import top.ilovemyhome.zorasso.core.Pbkdf2PasswordHasher;
 import top.ilovemyhome.zorasso.core.RegisteredClient;
+import top.ilovemyhome.zorasso.muserver.application.SsoWebServer;
+import top.ilovemyhome.zorasso.muserver.config.SsoConfiguration;
 
 import java.net.URI;
 import java.net.URLEncoder;
