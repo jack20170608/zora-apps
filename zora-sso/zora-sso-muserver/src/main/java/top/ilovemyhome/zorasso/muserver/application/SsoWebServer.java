@@ -77,9 +77,7 @@ public final class SsoWebServer {
 
         return RestHandlerBuilder
             .restHandler(
-                ssoHandler.logoutResource(),
-                ssoHandler.tokenExchangeResource(),
-                ssoHandler.clientsResource(),
+                ssoHandler,
                 new HealthHandler()
             )
             .addCustomReader(new JacksonJsonProvider((JsonMapper) JacksonUtil.MAPPER))

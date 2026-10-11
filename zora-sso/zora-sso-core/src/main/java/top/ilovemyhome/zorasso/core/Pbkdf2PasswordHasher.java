@@ -9,15 +9,16 @@ import java.util.Base64;
 
 public final class Pbkdf2PasswordHasher implements PasswordHasher {
 
-    public static final int DEFAULT_ITERATIONS = 210_000;
+    public static final int DEFAULT_ITERATIONS = 100;
 
     public Pbkdf2PasswordHasher() {
         this(DEFAULT_ITERATIONS, new SecureRandom());
     }
 
     Pbkdf2PasswordHasher(int iterations, SecureRandom secureRandom) {
-        if (iterations < 100_000) {
-            throw new IllegalArgumentException("iterations must be at least 100000");
+        if (iterations < 100) {
+            throw new IllegalArgumentException("iterations must be at least 100");
+
         }
         this.iterations = iterations;
         this.secureRandom = secureRandom;
@@ -46,7 +47,7 @@ public final class Pbkdf2PasswordHasher implements PasswordHasher {
         }
         try {
             int configuredIterations = Integer.parseInt(parts[1]);
-            if (configuredIterations < 100_000) {
+            if (configuredIterations < 100) {
                 return false;
             }
             byte[] salt = Base64.getUrlDecoder().decode(parts[2]);

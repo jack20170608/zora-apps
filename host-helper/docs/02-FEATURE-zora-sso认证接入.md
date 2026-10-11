@@ -14,7 +14,7 @@
    `/authorize`。
 4. 用户在 zora-sso 完成登录。zora-sso 将浏览器重定向到预注册的
    `/auth/sso/callback`，并携带一次性 `code` 和原 `state`。
-5. host-helper 单次消费 `state`，通过后端通道向 `/token/exchange` 提交授权码、客户端 ID、
+5. host-helper 单次消费 `state`，通过后端通道向 `/sso/token/exchange` 提交授权码、客户端 ID、
    客户端密钥和固定回调 URI。
 6. host-helper 将 SSO 角色映射为本地角色，签发原有 JWT 格式的 HttpOnly 应用 Cookie，然后
    跳转到首页。已有 REST 过滤器继续验证该 Cookie。

@@ -3,6 +3,7 @@ package top.ilovemyhome.hosthelper.muserver.util.config;
 import com.typesafe.config.Config;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import top.ilovemyhome.zora.config.ConfigLoader;
 
 import java.io.IOException;
 import java.nio.file.Files;

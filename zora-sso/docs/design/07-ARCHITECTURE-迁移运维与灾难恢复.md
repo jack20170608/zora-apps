@@ -54,7 +54,7 @@
 
 ## 6. POC 退役清单
 
-1. 所有应用停止调用 `/authorize`、`/login` 和 `/token/exchange` 私有接口。
+1. 所有应用停止调用 `/authorize`、`/login` 和 `/sso/token/exchange` 私有接口。
 2. 删除本地用户密码哈希与 Client Secret 哈希。
 3. 移除 `local-auth.production-allowed` 及本地认证启动路径。
 4. 删除内存 Session、事务和 Code 实现。

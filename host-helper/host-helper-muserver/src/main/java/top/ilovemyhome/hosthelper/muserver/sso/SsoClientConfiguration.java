@@ -91,7 +91,7 @@ public final class SsoClientConfiguration {
     }
 
     public URI exchangeEndpoint() {
-        return baseUri.resolve("/token/exchange");
+        return baseUri.resolve("/sso/token/exchange");
     }
 
     public String clientId() {

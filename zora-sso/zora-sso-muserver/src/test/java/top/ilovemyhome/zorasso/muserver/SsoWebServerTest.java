@@ -104,7 +104,7 @@ class SsoWebServerTest {
         String code = query(callback, "code");
         assertThat(query(callback, "state")).isEqualTo("client-state");
 
-        HttpResponse<String> exchange = post("/token/exchange", form(MapBuilder.of(
+        HttpResponse<String> exchange = post("/sso/token/exchange", form(MapBuilder.of(
             "code", code,
             "client_id", "app-a",
             "client_secret", "client-secret",
@@ -116,7 +116,7 @@ class SsoWebServerTest {
             .containsPattern("\"username\"\\s*:\\s*\"alice\"")
             .doesNotContain("client-secret");
 
-        HttpResponse<String> clients = get("/clients", cookie);
+        HttpResponse<String> clients = get("/sso/clients", cookie);
         assertThat(clients.statusCode()).isEqualTo(200);
         assertThat(clients.body())
             .containsPattern("\"clientId\"\\s*:\\s*\"app-a\"")
@@ -144,7 +144,7 @@ class SsoWebServerTest {
     @Test
     void servesHealthAndLogoutAsRestEndpoints() throws Exception {
         HttpResponse<String> health = get("/health", null);
-        HttpResponse<String> logout = post("/logout", "", "ZORA_SSO_SESSION=unknown");
+        HttpResponse<String> logout = post("/sso/logout", "", "ZORA_SSO_SESSION=unknown");
 
         assertThat(health.statusCode()).isEqualTo(200);
         assertThat(health.headers().firstValue("content-type")).hasValueSatisfying(
@@ -169,7 +169,7 @@ class SsoWebServerTest {
 
     @Test
     void rejectsClientListWithoutAuthenticatedSession() throws Exception {
-        HttpResponse<String> response = get("/clients", null);
+        HttpResponse<String> response = get("/sso/clients", null);
 
         assertThat(response.statusCode()).isEqualTo(401);
         assertThat(response.body())
@@ -191,7 +191,7 @@ class SsoWebServerTest {
         )), null);
         String cookie = login.headers().firstValue("set-cookie").orElseThrow().split(";", 2)[0];
 
-        HttpResponse<String> response = get("/clients", cookie);
+        HttpResponse<String> response = get("/sso/clients", cookie);
 
         assertThat(response.statusCode()).isEqualTo(403);
         assertThat(response.body())

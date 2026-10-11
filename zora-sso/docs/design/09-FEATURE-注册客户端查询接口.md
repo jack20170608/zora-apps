@@ -10,7 +10,7 @@
 请求：
 
 ```http
-GET /clients
+GET /sso/clients
 Cookie: ZORA_SSO_SESSION=<session-id>
 ```
 

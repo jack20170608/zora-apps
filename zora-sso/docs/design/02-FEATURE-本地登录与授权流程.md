@@ -62,7 +62,7 @@ sequenceDiagram
     S-->>B: 设置中央 Session Cookie，回调 code + 原 state
     B->>A: 回调
     A->>A: 校验 state
-    A->>S: 后端 POST /token/exchange
+    A->>S: 后端 POST /sso/token/exchange
     S-->>A: 最小身份 JSON
     A->>A: 建立自己的应用 Session
 ```
@@ -76,8 +76,8 @@ sequenceDiagram
 | `GET /authorize` | `client_id`、`redirect_uri`、`state` | 跳转登录页或已注册回调 |
 | `GET /login` | `transaction_id` | 带独立 CSRF Token 的 HTML 表单 |
 | `POST /login` | URL-encoded 事务、CSRF、用户名、密码 | 设置中央 Cookie 并回调 |
-| `POST /token/exchange` | Code、Client、Secret、回调 URI | `AuthenticatedIdentity` JSON |
-| `POST /logout` | 中央 Session Cookie | 删除中央 Session 并清 Cookie |
+| `POST /sso/token/exchange` | Code、Client、Secret、回调 URI | `AuthenticatedIdentity` JSON |
+| `POST /sso/logout` | 中央 Session Cookie | 删除中央 Session 并清 Cookie |
 | `GET /health` | 无 | 本地模式健康状态 |
 
 `POST` 只接受 `application/x-www-form-urlencoded`。表单参数不允许重复，请求体和服务器请求大小均受限。

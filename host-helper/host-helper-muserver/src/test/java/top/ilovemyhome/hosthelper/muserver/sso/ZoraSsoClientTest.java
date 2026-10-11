@@ -43,7 +43,7 @@ class ZoraSsoClientTest {
     void exchangesCodeAndParsesIdentity() {
         server = MuServerBuilder.httpServer()
             .withHttpPort(0)
-            .addHandler(Method.POST, "/token/exchange", (request, response, pathParams) -> {
+            .addHandler(Method.POST, "/sso/token/exchange", (request, response, pathParams) -> {
                 response.contentType("application/json");
                 response.write("""
                     {"subject":"user-1","username":"alice","displayName":"Alice",
@@ -65,7 +65,7 @@ class ZoraSsoClientTest {
     void rejectsOversizedExchangeResponse() {
         server = MuServerBuilder.httpServer()
             .withHttpPort(0)
-            .addHandler(Method.POST, "/token/exchange", (request, response, pathParams) -> {
+            .addHandler(Method.POST, "/sso/token/exchange", (request, response, pathParams) -> {
                 response.contentType("application/json");
                 response.write("x".repeat(257));
             })

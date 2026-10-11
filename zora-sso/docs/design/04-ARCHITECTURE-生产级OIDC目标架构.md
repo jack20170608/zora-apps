@@ -36,7 +36,7 @@ flowchart LR
 - `zora-sso-si`：扩展为与 Provider 无关的登录事务、身份结果和 Token 验证端口。
 - `zora-sso-core`：新增 OIDC Discovery、授权请求、回调校验、JWKS 缓存、身份映射与会话策略。
 - `zora-sso-muserver`：只提供应用需要的 HTTP 适配器；不再托管用户名密码登录页。
-- 当前 `LocalIdentityAuthenticator` 和私有 `/token/exchange` 只在开发 POC profile 中存在，迁移完成后删除。
+- 当前 `LocalIdentityAuthenticator` 和私有 `/sso/token/exchange` 只在开发 POC profile 中存在，迁移完成后删除。
 
 ## 4. 核心安全不变量
 
