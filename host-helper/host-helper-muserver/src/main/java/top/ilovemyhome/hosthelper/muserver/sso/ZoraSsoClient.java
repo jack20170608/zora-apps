@@ -1,28 +1,24 @@
 package top.ilovemyhome.hosthelper.muserver.sso;
 
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import top.ilovemyhome.hosthelper.muserver.api.dto.RestResponse;
+import top.ilovemyhome.zora.httpclient.HttpRetryClient;
+import top.ilovemyhome.zora.httpclient.RestClient;
+import top.ilovemyhome.zora.json.jackson.JacksonUtil;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.format.DateTimeParseException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import top.ilovemyhome.zora.httpclient.HttpRetryClient;
-import top.ilovemyhome.zora.httpclient.RestClient;
 
 public final class ZoraSsoClient {
 
@@ -32,18 +28,16 @@ public final class ZoraSsoClient {
             HttpClient.newBuilder()
                 .connectTimeout(configuration.requestTimeout())
                 .followRedirects(HttpClient.Redirect.NEVER)
-                .build(),
-            new ObjectMapper()
+                .build()
         );
     }
 
-    ZoraSsoClient(SsoClientConfiguration configuration, HttpClient httpClient, ObjectMapper objectMapper) {
+    ZoraSsoClient(SsoClientConfiguration configuration, HttpClient httpClient) {
         this.configuration = configuration;
         this.restClient = new RestClient(
             configuration.exchangeEndpoint().resolve("/").toString(),
             HttpRetryClient.builder(httpClient).withMaxAttempts(1).build()
         );
-        this.objectMapper = objectMapper;
     }
 
     public URI authorizationUri(String state) {
@@ -84,8 +78,6 @@ public final class ZoraSsoClient {
                 throw new SsoAuthenticationException("SSO returned an unexpected content type");
             }
             return parseIdentity(response.body());
-        } catch (IOException exception) {
-            throw new SsoAuthenticationException("SSO code exchange failed", exception);
         } catch (ExecutionException exception) {
             throw new SsoAuthenticationException("SSO code exchange failed", exception.getCause());
         } catch (InterruptedException exception) {
@@ -96,29 +88,17 @@ public final class ZoraSsoClient {
         }
     }
 
-    private SsoIdentity parseIdentity(String json) throws IOException {
-        JsonNode root = objectMapper.readTree(json);
-        if (!root.path("success").asBoolean() || !root.path("data").isObject()) {
+    private SsoIdentity parseIdentity(String json) {
+        RestResponse<SsoIdentity> result;
+        try {
+            result = JacksonUtil.fromJson(json, new TypeReference<>() {});
+        } catch (JacksonException exception) {
+            throw new SsoAuthenticationException("SSO returned an invalid identity response", exception);
+        }
+        if (result == null || !result.success() || result.data() == null) {
             throw new SsoAuthenticationException("SSO returned an invalid identity response");
         }
-        JsonNode identity = root.path("data");
-        Set<String> roles = new HashSet<>();
-        JsonNode roleNodes = identity.path("roles");
-        if (!roleNodes.isArray()) {
-            throw new SsoAuthenticationException("SSO identity roles are invalid");
-        }
-        roleNodes.forEach(node -> roles.add(requireText(node.textValue(), "role")));
-        try {
-            return new SsoIdentity(
-                requireText(identity.path("subject").textValue(), "subject"),
-                requireText(identity.path("username").textValue(), "username"),
-                requireText(identity.path("displayName").textValue(), "displayName"),
-                Set.copyOf(roles),
-                Instant.parse(requireText(identity.path("authenticatedAt").textValue(), "authenticatedAt"))
-            );
-        } catch (DateTimeParseException exception) {
-            throw new SsoAuthenticationException("SSO identity authenticatedAt is invalid", exception);
-        }
+        return result.data();
     }
 
     private static String requireText(String value, String name) {
@@ -134,5 +114,4 @@ public final class ZoraSsoClient {
 
     private final SsoClientConfiguration configuration;
     private final RestClient restClient;
-    private final ObjectMapper objectMapper;
 }

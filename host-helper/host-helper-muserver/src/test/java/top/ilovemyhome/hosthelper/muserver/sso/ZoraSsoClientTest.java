@@ -103,6 +103,82 @@ class ZoraSsoClientTest {
     }
 
     @Test
+    void rejectsUnsuccessfulExchangeEnvelope() {
+        server = MuServerBuilder.httpServer()
+            .withHttpPort(0)
+            .addHandler(Method.POST, "/sso/token/exchange", (request, response, pathParams) -> {
+                response.contentType("application/json");
+                response.write("{\"success\":false,\"data\":{\"roles\":[\"USER\"]}}");
+            })
+            .start();
+        ZoraSsoClient client = new ZoraSsoClient(configuration(server.uri(), 65_536));
+
+        SsoAuthenticationException exception = assertThrowsExactly(
+            SsoAuthenticationException.class, () -> client.exchange("one-time-code")
+        );
+
+        assertEquals("SSO returned an invalid identity response", exception.getMessage());
+    }
+
+    @Test
+    void rejectsMissingIdentityFieldsAfterDeserialization() {
+        server = MuServerBuilder.httpServer()
+            .withHttpPort(0)
+            .addHandler(Method.POST, "/sso/token/exchange", (request, response, pathParams) -> {
+                response.contentType("application/json");
+                response.write("""
+                    {"success":true,"data":{"username":"alice","displayName":"Alice",
+                     "roles":["USER"],"authenticatedAt":"2026-10-11T00:00:00Z"},"message":null}
+                    """);
+            })
+            .start();
+        ZoraSsoClient client = new ZoraSsoClient(configuration(server.uri(), 65_536));
+
+        SsoAuthenticationException exception = assertThrowsExactly(
+            SsoAuthenticationException.class, () -> client.exchange("one-time-code")
+        );
+
+        assertEquals("SSO returned an invalid identity response", exception.getMessage());
+    }
+
+    @Test
+    void rejectsMalformedIdentityResponse() {
+        server = MuServerBuilder.httpServer()
+            .withHttpPort(0)
+            .addHandler(Method.POST, "/sso/token/exchange", (request, response, pathParams) -> {
+                response.contentType("application/json");
+                response.write("""
+                    {"success":true,"data":{"subject":"user-1","username":"alice","displayName":"Alice",
+                     "roles":["USER"],"authenticatedAt":"invalid"},"message":null}
+                    """);
+            })
+            .start();
+        ZoraSsoClient client = new ZoraSsoClient(configuration(server.uri(), 65_536));
+
+        SsoAuthenticationException exception = assertThrowsExactly(
+            SsoAuthenticationException.class, () -> client.exchange("one-time-code")
+        );
+
+        assertEquals("SSO returned an invalid identity response", exception.getMessage());
+    }
+
+    @Test
+    void rejectsRedirectWithoutFollowingIt() {
+        server = MuServerBuilder.httpServer()
+            .withHttpPort(0)
+            .addHandler(Method.POST, "/sso/token/exchange", (request, response, pathParams) ->
+                response.redirect("/login"))
+            .start();
+        ZoraSsoClient client = new ZoraSsoClient(configuration(server.uri(), 65_536));
+
+        SsoAuthenticationException exception = assertThrowsExactly(
+            SsoAuthenticationException.class, () -> client.exchange("one-time-code")
+        );
+
+        assertEquals("SSO code exchange was rejected", exception.getMessage());
+    }
+
+    @Test
     void rejectsOversizedExchangeResponse() {
         server = MuServerBuilder.httpServer()
             .withHttpPort(0)
