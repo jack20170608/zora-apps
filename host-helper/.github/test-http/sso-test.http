@@ -1,4 +1,116 @@
-### 1.0 test the sso login
-GET http://localhost:8000/auth/sso/login
+@clientId=host-helper
+@hostHelperBaseUrl=http://localhost:8000
+@ssoBaseUrl=http://localhost:9080
+
+### 0.1 test access the hosthelper service in the 1st time
+# @no-cookie-jar
+# @no-redirect
+GET {{hostHelperBaseUrl}}/hosthelper/index.html
+
+> {%
+    client.test("login should return 302 without auto redirect", function() {
+        client.assert(response.status === 302, "Response status should be 302");
+
+        const location = response.headers.valueOf("Location");
+        client.assert(location && location.length > 0, "Location header should exist");
+        client.assert(location.includes("/auth/sso/login"), "Location should redirect to /auth/sso/login");
+
+    });
+%}
+
+### 1.0 test the sso login, it will redirect to the sso provider, we will capture the state parameter from the redirect url
+# @no-redirect
+GET {{hostHelperBaseUrl}}/auth/sso/login
+
+> {%
+client.test("login should return 302 without auto redirect", function() {
+    client.assert(response.status === 302, "Response status should be 302");
+
+    const location = response.headers.valueOf("Location");
+    client.assert(location && location.length > 0, "Location header should exist");
+    client.assert(location.includes("/authorize"), "Location should redirect to /authorize");
+    client.assert(location.includes("state="), "Location should contain state query parameter");
+
+    const match = location.match(/[?&]state=([^&]+)/);
+    client.assert(match && match[1], "state query parameter should be extractable");
+    const state = decodeURIComponent(match[1]);
+    client.assert(state.length > 0, "state should not be empty");
+
+    client.global.set("state", state);
+    console.log("Captured state:", state);
+});
+%}
+
+### 1.1 test the SSO provider authorize method
+# @no-redirect
+GET {{ssoBaseUrl}}/authorize?client_id={{clientId}}&redirect_uri={{hostHelperBaseUrl}}/auth/sso/callback&state={{state}}
+
+> {%
+client.test("authorize should redirect to SSO login without following it", function() {
+    client.assert(response.status === 302, "Response status should be 302");
+    const location = response.headers.valueOf("Location");
+    client.assert(location && location.length > 0, "Location header should exist");
+    const match = location.match(/^(?:https?:\/\/[^/?#]+)?\/login\?transaction_id=([^&#]+)$/);
+    client.assert(match && match[1], "Location should point to /login with a transaction_id");
+    const transactionId = decodeURIComponent(match[1]);
+    client.assert(transactionId.length > 0, "transaction_id should not be empty");
+    client.assert(response.headers.valueOf("Cache-Control") === "no-store", "Response should not be cached");
+
+    client.global.set("transactionId", transactionId);
+});
+%}
+
+### 1.2 test access the login page of the SSO provider
+# @no-redirect
+GET {{ssoBaseUrl}}/login?transaction_id={{transactionId}}
+
+> {%
+client.test("login page should provide a CSRF token for the current transaction", function() {
+    client.assert(response.status === 200, "Response status should be 200");
+    client.assert(response.headers.valueOf("Content-Type").startsWith("text/html"), "Response should be HTML");
+
+    const transactionMatch = response.body.match(/name="transaction_id" value="([^"]+)"/);
+    client.assert(transactionMatch && transactionMatch[1] === client.global.get("transactionId"),
+        "Login page should contain the current transaction_id");
+
+    const csrfMatch = response.body.match(/name="csrf_token" value="([^"]+)"/);
+    client.assert(csrfMatch && csrfMatch[1], "Login page should contain a non-empty csrf_token");
+    client.global.set("csrfToken", csrfMatch[1]);
+});
+%}
 
 
+### 1.3 test submit the login form with the CSRF token and transaction_id
+# @no-redirect
+POST {{ssoBaseUrl}}/login
+Content-Type: application/x-www-form-urlencoded
+
+transaction_id={{transactionId}}&csrf_token={{csrfToken}}&username={{username}}&password={{password}}
+
+> {%
+client.test("login should redirect to the client callback with a matching state", function() {
+    client.assert(response.status === 302, "Response status should be 302");
+
+    const location = response.headers.valueOf("Location");
+    client.assert(location && /^https?:\/\/[^/?#]+\/auth\/sso\/callback\?/.test(location),
+        "Location should point to the client callback");
+    const codeMatch = location.match(/[?&]code=([^&#]+)/);
+    const stateMatch = location.match(/[?&]state=([^&#]+)/);
+    client.assert(codeMatch && codeMatch[1], "Callback should contain an authorization code");
+    client.assert(stateMatch && decodeURIComponent(stateMatch[1]) === client.global.get("state"),
+        "Callback state should match the original state");
+
+    const cookie = response.headers.valueOf("Set-Cookie");
+    client.assert(cookie && cookie.includes("ZORA_SSO_SESSION="), "SSO session cookie should be set");
+    client.assert(/;\s*HttpOnly/i.test(cookie), "SSO session cookie should be HttpOnly");
+    client.assert(/;\s*SameSite=Lax/i.test(cookie), "SSO session cookie should use SameSite=Lax");
+    client.assert(response.headers.valueOf("Cache-Control") === "no-store", "Response should not be cached");
+
+    client.global.set("authorizationCode", decodeURIComponent(codeMatch[1]));
+});
+%}
+
+### 1.4 test the client callback with the authorization code and state
+# @no-redirect
+GET {{hostHelperBaseUrl}}/auth/sso/callback?code={{authorizationCode}}
+    &state={{state}}

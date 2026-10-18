@@ -89,3 +89,5 @@ config-local/
 
 .worktrees/
 .worktree/
+
+http-client.private.env.json
