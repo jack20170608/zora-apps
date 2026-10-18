@@ -1,0 +1,4 @@
+### 1.0 test the sso login
+GET http://localhost:8000/auth/sso/login
+
+

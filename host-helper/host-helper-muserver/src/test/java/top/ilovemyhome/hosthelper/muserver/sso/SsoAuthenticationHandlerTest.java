@@ -87,6 +87,19 @@ class SsoAuthenticationHandlerTest {
     }
 
     @Test
+    void beginsLoginByReturningRedirectWithoutFollowingIt() throws Exception {
+        HttpResponse<String> begin = get("/auth/sso/login");
+
+        assertEquals(302, begin.statusCode());
+        URI location = URI.create(begin.headers().firstValue("location").orElseThrow());
+        assertEquals("http", location.getScheme());
+        assertEquals("localhost", location.getHost());
+        assertEquals("/authorize", location.getPath());
+        assertTrue(location.getRawQuery().contains("state="));
+        assertEquals("no-store", begin.headers().firstValue("cache-control").orElseThrow());
+    }
+
+    @Test
     void consumesStateOnceAndCreatesApplicationSession() throws Exception {
         HttpResponse<String> begin = get("/auth/sso/login");
         String state = query(URI.create(begin.headers().firstValue("location").orElseThrow()), "state");
