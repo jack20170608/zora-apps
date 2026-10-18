@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
@@ -46,8 +47,8 @@ class ZoraSsoClientTest {
             .addHandler(Method.POST, "/sso/token/exchange", (request, response, pathParams) -> {
                 response.contentType("application/json");
                 response.write("""
-                    {"subject":"user-1","username":"alice","displayName":"Alice",
-                     "roles":["USER"],"authenticatedAt":"2026-10-11T00:00:00Z"}
+                    {"success":true,"data":{"subject":"user-1","username":"alice","displayName":"Alice",
+                     "roles":["USER"],"authenticatedAt":"2026-10-11T00:00:00Z"},"message":null}
                     """);
             })
             .start();
@@ -59,6 +60,46 @@ class ZoraSsoClientTest {
         assertEquals("alice", identity.username());
         assertEquals(Instant.parse("2026-10-11T00:00:00Z"), identity.authenticatedAt());
         assertEquals(java.util.Set.of("USER"), identity.roles());
+    }
+
+    @Test
+    void rejectsFailedExchangeWithoutRetryingOneTimeCode() {
+        AtomicInteger attempts = new AtomicInteger();
+        server = MuServerBuilder.httpServer()
+            .withHttpPort(0)
+            .addHandler(Method.POST, "/sso/token/exchange", (request, response, pathParams) -> {
+                attempts.incrementAndGet();
+                response.status(500);
+                response.contentType("application/json");
+                response.write("{\"success\":false,\"data\":null,\"message\":\"rejected\"}");
+            })
+            .start();
+        ZoraSsoClient client = new ZoraSsoClient(configuration(server.uri(), 65_536));
+
+        SsoAuthenticationException exception = assertThrowsExactly(
+            SsoAuthenticationException.class, () -> client.exchange("one-time-code")
+        );
+
+        assertEquals("SSO code exchange was rejected", exception.getMessage());
+        assertEquals(1, attempts.get());
+    }
+
+    @Test
+    void rejectsIdentityOutsideSuccessEnvelope() {
+        server = MuServerBuilder.httpServer()
+            .withHttpPort(0)
+            .addHandler(Method.POST, "/sso/token/exchange", (request, response, pathParams) -> {
+                response.contentType("application/json");
+                response.write("{\"subject\":\"user-1\",\"roles\":[\"USER\"]}");
+            })
+            .start();
+        ZoraSsoClient client = new ZoraSsoClient(configuration(server.uri(), 65_536));
+
+        SsoAuthenticationException exception = assertThrowsExactly(
+            SsoAuthenticationException.class, () -> client.exchange("one-time-code")
+        );
+
+        assertEquals("SSO returned an invalid identity response", exception.getMessage());
     }
 
     @Test

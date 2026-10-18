@@ -44,6 +44,10 @@
             <groupId>top.ilovemyhome.zora</groupId>
             <artifactId>zora-json</artifactId>
         </dependency>
+        <dependency>
+            <groupId>top.ilovemyhome.zora</groupId>
+            <artifactId>zora-httpclient</artifactId>
+        </dependency>
         <!-- zora config -->
         <dependency>
             <groupId>top.ilovemyhome.zora</groupId>
