@@ -1,0 +1,46 @@
+@issuer=http://localhost:9200/realms/micronaut-sso
+@app=http://localhost:9201
+
+### 0.1 OIDC discovery
+GET {{issuer}}/.well-known/openid-configuration
+
+> {%
+client.test("Keycloak should publish standard OIDC discovery", function() {
+    client.assert(response.status === 200, "Discovery should return 200");
+    client.assert(response.body.issuer === "http://localhost:9200/realms/micronaut-sso", "Issuer should match");
+    client.assert(response.body.authorization_endpoint && response.body.token_endpoint && response.body.jwks_uri,
+        "Standard endpoints should be present");
+});
+%}
+
+### 0.2 Unauthenticated identity protection
+# @no-cookie-jar
+# @no-redirect
+GET {{app}}/api/me
+Accept: application/json
+
+> {%
+client.test("Identity should not be accessible without authentication", function() {
+    client.assert(response.status === 401, "Unauthenticated JSON request should return 401");
+});
+%}
+
+### 0.3 Authorization request with PKCE
+# @no-redirect
+GET {{app}}/oauth/login/keycloak
+
+> {%
+client.test("Micronaut should create an OIDC authorization request", function() {
+    client.assert(response.status === 302 || response.status === 303, "Client should redirect to Keycloak");
+    const location = response.headers.valueOf("Location");
+    client.assert(location && location.startsWith("http://localhost:9200/realms/micronaut-sso/protocol/openid-connect/auth?"),
+        "Redirect should target the configured Keycloak realm");
+    client.assert(/[?&]state=[^&]+/.test(location), "State should be present");
+    client.assert(/[?&]nonce=[^&]+/.test(location), "Nonce should be present");
+    client.assert(/[?&]code_challenge=[^&]+/.test(location), "PKCE challenge should be present");
+    client.assert(/[?&]code_challenge_method=S256(?:&|$)/.test(location), "PKCE should use S256");
+});
+%}
+
+# Complete the cross-application flow in one browser context as described in README.md.
+# Browser cookies and HTTP Client cookies are independent.

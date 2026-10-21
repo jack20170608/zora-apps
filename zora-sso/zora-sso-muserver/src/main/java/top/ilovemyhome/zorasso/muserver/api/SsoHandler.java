@@ -111,6 +111,7 @@ public final class SsoHandler {
     public void loginPage(MuRequest request, MuResponse response, Map<String, String> pathParams) {
         secureHeaders(response);
         SsoService.LoginPage page = ssoService.prepareLogin(requiredQuery(request, "transaction_id"));
+        secureLoginHeaders(response, page.redirectUri());
         response.status(200);
         response.contentType("text/html; charset=utf-8");
         response.write("""
@@ -150,6 +151,7 @@ public final class SsoHandler {
                 password,
                 request.clientIP()
             );
+            secureLoginHeaders(response, result.redirectUri());
             response.addCookie(sessionCookie(result.sessionId(), 7_200));
             response.redirect(result.redirectUri().toString());
         } catch (SsoException exception) {
@@ -224,8 +226,24 @@ public final class SsoHandler {
         response.headers().set("Pragma", "no-cache");
         response.headers().set("X-Content-Type-Options", "nosniff");
         response.headers().set("X-Frame-Options", "DENY");
-        response.headers().set("Content-Security-Policy",
-            "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'");
+        response.headers().set("Content-Security-Policy", contentSecurityPolicy("'self'"));
+    }
+
+    private static void secureLoginHeaders(MuResponse response, URI redirectUri) {
+        if (redirectUri.getHost() == null || redirectUri.getRawUserInfo() != null
+            || !("http".equalsIgnoreCase(redirectUri.getScheme())
+                || "https".equalsIgnoreCase(redirectUri.getScheme()))) {
+            throw new IllegalArgumentException("Login callback must have an HTTP(S) origin without user info");
+        }
+        // Browsers also check form-action against redirects after a form submission.
+        // Use only the registered callback bound to this transaction, never request parameters.
+        String origin = redirectUri.getScheme() + "://" + redirectUri.getRawAuthority();
+        response.headers().set("Content-Security-Policy", contentSecurityPolicy("'self' " + origin));
+    }
+
+    private static String contentSecurityPolicy(String formAction) {
+        return "default-src 'none'; style-src 'unsafe-inline'; form-action " + formAction
+            + "; frame-ancestors 'none'";
     }
 
     private static void reject(MuResponse response, SsoException exception) {
@@ -249,8 +267,7 @@ public final class SsoHandler {
             .header("Pragma", "no-cache")
             .header("X-Content-Type-Options", "nosniff")
             .header("X-Frame-Options", "DENY")
-            .header("Content-Security-Policy",
-                "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'")
+            .header("Content-Security-Policy", contentSecurityPolicy("'self'"))
             .entity(body);
     }
 

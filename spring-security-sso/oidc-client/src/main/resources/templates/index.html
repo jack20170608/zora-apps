@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Spring Security SSO Lab</title>
+</head>
+<body>
+<main>
+    <h1 th:text="${applicationName}">SSO Lab</h1>
+    <p>Spring Security 7.0 / OpenID Connect 研究环境，仅限本机使用。</p>
+    <section th:if="${user == null}">
+        <h2>尚未登录</h2>
+        <a th:href="@{/oauth2/authorization/lab}">通过统一身份提供方登录</a>
+    </section>
+    <section th:if="${user != null}">
+        <h2>已登录</h2>
+        <p>用户：<span th:text="${user.subject}">subject</span></p>
+        <p>身份提供方：<span th:text="${user.issuer}">issuer</span></p>
+        <a th:href="@{/api/me}">查看当前应用身份</a>
+        <form th:action="@{/logout}" method="post">
+            <button type="submit">退出当前应用及统一身份提供方会话</button>
+        </form>
+    </section>
+    <h2>验证单点登录</h2>
+    <p>先登录应用 A，再到应用 B 选择登录；有效的统一会话应免去再次输入密码。</p>
+    <ul>
+        <li><a href="http://localhost:9101/">打开应用 A</a></li>
+        <li><a href="http://localhost:9102/">打开应用 B</a></li>
+    </ul>
+    <p>退出一个应用不会自动清除另一个应用已建立的本地会话；本项目尚未实现跨应用退出通知。</p>
+</main>
+</body>
+</html>

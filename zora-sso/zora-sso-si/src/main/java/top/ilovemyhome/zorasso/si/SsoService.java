@@ -40,7 +40,7 @@ public interface SsoService {
         }
     }
 
-    record LoginPage(String transactionId, String csrfToken, String clientId) {
+    record LoginPage(String transactionId, String csrfToken, String clientId, URI redirectUri) {
     }
 
     record LoginResult(String sessionId, URI redirectUri) {

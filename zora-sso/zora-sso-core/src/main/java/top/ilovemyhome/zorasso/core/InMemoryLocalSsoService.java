@@ -91,7 +91,7 @@ public final class InMemoryLocalSsoService implements SsoService {
         Transaction transaction = requireTransaction(transactionId);
         String csrfToken = randomToken();
         transactions.put(digest(transactionId), transaction.withCsrfDigest(digest(csrfToken)));
-        return new LoginPage(transactionId, csrfToken, transaction.clientId());
+        return new LoginPage(transactionId, csrfToken, transaction.clientId(), transaction.redirectUri());
     }
 
     @Override

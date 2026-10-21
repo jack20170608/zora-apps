@@ -1,0 +1,48 @@
+@issuer=http://localhost:9100
+@appA=http://localhost:9101
+
+### 0.1 Verify OpenID Connect discovery
+GET {{issuer}}/.well-known/openid-configuration
+
+> {%
+client.test("OIDC discovery should publish the configured issuer and standard endpoints", function() {
+    client.assert(response.status === 200, "Discovery should return 200");
+    client.assert(response.body.issuer === "http://localhost:9100", "Issuer must match the configured issuer");
+    client.assert(response.body.authorization_endpoint && response.body.token_endpoint,
+        "Authorization and token endpoints must be present");
+    client.assert(response.body.end_session_endpoint, "OIDC logout endpoint must be present");
+});
+%}
+
+### 0.2 Verify unauthenticated identity access does not expose user data
+# @no-cookie-jar
+# @no-redirect
+GET {{appA}}/api/me
+Accept: text/html
+
+> {%
+client.test("Unauthenticated identity access should require login", function() {
+    client.assert(response.status === 302, "Unauthenticated access should redirect to login");
+    client.assert(response.headers.valueOf("Location"), "Login redirect should be provided");
+});
+%}
+
+### 0.3 Verify the client creates a standard OIDC authorization request
+# @no-redirect
+GET {{appA}}/oauth2/authorization/lab
+
+> {%
+client.test("Client authorization request should include state, nonce and PKCE S256", function() {
+    client.assert(response.status === 302, "Client should redirect to the authorization server");
+    const location = response.headers.valueOf("Location");
+    client.assert(location && location.startsWith("http://localhost:9100/oauth2/authorize?"),
+        "Redirect should target the local authorization endpoint");
+    client.assert(/[?&]state=[^&]+/.test(location), "State must be present");
+    client.assert(/[?&]nonce=[^&]+/.test(location), "Nonce must be present");
+    client.assert(/[?&]code_challenge=[^&]+/.test(location), "PKCE challenge must be present");
+    client.assert(/[?&]code_challenge_method=S256(?:&|$)/.test(location), "PKCE must use S256");
+});
+%}
+
+# Complete the cross-application SSO flow in a browser using the README steps.
+# The HTTP Client cookie jar is separate from the browser cookie jar.

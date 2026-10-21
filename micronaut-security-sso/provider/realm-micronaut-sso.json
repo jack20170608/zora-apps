@@ -1,0 +1,53 @@
+{
+  "realm": "micronaut-sso",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "loginWithEmailAllowed": false,
+  "clients": [
+    {
+      "clientId": "micronaut-app-a",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${MICRONAUT_SSO_CLIENT_A_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:9201/oauth/callback/keycloak"],
+      "webOrigins": [],
+      "defaultClientScopes": ["profile", "email"],
+      "attributes": {"pkce.code.challenge.method": "S256"}
+    },
+    {
+      "clientId": "micronaut-app-b",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${MICRONAUT_SSO_CLIENT_B_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:9202/oauth/callback/keycloak"],
+      "webOrigins": [],
+      "defaultClientScopes": ["profile", "email"],
+      "attributes": {"pkce.code.challenge.method": "S256"}
+    }
+  ],
+  "users": [
+    {
+      "username": "researcher",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "SSO",
+      "lastName": "Researcher",
+      "email": "researcher@example.invalid",
+      "credentials": [
+        {"type": "password", "value": "${MICRONAUT_SSO_PASSWORD}", "temporary": false}
+      ]
+    }
+  ]
+}

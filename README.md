@@ -13,7 +13,7 @@ zora-apps 是一个基于 [zora](https://github.com/ilovemyhome/zora) 框架构�
 
 ## 项目结构
 
-```
+```text
 zora-apps/
 ├── dag-task/                 # 基于DAG的分布式任务调度系统
 │   ├── dag-task-si/         # 领域模型接口定义
@@ -24,6 +24,9 @@ zora-apps/
 │   ├── host-helper-si/      # 领域模型接口定义
 │   ├── host-helper-core/    # 核心功能实现
 │   └── host-helper-server/  # 主机管理服务端
+├── spring-security-sso/      # Spring Security 7.0 OAuth2/OIDC 研究项目
+│   ├── authorization-server/ # 统一身份提供方
+│   └── oidc-client/          # 两个独立应用实例
 ├── docs/                     # 架构和功能设计文档
 └── CLAUDE.md                # 开发指引
 ```
@@ -54,6 +57,14 @@ zora-apps/
 > 开发规划中...
 
 一个主机管理工具，提供主机的注册、查询、监控和维护等功能，支持多种主机类型和协议。
+
+### [spring-security-sso](./spring-security-sso/README.md) - 标准 SSO 研究项目
+
+独立研究 Spring Boot 4.0 与 Spring Security 7.0 的 OAuth2/OIDC 方案，包含一个授权服务器及两个客户端实例，支持 Authorization Code + PKCE、跨应用免密登录和 OIDC 退出。与现有 `zora-sso` 并行，不替换原实现。使用独立的 Spring Boot BOM，启动方法见[研究项目快速启动](./spring-security-sso/README.md#一键启动)。
+
+### [micronaut-security-sso](./micronaut-security-sso/README.md) - Micronaut OAuth2 SSO 研究项目
+
+使用 Micronaut Security OAuth2 接入 Keycloak，运行两个独立客户端，研究 OIDC、PKCE、服务端 Session 与 CSRF。独立于现有认证代码，支持 Docker 一键启动或外部 Keycloak 接入，采用 Micronaut 平台管理依赖。
 
 ## 技术栈
 
@@ -90,7 +101,7 @@ mvn clean install
 
 - 每个子项目都有独立的 README.md，详细说明该项目的功能和使用方法
 - 子项目之间没有依赖关系，可以独立构建和使用
-- 所有依赖版本统一由父 POM 的 zora-bom 管理
+- Zora 应用通过父 POM 中的 zora-bom 管理依赖版本；独立 Spring 研究项目使用 Spring Boot BOM
 - 遵循 Maven 标准目录结构
 - 每个模块需要包含 `metadata/metadata.json` 文件，存放模块基本信息
 

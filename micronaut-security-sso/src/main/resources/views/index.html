@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Micronaut Security OAuth2 SSO</title>
+</head>
+<body>
+<main>
+    <h1 th:text="${applicationName}">Micronaut SSO</h1>
+    <p>Micronaut Security OAuth2 + Keycloak，本机研究环境。</p>
+    <section th:unless="${loggedIn}">
+        <h2>尚未登录</h2>
+        <a href="/oauth/login/keycloak">通过 Keycloak 登录</a>
+    </section>
+    <section th:if="${loggedIn}">
+        <h2>已登录</h2>
+        <p>用户：<span th:text="${username}">username</span></p>
+        <p><a href="/api/me">查看当前应用身份</a></p>
+        <form action="/logout" method="post">
+            <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+            <button type="submit">仅退出当前应用</button>
+        </form>
+    </section>
+    <h2>验证单点登录</h2>
+    <ul>
+        <li><a href="http://localhost:9201/">打开 Micronaut 应用 A</a></li>
+        <li><a href="http://localhost:9202/">打开 Micronaut 应用 B</a></li>
+    </ul>
+    <p>当前版本只实现本地退出，不结束 Keycloak 会话，也不清除其他应用会话。</p>
+</main>
+</body>
+</html>

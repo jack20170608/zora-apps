@@ -18,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SsoWebServerTest {
 
@@ -51,7 +53,7 @@ class SsoWebServerTest {
               clients = [{
                 client-id = "app-a"
                 client-secret-hash = "%s"
-                redirect-uris = ["%s"]
+                redirect-uris = ["%s", "http://localhost:8081/callback", "https://unused.example/callback"]
                 enabled = true
               }]
             }
@@ -86,7 +88,8 @@ class SsoWebServerTest {
         HttpResponse<String> loginPage = get(authorize.headers().firstValue("location").orElseThrow(), null);
         String transactionId = hidden(loginPage.body(), "transaction_id");
         String csrfToken = hidden(loginPage.body(), "csrf_token");
-        assertThat(loginPage.headers().firstValue("content-security-policy")).isPresent();
+        assertEquals(loginPolicy("https://app.example"),
+            loginPage.headers().firstValue("content-security-policy").orElseThrow());
 
         String loginBody = form(MapBuilder.of(
             "transaction_id", transactionId,
@@ -96,6 +99,8 @@ class SsoWebServerTest {
         ));
         HttpResponse<String> login = post("/login", loginBody, null);
         assertThat(login.statusCode()).isEqualTo(302);
+        assertEquals(loginPolicy("https://app.example"),
+            login.headers().firstValue("content-security-policy").orElseThrow());
         String cookie = login.headers().firstValue("set-cookie").orElseThrow().split(";", 2)[0];
         assertThat(login.headers().firstValue("set-cookie").orElseThrow())
             .containsIgnoringCase("HttpOnly")
@@ -132,6 +137,22 @@ class SsoWebServerTest {
     }
 
     @Test
+    void loginPolicyUsesOnlyTheTransactionCallbackOriginAndPreservesItsPort() throws Exception {
+        HttpResponse<String> authorize = get("/authorize?client_id=app-a&redirect_uri="
+            + encode("http://localhost:8081/callback") + "&state=client-state", null);
+        String loginPath = authorize.headers().firstValue("location").orElseThrow();
+
+        HttpResponse<String> page = get(loginPath + "&redirect_uri="
+            + encode("https://attacker.example/callback"), null);
+
+        assertAll("transaction-scoped login policy",
+            () -> assertEquals(200, page.statusCode()),
+            () -> assertEquals(loginPolicy("http://localhost:8081"),
+                page.headers().firstValue("content-security-policy").orElseThrow())
+        );
+    }
+
+    @Test
     void rejectsOpenRedirectWithoutLocationHeader() throws Exception {
         HttpResponse<String> response = get("/authorize?client_id=app-a&redirect_uri="
             + encode("https://attacker.example/callback") + "&state=test", null);
@@ -139,6 +160,8 @@ class SsoWebServerTest {
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.headers().firstValue("location")).isEmpty();
         assertThat(response.body()).contains("invalid_redirect_uri");
+        assertEquals("default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'",
+            response.headers().firstValue("content-security-policy").orElseThrow());
     }
 
     @Test
@@ -254,6 +277,11 @@ class SsoWebServerTest {
             }
             return result;
         }
+    }
+
+    private static String loginPolicy(String callbackOrigin) {
+        return "default-src 'none'; style-src 'unsafe-inline'; form-action 'self' "
+            + callbackOrigin + "; frame-ancestors 'none'";
     }
 
     private static final URI CALLBACK = URI.create("https://app.example/callback");
