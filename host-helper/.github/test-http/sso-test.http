@@ -1,6 +1,8 @@
 @clientId=host-helper
 @hostHelperBaseUrl=http://localhost:8000
 @ssoBaseUrl=http://localhost:9080
+@username=jack
+@password=1
 
 ### 0.1 test access the hosthelper service in the 1st time
 # @no-cookie-jar
@@ -43,6 +45,7 @@ client.test("login should return 302 without auto redirect", function() {
 
 ### 1.1 test the SSO provider authorize method
 # @no-redirect
+# @no-cookie-jar
 GET {{ssoBaseUrl}}/authorize?client_id={{clientId}}&redirect_uri={{hostHelperBaseUrl}}/auth/sso/callback&state={{state}}
 
 > {%
@@ -62,6 +65,7 @@ client.test("authorize should redirect to SSO login without following it", funct
 
 ### 1.2 test access the login page of the SSO provider
 # @no-redirect
+# @no-cookie-jar
 GET {{ssoBaseUrl}}/login?transaction_id={{transactionId}}
 
 > {%
@@ -82,6 +86,7 @@ client.test("login page should provide a CSRF token for the current transaction"
 
 ### 1.3 test submit the login form with the CSRF token and transaction_id
 # @no-redirect
+# @no-cookie-jar
 POST {{ssoBaseUrl}}/login
 Content-Type: application/x-www-form-urlencoded
 
@@ -114,3 +119,38 @@ client.test("login should redirect to the client callback with a matching state"
 # @no-redirect
 GET {{hostHelperBaseUrl}}/auth/sso/callback?code={{authorizationCode}}
     &state={{state}}
+
+> {%
+client.test("callback should create a host-helper session and redirect to the home page", function() {
+    client.assert(response.status === 302, "Response status should be 302");
+
+    const location = response.headers.valueOf("Location");
+    client.assert(location && location.endsWith("hosthelper/index.html"),
+        "Location should end with hosthelper/index.html");
+
+    const cookie = response.headers.valueOf("Set-Cookie");
+    client.assert(cookie && /^hosthelperjwt=([^;\s]+)/.test(cookie), "A non-empty host-helper session cookie should be set");
+    client.assert(/;\s*HttpOnly(?:;|$)/i.test(cookie), "Session cookie should be HttpOnly");
+    client.assert(/;\s*SameSite=Lax(?:;|$)/i.test(cookie), "Session cookie should use SameSite=Lax");
+    client.assert(response.headers.valueOf("Cache-Control") === "no-store", "Response should not be cached");
+
+    client.global.set("hostHelperRedirectUrl", location);
+});
+%}
+
+### 1.5 test access the callback redirect target with the saved session cookie
+# The HTTP Client cookie jar automatically sends the session cookie set in 1.4.
+# @no-redirect
+GET {{hostHelperRedirectUrl}}
+
+> {%
+client.test("authenticated session should access the home page without another login redirect", function() {
+    client.assert(response.status === 200, "Response status should be 200 without following redirects");
+
+    const contentType = response.headers.valueOf("Content-Type");
+    client.assert(contentType && contentType.toLowerCase().startsWith("text/html"), "Response should be HTML");
+    client.assert(typeof response.body === "string" && /id=["']main-layout["']/.test(response.body),
+        "Response should contain the host-helper home page layout");
+    client.assert(!response.headers.valueOf("Location"), "Authenticated access should not redirect to login");
+});
+%}
