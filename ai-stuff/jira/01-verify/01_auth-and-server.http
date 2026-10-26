@@ -1,0 +1,32 @@
+# Select the jira-v2 environment. See ../docs/01-FEATURE-jira-v2-api-tests.md.
+# JIRA_AUTHORIZATION must contain the complete Bearer or Basic authorization value.
+
+### Verify the authenticated account
+# @name jiraMyself
+# @no-redirect
+# @no-log
+GET {{jiraBaseUrl}}/rest/api/2/myself
+Authorization: {{$env.JIRA_AUTHORIZATION}}
+Accept: application/json
+
+> {%
+    client.test("Authentication succeeds", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body && response.body.self, "Expected a user resource, not an SSO login page");
+    });
+%}
+
+### Inspect the Jira version and deployment information
+# @name jiraServerInfo
+# @no-redirect
+# @no-log
+GET {{jiraBaseUrl}}/rest/api/2/serverInfo
+Authorization: {{$env.JIRA_AUTHORIZATION}}
+Accept: application/json
+
+> {%
+    client.test("Server information is available", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body && response.body.version, "Expected Jira version information");
+    });
+%}

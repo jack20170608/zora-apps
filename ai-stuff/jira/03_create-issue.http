@@ -1,0 +1,45 @@
+# Inspect create metadata first and add every required custom field before sending.
+# Every successful execution creates another issue. This request is NOT idempotent.
+
+### Create one issue in an explicitly selected test project
+# @name jiraCreateIssue
+# @no-redirect
+# @no-log
+< {%
+    if (request.environment.get("allowWrites") !== true) {
+        throw new Error("Write requests are disabled. Set allowWrites to boolean true only for a test project.");
+    }
+    client.global.clear("createdIssueKey");
+    client.global.clear("createdIssueId");
+%}
+POST {{jiraBaseUrl}}/rest/api/2/issue
+Authorization: {{$env.JIRA_AUTHORIZATION}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "fields": {
+    "project": {
+      "key": "{{projectKey}}"
+    },
+    "issuetype": {
+      "id": "{{issueTypeId}}"
+    },
+    "summary": "[API TEST] Jira v2 automation verification",
+    "description": "Created manually from the JetBrains HTTP Client for API verification.",
+    "labels": [
+      "jira-api-test"
+    ]
+  }
+}
+
+> {%
+    client.test("Issue is created", function () {
+        client.assert(response.status === 201, "Expected HTTP 201; do not blindly retry after a timeout");
+        client.assert(response.body && response.body.key && response.body.id, "Expected issue key and ID");
+    });
+    if (response.status === 201 && response.body && response.body.key && response.body.id) {
+        client.global.set("createdIssueKey", response.body.key);
+        client.global.set("createdIssueId", response.body.id);
+    }
+%}
