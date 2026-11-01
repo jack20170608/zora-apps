@@ -5,8 +5,8 @@
 # @name jiraProject
 # @no-redirect
 # @no-log
-GET {{jiraBaseUrl}}/rest/api/2/project/{{projectKey}}
-Authorization: {{$env.JIRA_AUTHORIZATION}}
+GET {{JIRA_BASE_URL}}/rest/api/2/project/{{PROJECT_KEY}}
+Authorization: Basic {{JIRA_BASIC}}
 Accept: application/json
 
 > {%
@@ -20,8 +20,8 @@ Accept: application/json
 # @name jiraFields
 # @no-redirect
 # @no-log
-GET {{jiraBaseUrl}}/rest/api/2/field
-Authorization: {{$env.JIRA_AUTHORIZATION}}
+GET {{JIRA_BASE_URL}}/rest/api/2/field
+Authorization: Basic {{JIRA_BASIC}}
 Accept: application/json
 
 > {%
@@ -35,15 +35,15 @@ Accept: application/json
 # @name jiraLegacyCreateMetadata
 # @no-redirect
 # @no-log
-GET {{jiraBaseUrl}}/rest/api/2/issue/createmeta?projectKeys={{projectKey}}&issuetypeIds={{issueTypeId}}&expand=projects.issuetypes.fields
-Authorization: {{$env.JIRA_AUTHORIZATION}}
+GET {{JIRA_BASE_URL}}/rest/api/2/issue/createmeta?projectKeys={{PROJECT_KEY}}&issuetypeIds={{ISSUE_TYPE_ID}}&expand=projects.issuetypes.fields
+Authorization: Basic {{JIRA_BASIC}}
 Accept: application/json
 
 > {%
     client.test("Legacy create metadata is available", function () {
         client.assert(response.status === 200, "Expected HTTP 200; check endpoint compatibility if unavailable");
         client.assert(response.body && Array.isArray(response.body.projects) && response.body.projects.length > 0,
-            "Expected a visible project; verify projectKey, issueTypeId, and permissions");
+            "Expected a visible project; verify PROJECT_KEY, ISSUE_TYPE_ID, and permissions");
     });
 %}
 
@@ -51,8 +51,8 @@ Accept: application/json
 # @name jiraCreateIssueTypes
 # @no-redirect
 # @no-log
-GET {{jiraBaseUrl}}/rest/api/2/issue/createmeta/{{projectKey}}/issuetypes?startAt={{startAt}}&maxResults={{maxResults}}
-Authorization: {{$env.JIRA_AUTHORIZATION}}
+GET {{JIRA_BASE_URL}}/rest/api/2/issue/createmeta/{{PROJECT_KEY}}/issuetypes?startAt={{START_AT}}&maxResults={{maxResults}}
+Authorization: Basic {{JIRA_BASIC}}
 Accept: application/json
 
 > {%
@@ -65,8 +65,8 @@ Accept: application/json
 # @name jiraCreateFields
 # @no-redirect
 # @no-log
-GET {{jiraBaseUrl}}/rest/api/2/issue/createmeta/{{projectKey}}/issuetypes/{{issueTypeId}}?startAt={{startAt}}&maxResults={{maxResults}}
-Authorization: {{$env.JIRA_AUTHORIZATION}}
+GET {{JIRA_BASE_URL}}/rest/api/2/issue/createmeta/{{PROJECT_KEY}}/issuetypes/{{ISSUE_TYPE_ID}}?startAt={{START_AT}}&maxResults={{MAX_RESULTS}}
+Authorization: Basic {{JIRA_BASIC}}
 Accept: application/json
 
 > {%

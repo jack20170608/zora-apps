@@ -6,24 +6,26 @@
 # @no-redirect
 # @no-log
 < {%
-    if (request.environment.get("allowWrites") !== true) {
-        throw new Error("Write requests are disabled. Set allowWrites to boolean true only for a test project.");
+    const allowWrites = request.environment.get("ALLOW_WRITES");
+    if (allowWrites !== true && allowWrites !== "true") {
+        throw new Error("Write requests are disabled. Select the test-project environment and set ALLOW_WRITES to true. Received "
+            + JSON.stringify(allowWrites) + " (type: " + typeof allowWrites + ").");
     }
     client.global.clear("createdIssueKey");
     client.global.clear("createdIssueId");
 %}
-POST {{jiraBaseUrl}}/rest/api/2/issue
-Authorization: {{$env.JIRA_AUTHORIZATION}}
+POST {{JIRA_BASE_URL}}/rest/api/2/issue
+Authorization: Basic {{JIRA_BASIC}}
 Accept: application/json
 Content-Type: application/json
 
 {
   "fields": {
     "project": {
-      "key": "{{projectKey}}"
+      "key": "{{PROJECT_KEY}}"
     },
     "issuetype": {
-      "id": "{{issueTypeId}}"
+      "id": "{{ISSUE_TYPE_ID}}"
     },
     "summary": "[API TEST] Jira v2 automation verification",
     "description": "Created manually from the JetBrains HTTP Client for API verification.",

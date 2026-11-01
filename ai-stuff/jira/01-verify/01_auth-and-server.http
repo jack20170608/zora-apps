@@ -1,12 +1,10 @@
-# Select the jira-v2 environment. See ../docs/01-FEATURE-jira-v2-api-tests.md.
-# JIRA_AUTHORIZATION must contain the complete Bearer or Basic authorization value.
-
 ### Verify the authenticated account
 # @name jiraMyself
 # @no-redirect
 # @no-log
-GET {{jiraBaseUrl}}/rest/api/2/myself
-Authorization: {{$env.JIRA_AUTHORIZATION}}
+< ../jira-auth.js
+GET {{JIRA_BASE_URL}}/rest/api/2/myself
+Authorization: Basic {{JIRA_BASIC}}
 Accept: application/json
 
 > {%
@@ -20,8 +18,8 @@ Accept: application/json
 # @name jiraServerInfo
 # @no-redirect
 # @no-log
-GET {{jiraBaseUrl}}/rest/api/2/serverInfo
-Authorization: {{$env.JIRA_AUTHORIZATION}}
+GET {{JIRA_BASE_URL}}/rest/api/2/serverInfo
+Authorization: Basic {{JIRA_BASIC}}
 Accept: application/json
 
 > {%
